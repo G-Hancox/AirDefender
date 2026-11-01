@@ -12,7 +12,7 @@ closed. When the sky is clear again, it hands the shutters back to your sequence
 > service's own delay). It is an extra layer of care, **not a replacement for your own obligations** for
 > sky-pointing beams and lasers.
 
-Version 1.6.0 (see [CHANGELOG.md](CHANGELOG.md)). For FPP 10 and later.
+Version 1.6.1 (see [CHANGELOG.md](CHANGELOG.md)). For FPP 10 and later.
 
 ---
 

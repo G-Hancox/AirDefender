@@ -8,7 +8,9 @@
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "Stopping Air Defender detection loop"
-# The watchdog first, so it does not start the loop again.
+# A start still under way first (an unload straight after a load), then the
+# watchdog, so neither can start the loop again.
+pkill -f "${PLUGIN_DIR}/scripts/airdefender_start.sh" 2>/dev/null
 pkill -f "${PLUGIN_DIR}/scripts/airdefender_supervise.sh" 2>/dev/null
 pkill -f "${PLUGIN_DIR}/scripts/airdefender_loop.php" 2>/dev/null
 exit 0

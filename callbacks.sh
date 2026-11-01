@@ -6,8 +6,10 @@
 # detection loop lives and dies with fppd:
 #   startup  - fppd started, or loaded the plugin after an install or update
 #   shutdown - fppd is stopping, or unloading the plugin to uninstall or update
-# fppd waits for these, so both return straight away: the loop is started in
-# the background (scripts/airdefender_start.sh).
+# fppd waits for these (on its main loop), so both return straight away:
+# startup runs scripts/airdefender_start.sh in the background, since that
+# waits for an old loop to go before starting the new one; shutdown only
+# signals the watchdog and the loop (scripts/airdefender_stop.sh).
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -18,7 +20,7 @@ case "$1" in
     --type)
         if [ "$2" = "lifecycle" ]; then
             case "$3" in
-                "startup")  bash "${DIR}/scripts/airdefender_start.sh" ;;
+                "startup")  setsid bash "${DIR}/scripts/airdefender_start.sh" </dev/null >/dev/null 2>&1 & ;;
                 "shutdown") bash "${DIR}/scripts/airdefender_stop.sh" ;;
             esac
         fi

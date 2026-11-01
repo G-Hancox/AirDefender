@@ -1,5 +1,14 @@
 # Air Defender changelog
 
+## 1.6.1 (2026-11-01)
+
+Second round of FPP's review.
+
+- fppd no longer waits on Air Defender when it starts or reloads the plugin: the start runs in the background,
+  and stopping also stops a start still under way.
+- The update script asks fppd's API which FPP version is running, instead of looking inside FPP's code.
+- Installing and uninstalling no longer ask for an FPPD restart: fppd loads and unloads the plugin itself.
+
 ## 1.6.0 (2026-10-31)
 
 Changes from FPP's review for the plugin list.

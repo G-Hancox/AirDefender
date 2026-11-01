@@ -29,15 +29,14 @@ if [ -f "${PLUGIN_DIR}/state.json" ]; then
     done
 fi
 
-# fppd reads commands/descriptions.json only at startup, so the Air Defender
-# commands stay listed until it restarts. Ask for one.
-. ${FPPDIR}/scripts/common
-setSetting restartFlag 1
+# No restart needed: just before this, FPP asked fppd to unload the plugin,
+# which withdrew the Air Defender commands and stopped the loop (callbacks.sh).
 
 # Remove what Air Defender kept outside its folder: the Player's UI password
 # and the log (which lists aircraft that passed near the show). A Reinstall
 # (FPP sets FPP_PLUGIN_REINSTALL=1 from 10.4) keeps the password, so Remotes
 # don't have to be given it again after an FPP OS upgrade.
+. "${FPPDIR:-/opt/fpp}/scripts/common" >/dev/null 2>&1 || true   # MEDIADIR, LOGDIR
 : "${MEDIADIR:=/home/fpp/media}"
 : "${LOGDIR:=${MEDIADIR}/logs}"
 if [ "${FPP_PLUGIN_REINSTALL:-0}" != "1" ]; then
