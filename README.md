@@ -12,7 +12,7 @@ closed. When the sky is clear again, it hands the shutters back to your sequence
 > service's own delay). It is an extra layer of care, **not a replacement for your own obligations** for
 > sky-pointing beams and lasers.
 
-Version 1.6.1 (see [CHANGELOG.md](CHANGELOG.md)). For FPP 10 and later.
+Version 1.7.0 (see [CHANGELOG.md](CHANGELOG.md)). For FPP 10 and later.
 
 ---
 
@@ -137,8 +137,12 @@ to the flight-data service and leaves the shutters to the show. **Check for airc
 - **Only selected playlists:** tick the playlists that use your moving heads in the list beside it. Air Defender checks
   only while one of those plays, scheduled or started by hand, and from 2 minutes before a scheduled one. The rest (a
   static display that runs late into the night, say) leave it on Standby. With nothing ticked it checks while any
-  playlist plays. A sequence started on its own isn't part of a playlist, so it isn't checked: use **Check now**. The
-  list is greyed out with **All scheduled shows**, and your ticks are kept.
+  playlist plays. A sequence started on its own isn't part of a playlist, so it isn't checked unless the box below is
+  ticked. The list is hidden with **All scheduled shows**, and your ticks are kept.
+- **Also check whenever FPP is playing** (off by default): also checks while anything plays that the choice above
+  leaves out, such as a single sequence or a playlist started by hand. Checking starts as soon as FPP starts playing,
+  so there is no 2-minute head start: the heads stay closed for the few seconds until the first check answers, then
+  open if the sky is clear.
 
 **Using Remote Falcon?** A viewer's request plays from Remote Falcon's own playlist, inserted into your show. With
 **Only selected playlists**, tick Remote Falcon's playlist too. (During a selected scheduled show Air Defender keeps
@@ -318,6 +322,11 @@ php /home/fpp/media/plugins/AirDefender/scripts/airdefender_check.php
 Options `--url`, `--lat`, `--lon`, `--distance`, `--altitude` and `--elevation` override the saved settings. Exit code: 0 clear,
 1 an aircraft is inside the limits, 2 could not check.
 
+## Questions, problems and ideas
+
+[Report a problem, suggest a feature, or ask for a flight data service](https://github.com/G-Hancox/AirDefender/issues/new/choose)
+on GitHub. **Air Defender - Help** in FPP's Help menu links there too.
+
 ## How it works (for developers)
 
 | Piece | File |
@@ -334,6 +343,7 @@ Options `--url`, `--lat`, `--lon`, `--distance`, `--altitude` and `--elevation` 
 | The Player's UI password (on a Remote), in `plugindata/AirDefender/` (0600) | `scripts/airdefender_secret.php` |
 | Dashboard and its endpoint | `www/index.php`, `www/test_api.php` |
 | Settings page, built from FPP's setting helpers | `www/settings.php`, `settings.json` |
+| Help menu page (quick start, links) and GitHub request forms | `www/help.php`, `.github/ISSUE_TEMPLATE/` |
 | Status a Remote reads from its master | `www/master_status.php` |
 | Install, update and uninstall hooks | `scripts/fpp_install.sh`, `scripts/fpp_upgrade.sh`, `scripts/fpp_uninstall.sh` |
 

@@ -1,0 +1,33 @@
+name: Add a flight data service
+description: Suggest an ADS-B service for Air Defender's Service list.
+title: "Service: "
+labels: ["service request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Air Defender only sends the show's location to services on its list, so each one is checked before it's added.
+  - type: input
+    id: name
+    attributes:
+      label: Service name
+      placeholder: e.g. adsb.example
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: Link to its API documentation
+      description: Where it explains how to ask for aircraft near a location.
+    validations:
+      required: true
+  - type: textarea
+    id: terms
+    attributes:
+      label: Cost, limits and terms
+      description: Is it free? Does it need a key or an account? How many requests does it allow?
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this one
+      description: Better coverage where you are, a backup, or something else?

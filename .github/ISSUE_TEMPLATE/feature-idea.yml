@@ -1,0 +1,22 @@
+name: Feature idea
+description: Suggest something Air Defender could do.
+title: "Idea: "
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What should Air Defender do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: How you'd use it
+      description: What happens in your show today, and what would change?
+  - type: input
+    id: fpp
+    attributes:
+      label: Your FPP version and Air Defender version
+      placeholder: e.g. FPP 10.4, Air Defender 1.6.1

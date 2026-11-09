@@ -54,10 +54,15 @@ until you pick the model again.</p>
         dashboard (or the Air Defender: Check Now command): it checks for the time you pick, then turns itself off.</li>
     <li><b>Playlists to check during</b> (shown with Only selected playlists; your ticks are kept while it is
         hidden): tick the playlists that use your moving heads, so the rest (a late-night static show, say) leave Air
-        Defender on Standby. A sequence started on its own is not part of a playlist, so it is not checked: use
-        <b>Check now</b>. A selected playlist FPP no longer has is marked "not in FPP" until you untick it. If you use
+        Defender on Standby. A sequence started on its own is not part of a playlist, so it is not checked unless
+        <b>Also check whenever FPP is playing</b> is ticked. A selected playlist FPP no longer has is marked "not in FPP" until you untick it. If you use
         Remote Falcon, tick its playlist too: viewer requests play from it. (During a selected scheduled show Air Defender
         keeps checking through requests anyway, since they play inside that show's schedule slot.)</li>
+    <li><b>Also check whenever FPP is playing</b> (off by default): also checks while anything plays that the choice
+        above leaves out, such as a single sequence or a playlist started by hand. Checking starts as soon as FPP starts
+        playing, so there is no 2-minute head start: the heads stay closed for the few seconds until the first check
+        answers, then open if the sky is clear. The log notes this hold, but it doesn't count as a time the heads
+        closed for an aircraft.</li>
     <li><b>Use FPP's location</b>: uses the latitude and longitude in FPP's own settings, shown below it. Turn it
         off to enter a different <b>Latitude</b> and <b>Longitude</b>. <b>Check it on a map</b> opens the spot in OpenStreetMap: always check that the pin is on
         your show, not just your town. FPP's location is often rough and can be miles off, and every distance (and the

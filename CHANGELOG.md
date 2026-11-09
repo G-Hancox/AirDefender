@@ -1,5 +1,16 @@
 # Air Defender changelog
 
+## 1.7.0 (dev, not released)
+
+- **Also check whenever FPP is playing** (Settings, When & where; off by default): checks during a single sequence
+  or a playlist started by hand too. The heads close for the second or two until the first check answers, then open
+  if the sky is clear, since a show started by hand gets no 2-minute head start. That hold is logged, but isn't
+  counted as a time the heads closed.
+- **Air Defender - Help** in FPP's Help menu: a quick start, what it can't see, and links to the README and to
+  GitHub's forms for problems, ideas and new flight data services. Settings has the same "Request a service or
+  feature" link. Air Defender itself sends nothing.
+- Checked against FPP 10.4.
+
 ## 1.6.1 (2026-11-01)
 
 Second round of FPP's review.

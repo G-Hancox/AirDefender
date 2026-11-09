@@ -2,23 +2,45 @@
     "settingGroups": {
         "airdefenderGeneral": {
             "description": "Air Defender",
-            "settings": ["enabled", "nodeRole", "masterAddress"]
+            "settings": [
+                "enabled",
+                "nodeRole",
+                "masterAddress"
+            ]
         },
         "airdefenderWhen": {
             "description": "When to check",
-            "settings": ["checkWhen"]
+            "settings": [
+                "checkWhen",
+                "checkAnyPlaying"
+            ]
         },
         "airdefenderWhere": {
             "description": "Where the show is",
-            "settings": ["useFPPLocation", "latitude", "longitude", "showElevationFt"]
+            "settings": [
+                "useFPPLocation",
+                "latitude",
+                "longitude",
+                "showElevationFt"
+            ]
         },
         "airdefenderLimits": {
             "description": "Safety limits",
-            "settings": ["distanceNM", "altitudeThresholdFt", "clearDelaySec", "fetchInterval"]
+            "settings": [
+                "distanceNM",
+                "altitudeThresholdFt",
+                "clearDelaySec",
+                "fetchInterval"
+            ]
         },
         "airdefenderFeed": {
             "description": "Flight data",
-            "settings": ["adsbSourceUrl", "receiverAddress", "feedFallback", "feedDownSafe"]
+            "settings": [
+                "adsbSourceUrl",
+                "receiverAddress",
+                "feedFallback",
+                "feedDownSafe"
+            ]
         }
     },
     "settings": {
@@ -37,7 +59,10 @@
                 "Remote": "remote"
             },
             "children": {
-                "remote": ["masterAddress", "masterPassword"]
+                "remote": [
+                    "masterAddress",
+                    "masterPassword"
+                ]
             }
         },
         "masterAddress": {
@@ -58,8 +83,16 @@
             },
             "default": "scheduled",
             "children": {
-                "playing": ["checkPlaylists"]
+                "playing": [
+                    "checkPlaylists"
+                ]
             }
+        },
+        "checkAnyPlaying": {
+            "description": "Also check whenever FPP is playing",
+            "tip": "Also checks while anything plays that the choice above leaves out: a single sequence, or a playlist started by hand. It starts as soon as FPP starts playing and stops once it finishes. A show started by hand gets no 2 minutes of checking beforehand, so the heads stay closed for the few seconds until the first check answers.",
+            "type": "checkbox",
+            "default": "0"
         },
         "useFPPLocation": {
             "description": "Use FPP's location",
@@ -138,9 +171,15 @@
             "type": "select",
             "default": "https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{radius}",
             "children": {
-                "receiver": ["receiverAddress"],
-                "https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{radius}": ["feedFallback"],
-                "https://api.adsb.lol/v2/point/{lat}/{lon}/{radius}": ["feedFallback"]
+                "receiver": [
+                    "receiverAddress"
+                ],
+                "https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{radius}": [
+                    "feedFallback"
+                ],
+                "https://api.adsb.lol/v2/point/{lat}/{lon}/{radius}": [
+                    "feedFallback"
+                ]
             }
         },
         "receiverAddress": {

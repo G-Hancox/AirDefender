@@ -130,7 +130,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 
 <div class="airdefender-settings">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-        <div class="text-body-secondary">Version <?php echo htmlspecialchars(airdefender_version()); ?> &middot; changes save as you make them</div>
+        <div class="text-body-secondary">Version <?php echo htmlspecialchars(airdefender_version()); ?> &middot; changes save as you make them
+            &middot; <a href="https://github.com/G-Hancox/AirDefender/issues/new/choose" target="_blank" rel="noopener">Request a service or feature</a></div>
         <a class="buttons" href="plugin.php?plugin=AirDefender&amp;page=www/index.php"><i class="fas fa-fw fa-satellite-dish"></i> Dashboard</a>
     </div>
 
@@ -219,7 +220,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         </div>
 
         <div class="tab-pane fade" id="ad-when" role="tabpanel" aria-labelledby="ad-when-tab">
-            <?php airdefender_print_group('When to check', array('checkWhen', $airdefenderPlaylistRow)); ?>
+            <?php airdefender_print_group('When to check', array('checkWhen', $airdefenderPlaylistRow, 'checkAnyPlaying')); ?>
             <?php airdefender_print_group('Where the show is', array('useFPPLocation', $airdefenderFppLocRow, 'latitude', 'longitude', $airdefenderMapRow,
                 'showElevationFt', $airdefenderElevRow)); ?>
         </div>

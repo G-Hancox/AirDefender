@@ -1,0 +1,30 @@
+name: Something's not working
+description: Report a problem with Air Defender.
+title: "Problem: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what Air Defender did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log lines
+      description: From the dashboard's View log (Everything), around when it happened. Remove callsigns if you'd rather not share them.
+      render: text
+  - type: input
+    id: fpp
+    attributes:
+      label: Your FPP version and Air Defender version
+      placeholder: e.g. FPP 10.4, Air Defender 1.6.1
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Role
+      options: ["Player", "Remote"]

@@ -355,11 +355,13 @@ function airdefender_current_counts(array $show, array $only, string $tickedSlot
  *   playing   - Only selected playlists ($only): while one of them plays,
  *               scheduled or started by hand, and shortly before a scheduled
  *               one; nothing ticked means any playlist
- * A Check now override, or not being able to ask fppd, means check.
+ * A Check now override, or not being able to ask fppd, means check. With
+ * $anyPlaying (Also check whenever FPP is playing), anything FPP plays counts
+ * too: a playlist or a single sequence, scheduled or started by hand.
  */
-function airdefender_should_check(string $mode, ?array $show, ?int $overrideUntil, int $now, array $only = [], string $tickedSlot = ''): bool
+function airdefender_should_check(string $mode, ?array $show, ?int $overrideUntil, int $now, array $only = [], string $tickedSlot = '', bool $anyPlaying = false): bool
 {
-    if ($overrideUntil !== null || $show === null) {
+    if ($overrideUntil !== null || $show === null || ($anyPlaying && $show['playing'])) {
         return true;
     }
     $startsSoon = $show['nextStart'] !== null
@@ -415,9 +417,11 @@ $feedUsed = null;            // the service that gave the last good answer
 $safeSince = null;           // when safety mode last turned on
 
 $safe = false;
+$safetyLogged = false;       // a SAFETY ON line is in the log without its SAFETY OFF
 $lastTriggerAt = 0;          // last time an aircraft was inside the thresholds
 $lastTrigger = null;         // that aircraft
 $nextFetchAt = 0;
+$firstCheckDone = true;      // false from when checking starts until the sky has been checked once
 $feedError = null;
 $lastFetchOkAt = null;
 $aircraftCount = null;
@@ -454,6 +458,7 @@ while (true) {
     if (!in_array($checkWhen, ['scheduled', 'playing'], true)) {
         $checkWhen = 'scheduled';
     }
+    $anyPlaying = airdefender_truthy(airdefender_setting($settings, 'checkAnyPlaying', '0'));
     // The selected playlists count only with Only selected playlists.
     $onlyPlaylists = $checkWhen === 'playing' ? airdefender_decode_playlists((string) ($settings['checkPlaylists'] ?? '')) : [];
     [$feedTemplate, $feedNote] = airdefender_effective_feed((string) airdefender_setting($settings, 'adsbSourceUrl', ''));
@@ -501,19 +506,25 @@ while (true) {
         }
     }
     $overrideUntil = airdefender_override_until();
-    $checking = $role === 'remote' || airdefender_should_check($checkWhen, $show, $overrideUntil, $now, $onlyPlaylists, $tickedSlot);
+    $checking = $role === 'remote' || airdefender_should_check($checkWhen, $show, $overrideUntil, $now, $onlyPlaylists, $tickedSlot, $anyPlaying);
     // Playing, but a playlist that is not on the list (a late-night static one, say).
     $skippedPlaylist = !$checking && $show !== null && $show['playing'] && $show['current'] !== ''
         && !airdefender_current_counts($show, $onlyPlaylists, $tickedSlot) ? $show['current'] : null;
     if ($wasChecking !== null && $checking !== $wasChecking && $role !== 'remote' && $enabled) {
         airdefender_log($checking
-            ? "Checking for aircraft" . ($overrideUntil !== null ? " (Check now override)." : " (show time" . ($show && $show['current'] !== '' ? ": {$show['current']}" : "") . ").")
+            ? "Checking for aircraft" . ($overrideUntil !== null ? " (Check now override)."
+                : " (" . ($show && !$show['scheduled'] && $show['playing'] ? "started by hand" : "show time")
+                    . ($show && $show['current'] !== '' ? ": {$show['current']}" : "") . ").")
             : ($skippedPlaylist !== null
                 ? "Standby: {$skippedPlaylist} isn't selected, so not checking for aircraft."
                 : "Standby: no show playing, so not checking for aircraft."));
     }
-    if ($checking && $wasChecking === false) {
-        $nextFetchAt = 0;      // check straight away rather than one interval later
+    if ($checking && $wasChecking !== true) {
+        // Close the heads first (this pass), then ask for aircraft on the next
+        // pass a second later: asking can take a few seconds, and the heads
+        // shouldn't be open while it does.
+        $nextFetchAt = $now + 1;
+        $firstCheckDone = false;
     }
     if (!$checking) {
         $feedError = null;
@@ -580,6 +591,7 @@ while (true) {
                 . airdefender_feed_label($feedUsed) . " until it does.");
         }
 
+        $firstCheckDone = true;
         if ($planes === null) {
             $feedError = $errors[$feedTemplate] ?? reset($errors);
             if ($backupTemplate !== null && isset($errors[$backupTemplate])) {
@@ -696,6 +708,13 @@ while (true) {
         $safe = true;
         $reason = 'feed-down';
         $event = "ADS-B feed is down and Close Heads If Feed Is Down is on, so heads stay closed until it answers";
+    } elseif ($detecting && !$firstCheckDone) {
+        // Checking has just started: a show started by hand gets no 2 minutes
+        // of checking beforehand, so the heads wait for the first answer
+        // (seconds) rather than opening into a sky nobody has looked at.
+        $safe = true;
+        $reason = 'first-check';
+        $event = "Checking the sky before the heads open";
     } elseif ($lastTriggerAt > 0 && $now - $lastTriggerAt < $clearDelay) {
         $safe = true;
         $reason = 'hold';
@@ -723,7 +742,16 @@ while (true) {
     } elseif (!$safe) {
         $safeSince = null;
     }
-    if ($safe && !$wasSafe) {
+    // The short hold until the first check answers isn't a safety event: it
+    // happens at every start, and the log's count of times the heads closed is
+    // for aircraft and tests. Logged as a plain line; a real reason that
+    // follows it while the heads are still closed is logged as SAFETY ON.
+    if ($safe && $reason === 'first-check') {
+        if (!$wasSafe) {
+            airdefender_log("Holding the shutters closed until the first check answers.");
+        }
+    } elseif ($safe && !$safetyLogged) {
+        $safetyLogged = true;
         $what = $reason === 'test' ? "test started" : $event;
         $list = [];
         foreach (array_keys($heads) as $ch) {
@@ -731,7 +759,8 @@ while (true) {
         }
         airdefender_event("SAFETY ON ({$what}). Closing " . count($heads) . " shutter(s): "
             . ($list ? implode(', ', $list) : 'none configured'));
-    } elseif (!$safe && $wasSafe) {
+    } elseif (!$safe && $safetyLogged) {
+        $safetyLogged = false;
         airdefender_event("SAFETY OFF. Shutters released back to the sequence.");
     }
     if ($safe && !$heads) {

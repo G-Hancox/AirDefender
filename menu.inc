@@ -5,6 +5,12 @@ $menuEntries = array(
         'type' => 'content',
         'page' => 'www/index.php',
         'wrap' => 1
+    ),
+    array(
+        'text' => 'Air Defender - Help',
+        'type' => 'help',
+        'page' => 'www/help.php',
+        'wrap' => 1
     )
 );
 
