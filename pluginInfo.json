@@ -28,13 +28,13 @@
             {
                 "to": "api.adsb.lol",
                 "what": "your show's location, rounded to about 1 km, and search radius",
-                "why": "to get the aircraft near your show, only if you choose it, or turn on Use the other as a backup",
+                "why": "to get the aircraft near your show, only if you choose it or turn it on as adsb.fi's backup",
                 "alwaysOn": false
             },
             {
                 "to": "opendata.adsb.fi",
                 "what": "your show's location, rounded to about 1 km, and search radius",
-                "why": "to get the aircraft flying near your show (the default service), only while Air Defender is checking",
+                "why": "to get aircraft near your show (default service, or a backup you turn on), only while checking",
                 "alwaysOn": false
             },
             {

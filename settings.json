@@ -167,12 +167,19 @@
         },
         "adsbSourceUrl": {
             "description": "Service",
-            "tip": "Free community services for personal, non-commercial use: data from adsb.fi and adsb.lol (ODbL). They are sent your show's location, rounded to about 1 km. Your own receiver sends nothing to the internet.",
+            "tip": "Free community services for personal, non-commercial use: data from adsb.fi and adsb.lol (ODbL). They are sent your show's location, rounded to about 1 km. Your own receiver sends nothing to the internet, unless you turn on its backup below.",
             "type": "select",
             "default": "https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{radius}",
             "children": {
                 "receiver": [
-                    "receiverAddress"
+                    "receiverAddress",
+                    "feedFallback"
+                ],
+                "http://localhost/tar1090/data/aircraft.json": [
+                    "feedFallback"
+                ],
+                "http://localhost:8080/data/aircraft.json": [
+                    "feedFallback"
                 ],
                 "https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{radius}": [
                     "feedFallback"
@@ -192,8 +199,8 @@
             "pii": true
         },
         "feedFallback": {
-            "description": "Use the other as a backup",
-            "tip": "If adsb.fi or adsb.lol stops answering or limits requests, ask the other one in the same check, and go back to the chosen one when it answers. Off by default, because turning it on means the other service is sent your show's location too.",
+            "description": "Use a backup service",
+            "tip": "If the chosen service stops answering or limits requests, ask another in the same check, and go back to the chosen one when it answers (it is tried again every minute). adsb.fi and adsb.lol back each other up; your own receiver falls back on adsb.fi. Off by default, because turning it on means the backup service is sent your show's location (rounded to about 1 km) while it is used.",
             "type": "checkbox",
             "default": "0"
         },

@@ -67,9 +67,10 @@ function airdefender_feed_url(string $template, float $lat, float $lon, float $n
 
 /*
  * The online service to fall back on when $template does not answer, or null:
- * adsb.fi and adsb.lol back each other up. A local receiver (or any other
- * address) has no backup, so a show that chose to keep its location on the
- * FPP never has it sent to an online service.
+ * adsb.fi and adsb.lol back each other up, and a receiver of your own falls
+ * back on adsb.fi. Only used with Use a backup service ticked (off by
+ * default), so a show with a receiver that leaves it off never has its
+ * location sent to an online service.
  */
 function airdefender_feed_backup(string $template): ?string
 {
@@ -78,6 +79,9 @@ function airdefender_feed_backup(string $template): ?string
     }
     if ($template === AIRDEFENDER_FEED_ADSBLOL) {
         return AIRDEFENDER_FEED_ADSBFI;
+    }
+    if (array_key_exists($template, airdefender_feed_options())) {
+        return AIRDEFENDER_FEED_ADSBFI;   // a receiver of your own
     }
     return null;
 }

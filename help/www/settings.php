@@ -97,10 +97,11 @@ until you pick the model again.</p>
         aircraft list. Only home-network addresses are accepted, and it is never sent your location. Data more than 2
         minutes old counts as the receiver not answering. <b>Receiver on this FPP</b> reads one installed on the FPP
         itself (not recommended: it takes CPU from the show). The README explains what a receiver needs.</li>
-    <li><b>Use the other as a backup</b>: off until you turn it on, because it means the other service is also sent
-        your show's location. When on, if adsb.fi or adsb.lol does not answer, Air Defender asks the other in the same
-        check. It tries your chosen service again every minute and goes back to it when it
-        answers. Your own receiver never falls back to an online service.</li>
+    <li><b>Use a backup service</b>: off until you turn it on, because it means the backup service is also sent
+        your show's location while it is used. When on, if your chosen service does not answer, Air Defender asks the
+        backup in the same check: adsb.fi and adsb.lol back each other up, and your own receiver falls back on adsb.fi.
+        It tries your chosen service again every minute and goes back to it when it answers. With it off, your own
+        receiver never sends anything to an online service.</li>
     <li><b>Test connection</b>: asks the service once, right away, using the location and limits saved here, and shows how many aircraft it sees, the nearest one, how many are inside your limits, or the exact
         error.</li>
     <li><b>Close heads if the feed is down</b>: off (the default), if the service stops answering, heads stay as they are

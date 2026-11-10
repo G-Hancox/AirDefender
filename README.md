@@ -86,7 +86,7 @@ say so) and takes effect within a second; no restart is needed.
 | **Moving heads** | Up to 8 heads: name, model or manual start channel, shutter channel in the fixture, closed value. |
 | **When & where** | **Check for aircraft during** (all scheduled shows, or only selected playlists) with the playlist list, the show location and its elevation. |
 | **Limits** | Distance (NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
-| **Flight data** | The service (or your own receiver's address), **Test connection**, an optional backup service, and **Close heads if the feed is down**. |
+| **Flight data** | The service (or your own receiver's address), **Test connection**, an optional backup service (also for your own receiver), and **Close heads if the feed is down**. |
 
 On a Remote only **General** and **Moving heads** are shown: the rest is set on the Player.
 
@@ -225,10 +225,12 @@ Air Defender asks a free community ADS-B service for the aircraft near your show
 | **Your receiver on your network** | None | Your own ADS-B receiver on another Pi; nothing goes to the internet. See below. |
 | **Receiver on this FPP** (tar1090 / dump1090-fa) | None | A receiver running on the FPP itself (not recommended; see below). |
 
-Turn on **Use the other as a backup** (it is off until you do, since it means the other service is also sent your
-location) and, if adsb.fi or adsb.lol refuses, limits or doesn't answer, Air Defender asks the other in the same
-check, so there's no gap. It tries the chosen one again every minute and goes back to it when it answers. Your own
-receiver never falls back to an online service.
+Turn on **Use a backup service** (it is off until you do, since it means the backup service is also sent your
+location) and, if the chosen one refuses, limits or doesn't answer, Air Defender asks the backup in the same check,
+so there's no gap. adsb.fi and adsb.lol back each other up, and your own receiver falls back on adsb.fi: you keep
+your receiver's speed and low-level coverage, with the internet as a safety net if its power, SD card or Wi-Fi fails.
+It tries the chosen one again every minute and goes back to it when it answers. With the backup off, your own
+receiver never sends anything to an online service.
 
 The number of requests is your check interval over the time it checks: at 10 seconds, about 1,800 for a 5-hour show
 night. The settings page shows the estimate as you change it.
