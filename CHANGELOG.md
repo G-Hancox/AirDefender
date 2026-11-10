@@ -1,6 +1,6 @@
 # Air Defender changelog
 
-## 1.7.1 (dev, not released)
+## 1.7.1 (2026-11-10)
 
 - **Only selected playlists with none ticked now works like All scheduled shows.** Before, it checked while any
   playlist played, so unticking the last playlist while one was playing kept Air Defender checking.
