@@ -143,8 +143,8 @@ $airdefenderPage = array(
                     <span class="fw-bold">Sky</span>
                     <small class="text-body-secondary text-end flex-grow-1" id="adFeed"></small>
                     <button type="button" class="btn btn-sm btn-outline-secondary text-body py-0 px-1" id="adTurn"
-                        title="Turn the radar so its top matches the way you face your show" aria-pressed="false"
-                        aria-label="Turn the radar"><i class="fas fa-fw fa-lock" id="adTurnIcon"></i></button>
+                        title="Rotate the radar to set your north: click to unlock, then drag" aria-pressed="false"
+                        aria-label="Rotate the radar to set your north"><i class="fas fa-fw fa-lock" id="adTurnIcon"></i></button>
                 </div>
                 <div class="card-body">
                     <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
@@ -485,6 +485,11 @@ $airdefenderPage = array(
         $id('adTurn').setAttribute('aria-pressed', on ? 'true' : 'false');
         $id('adTurn').classList.toggle('active', on);
         $id('adTurn').classList.toggle('text-body', !on);
+        var tip = on ? 'Click to lock and save where north is' : 'Rotate the radar to set your north: click to unlock, then drag';
+        // FPP turns titles into Bootstrap tooltips; update that one if it's there, so there's never two.
+        var tt = window.bootstrap && bootstrap.Tooltip && bootstrap.Tooltip.getInstance($id('adTurn'));
+        if (tt && tt.setContent) { tt.setContent({ '.tooltip-inner': tip }); } else { $id('adTurn').setAttribute('title', tip); }
+        $id('adTurn').setAttribute('aria-label', on ? 'Lock and save the radar' : 'Rotate the radar to set your north');
         if (on) { setRotation(rotation); }
     }
     $id('adTurn').addEventListener('click', function () {
