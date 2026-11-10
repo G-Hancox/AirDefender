@@ -5,6 +5,9 @@
 - **Only selected playlists with none ticked now works like All scheduled shows.** Before, it checked while any
   playlist played, so unticking the last playlist while one was playing kept Air Defender checking.
 
+- **Tidier playlist list in Settings**: no more big empty frame with only a few playlists (a long list still scrolls in a
+  box), and each checkbox sits level with its name.
+
 ## 1.7.0 (2026-11-10)
 
 - **Also check whenever FPP is playing** (Settings, When & where; off by default): checks during a single sequence

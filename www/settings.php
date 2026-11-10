@@ -102,7 +102,9 @@ if ($airdefenderFppPlaylists === null) {
 } elseif (!$airdefenderListed) {
     echo "<div class='text-body-secondary'>No playlists in FPP yet.</div>";
 } else {
-    echo "<div class='airdefender-playlists border rounded p-2' role='group' aria-label='Playlists Air Defender checks during'>";
+    // A plain list like FPP's own settings; only a long list gets a scrolling box, so a few playlists don't sit in a big empty frame.
+    $airdefenderLong = count($airdefenderListed) > 12 ? ' airdefender-playlists-long border rounded p-2' : '';
+    echo "<div class='airdefender-playlists{$airdefenderLong}' role='group' aria-label='Playlists Air Defender checks during'>";
     foreach ($airdefenderListed as $airdefenderIdx => $airdefenderPl) {
         $airdefenderId = 'adPl' . $airdefenderIdx;
         echo "<div class='form-check'><input class='form-check-input' type='checkbox' id='{$airdefenderId}' value='" . htmlspecialchars($airdefenderPl, ENT_QUOTES) . "'"
@@ -239,8 +241,11 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 
 <style>
     /* The playlist list scrolls inside its own box rather than stretching the page. */
-    .airdefender-playlists { max-height: 18rem; overflow-y: auto; columns: 14rem auto; }
-    .airdefender-playlists .form-check { break-inside: avoid; }
+    .airdefender-playlists { columns: 14rem auto; }
+    .airdefender-playlists-long { max-height: 18rem; overflow-y: auto; }
+    /* FPP draws big checkboxes: give each row their height and the label room beside it. */
+    .airdefender-playlists .form-check { break-inside: avoid; display: flex; align-items: center; gap: .5rem; min-height: 2rem; padding-left: 0; margin-bottom: .25rem; }
+    .airdefender-playlists .form-check .form-check-input { float: none; margin: 0; flex-shrink: 0; }
     /* Keep the head table's inputs usable on a phone: the table scrolls sideways in its own box. */
     .airdefender-heads { min-width: 46rem; }
     .airdefender-heads input[data-field="Name"], .airdefender-heads select { min-width: 8rem; }
