@@ -60,6 +60,7 @@ $airdefenderPage = array(
     .airdefender-sweep { transform-origin: 100px 100px; animation: airdefender-spin 6s linear infinite; }
     @keyframes airdefender-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .airdefender-sweep { animation: none; } }
+    .airdefender-radar.idle { opacity: .55; }
 </style>
 
 <div class="airdefender-dash" id="ad">
@@ -418,7 +419,10 @@ $airdefenderPage = array(
         el('circle', { cx: 100, cy: 100, r: R / 3, 'class': 'grid', 'stroke-width': 1.2 });
         el('line', { x1: 100, y1: 100 - R, x2: 100, y2: 100 + R, 'class': 'grid', 'stroke-width': 0.8 });
         el('line', { x1: 100 - R, y1: 100, x2: 100 + R, y2: 100, 'class': 'grid', 'stroke-width': 0.8 });
-        var sweep = el('g', { 'class': 'airdefender-sweep' });
+        // No sweep while nothing is being checked (standby, disabled, loop stopped), so a still radar means idle.
+        var idle = !!live && (!live.loopRunning || !live.enabled || (live.role !== 'remote' && live.checking === false));
+        svg.classList.toggle('idle', idle);
+        var sweep = el('g', { 'class': 'airdefender-sweep' + (idle ? ' d-none' : '') });
         // Rebuilt every refresh: start each one where the turn should be, so it never jumps.
         sweep.style.animationDelay = (-(Date.now() % 6000) / 1000) + 's';
         var ex = (100 + R * Math.sin(Math.PI / 3)).toFixed(1), ey = (100 - R * Math.cos(Math.PI / 3)).toFixed(1);

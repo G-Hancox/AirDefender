@@ -12,6 +12,8 @@
 - **Turn the radar** so its top matches the way you face your display: press the lock beside Sky, drag it (or use
   the arrows), press the lock again to save. Locked by default so it can't be moved by accident.
 - **Heading arrows**: aircraft that report a heading show as small arrows pointing the way they fly; the rest stay dots.
+- **Still radar means idle**: the sweep stops and the radar fades while Air Defender isn't checking (standby,
+  disabled or not running), and spins again once checking starts.
 - **Check now is now Start tracking** (and Stop tracking), which says what it does. The FPP command keeps the name
   Air Defender: Check Now, so playlists that use it keep working.
 - Checked against FPP 10.4.
