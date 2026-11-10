@@ -416,7 +416,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         help.className = 'form-text' + (ticked ? '' : ' text-warning-emphasis');
         help.textContent = ticked
             ? 'Using Remote Falcon? Tick its playlist too, so viewer requests are covered. A sequence started on its own isn’t in a playlist: use Start tracking on the dashboard.'
-            : 'Nothing ticked yet, so it checks while any playlist plays. Tick the ones with your moving heads.';
+            : 'Nothing ticked, so it works like All scheduled shows. Tick the playlists with your moving heads.';
     }
     plBoxes.forEach(function (b) {
         b.addEventListener('change', function () {

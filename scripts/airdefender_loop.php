@@ -355,7 +355,7 @@ function airdefender_current_counts(array $show, array $only, string $tickedSlot
  *               shortly before one starts
  *   playing   - Only selected playlists ($only): while one of them plays,
  *               scheduled or started by hand, and shortly before a scheduled
- *               one; nothing ticked means any playlist
+ *               one (the loop treats nothing ticked as scheduled)
  * Manual tracking (Start tracking), or not being able to ask fppd, means check. With
  * $anyPlaying (Also check whenever FPP is playing), anything FPP plays counts
  * too: a playlist or a single sequence, scheduled or started by hand.
@@ -462,6 +462,12 @@ while (true) {
     $anyPlaying = airdefender_truthy(airdefender_setting($settings, 'checkAnyPlaying', '0'));
     // The selected playlists count only with Only selected playlists.
     $onlyPlaylists = $checkWhen === 'playing' ? airdefender_decode_playlists((string) ($settings['checkPlaylists'] ?? '')) : [];
+    // Only selected playlists with none ticked works like the default, All
+    // scheduled shows: unticking the last one stops checking a playlist started
+    // by hand, while scheduled shows stay covered.
+    if ($checkWhen === 'playing' && $onlyPlaylists === []) {
+        $checkWhen = 'scheduled';
+    }
     [$feedTemplate, $feedNote] = airdefender_effective_feed((string) airdefender_setting($settings, 'adsbSourceUrl', ''));
     $receiverAddress = trim((string) ($settings['receiverAddress'] ?? ''));
     $backupTemplate = airdefender_truthy(airdefender_setting($settings, 'feedFallback', '0')) ? airdefender_feed_backup($feedTemplate) : null;

@@ -136,8 +136,8 @@ to the flight-data service and leaves the shutters to the show. **Check for airc
   so the heads are already protected when the lights come on.
 - **Only selected playlists:** tick the playlists that use your moving heads in the list beside it. Air Defender checks
   only while one of those plays, scheduled or started by hand, and from 2 minutes before a scheduled one. The rest (a
-  static display that runs late into the night, say) leave it on Standby. With nothing ticked it checks while any
-  playlist plays. A sequence started on its own isn't part of a playlist, so it isn't checked unless the box below is
+  static display that runs late into the night, say) leave it on Standby. With nothing ticked it works like **All
+  scheduled shows**. A sequence started on its own isn't part of a playlist, so it isn't checked unless the box below is
   ticked. The list is hidden with **All scheduled shows**, and your ticks are kept.
 - **Also check whenever FPP is playing** (off by default): also checks while anything plays that the choice above
   leaves out, such as a single sequence or a playlist started by hand. Checking starts as soon as FPP starts playing,

@@ -1,5 +1,10 @@
 # Air Defender changelog
 
+## 1.7.1 (dev, not released)
+
+- **Only selected playlists with none ticked now works like All scheduled shows.** Before, it checked while any
+  playlist played, so unticking the last playlist while one was playing kept Air Defender checking.
+
 ## 1.7.0 (2026-11-10)
 
 - **Also check whenever FPP is playing** (Settings, When & where; off by default): checks during a single sequence
