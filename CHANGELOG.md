@@ -1,6 +1,6 @@
 # Air Defender changelog
 
-## 1.7.0 (dev, not released)
+## 1.7.0 (2026-11-10)
 
 - **Also check whenever FPP is playing** (Settings, When & where; off by default): checks during a single sequence
   or a playlist started by hand too. The heads close for the second or two until the first check answers, then open
