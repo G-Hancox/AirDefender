@@ -148,8 +148,8 @@ to the flight-data service and leaves the shutters to the show. **Check for airc
 **Only selected playlists**, tick Remote Falcon's playlist too. (During a selected scheduled show Air Defender keeps
 checking through requests anyway, because they play inside that show's schedule slot.)
 
-To test a sequence at another time, use **Check now** on the dashboard (30 minutes to 4 hours), or the
-**Air Defender: Check Now** command. It turns itself off when the time runs out.
+To test a sequence at another time, use **Start tracking** on the dashboard (30 minutes to 4 hours), or the
+**Air Defender: Check Now** command. It stops by itself when the time runs out.
 
 ## Player and Remote
 
@@ -194,6 +194,10 @@ Choose **Lite** (refreshes every 5 seconds) or **Detailed** (every 2 seconds, ad
 and every head's state). Your choice is remembered in that browser. The dashboard only asks FPP for anything while it
 is open.
 
+On the radar, aircraft that report a heading are small arrows pointing the way they fly; the rest are dots. To
+match the radar to the way you face your display, press the lock beside **Sky**, drag the radar round (or use the
+arrows), then press the lock again to save it.
+
 - **Test** closes the heads for 5 seconds to 30 minutes so you can go outside and watch; a test on the Player also
   closes every Remote's heads.
 - **Last Event** shows only safety turning on or off and tests. Everything else is in the full log.
@@ -208,7 +212,7 @@ Available in playlists, schedules and command presets:
 
 - **Air Defender: Start Test** (seconds): like Test on the dashboard.
 - **Air Defender: Stop Test**: ends a running test.
-- **Air Defender: Check Now** (minutes, 0 ends it): checks for aircraft outside show times, like Check now.
+- **Air Defender: Check Now** (minutes, 0 ends it): tracks aircraft outside show times, like Start tracking on the dashboard. (It keeps its old name so playlists that use it keep working.)
 
 ## Flight data
 
@@ -308,7 +312,7 @@ plugin-AirDefender.log**) explains every change.
 | Aircraft right overhead aren't counted, or the radar looks wrong | The show location is probably off. Press **Check it on a map**; see [Check your location](#check-your-location). |
 | A head's row is red: "Model not found" | The model was renamed or deleted in xLights. Pick it again; until then the last channel is still protected. |
 | Heads don't close during a test | Check each head is **On**, the **FPP channel** shown matches the shutter channel, and the **closed** value is right for the fixture. |
-| **Standby** when you expected checking | No scheduled show is on, or the playlist playing isn't ticked. Use **Check now**, or change **Check for aircraft during**. |
+| **Standby** when you expected checking | No scheduled show is on, or the playlist playing isn't ticked. Use **Start tracking**, or change **Check for aircraft during**. |
 | A Remote says "Lost the Player" | Check the Player is on, has Air Defender set to Player, and the address is right. If it says the Player has a UI password, enter it on the Remote. |
 | The dashboard says "FPP refused the shutter channels" | fppd isn't accepting overlays; restart FPPD. |
 
@@ -337,7 +341,7 @@ on GitHub. **Air Defender - Help** in FPP's Help menu links there too.
 | Heads by model or manual channel | `scripts/airdefender_models.php` |
 | Flight-data services, backup, fetching and parsing | `scripts/airdefender_feeds.php`, `scripts/airdefender_adsb.php` |
 | Your own receiver: address check, finding its data, stale-data check | `scripts/airdefender_receiver.php` |
-| Tests, Check now, Last Event, log | `scripts/airdefender_test.php`, `scripts/airdefender_status.php` |
+| Tests, Start tracking, Last Event, log | `scripts/airdefender_test.php`, `scripts/airdefender_status.php` |
 | FPP's folders (media, logs, config), found the way FPP provides them | `scripts/airdefender_paths.php` |
 | FPP's settings and playlists, through its API | `scripts/airdefender_fpp.php` |
 | The Player's UI password (on a Remote), in `plugindata/AirDefender/` (0600) | `scripts/airdefender_secret.php` |

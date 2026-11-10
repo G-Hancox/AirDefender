@@ -75,7 +75,7 @@
         },
         "checkWhen": {
             "description": "Check for aircraft during",
-            "tip": "<b>All scheduled shows</b>: during every scheduled show, from 2 minutes before it starts.<br><b>Only selected playlists</b>: only while one of the playlists ticked below plays, scheduled or started by hand, and from 2 minutes before a scheduled one. With none ticked, whenever any playlist plays.<br>To check at any other time, use Check now on the dashboard.",
+            "tip": "<b>All scheduled shows</b>: during every scheduled show, from 2 minutes before it starts.<br><b>Only selected playlists</b>: only while one of the playlists ticked below plays, scheduled or started by hand, and from 2 minutes before a scheduled one. With none ticked, whenever any playlist plays.<br>To track at any other time, use Start tracking on the dashboard.",
             "type": "select",
             "options": {
                 "All scheduled shows": "scheduled",

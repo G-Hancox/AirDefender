@@ -37,6 +37,8 @@ $airdefenderPage = array(
         'holdSec' => (int) airdefender_dash_setting('clearDelaySec', '30'),
         'elevationFt' => (int) airdefender_dash_setting('showElevationFt', '0'),
     ),
+    // The compass direction shown at the top of the radar (0 = north up).
+    'radarRotation' => ((int) airdefender_dash_setting('radarRotation', '0') % 360 + 360) % 360,
     'feedLabel' => airdefender_feed_label($airdefenderFeed),
 );
 ?>
@@ -52,6 +54,9 @@ $airdefenderPage = array(
     .airdefender-radar .limit { fill: none; stroke: var(--bs-warning); }
     .airdefender-radar .label, .airdefender-radar .plane { fill: var(--bs-secondary-color); }
     .airdefender-radar .limit-label, .airdefender-radar .plane.in { fill: var(--bs-warning); }
+    .airdefender-radar .compass { fill: var(--bs-body-color); font-weight: 700; }
+    .airdefender-radar.turning { cursor: grab; touch-action: none; }
+    .airdefender-radar.turning .scope { stroke: var(--bs-primary); stroke-dasharray: 6 4; }
     .airdefender-sweep { transform-origin: 100px 100px; animation: airdefender-spin 6s linear infinite; }
     @keyframes airdefender-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .airdefender-sweep { animation: none; } }
@@ -74,18 +79,18 @@ $airdefenderPage = array(
             <h3 class="alert-heading h4 mb-1" id="adBannerTitle">&nbsp;</h3>
             <div id="adBannerSub">&nbsp;</div>
         </div>
-        <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOff" title="Check for aircraft now, even outside show times; turns itself off">
-            <select class="form-select w-auto" id="adOverrideMin" aria-label="How long to check">
+        <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOff" title="Track aircraft now, even with no show on; stops by itself when the time runs out">
+            <select class="form-select w-auto" id="adOverrideMin" aria-label="How long to track">
                 <option value="30">30 min</option>
                 <option value="60" selected>1 hour</option>
                 <option value="120">2 hours</option>
                 <option value="240">4 hours</option>
             </select>
-            <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideStart">Check now</button>
+            <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideStart">Start tracking</button>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOn">
             <span class="badge text-bg-secondary fs-6" id="adOverrideLeft"></span>
-            <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideEnd">End</button>
+            <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideEnd">Stop tracking</button>
         </div>
     </div>
 
@@ -134,11 +139,24 @@ $airdefenderPage = array(
         <div class="col-md-6 col-xl-4 d-none" data-detail>
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
-                    <span class="fw-bold">Sky</span><small class="text-body-secondary text-end" id="adFeed"></small>
+                    <span class="fw-bold">Sky</span>
+                    <small class="text-body-secondary text-end flex-grow-1" id="adFeed"></small>
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-body py-0 px-1" id="adTurn"
+                        title="Turn the radar so its top matches the way you face your show" aria-pressed="false"
+                        aria-label="Turn the radar"><i class="fas fa-fw fa-lock" id="adTurnIcon"></i></button>
                 </div>
                 <div class="card-body">
                     <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
                     <div class="form-text text-center" id="adSkyNote"></div>
+                    <div class="form-text text-center d-none" id="adTurnHelp">
+                        Drag the radar to turn it, or use the arrows. <span class="fw-semibold" id="adTurnTop"></span>
+                        <div class="d-flex justify-content-center gap-1 mt-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="-15" aria-label="Turn left 15 degrees"><i class="fas fa-undo"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="0">North up</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="15" aria-label="Turn right 15 degrees"><i class="fas fa-redo"></i></button>
+                        </div>
+                        Press the lock to save it.
+                    </div>
                 </div>
             </div>
         </div>
@@ -207,6 +225,7 @@ $airdefenderPage = array(
     var status = cfg.test, live = cfg.live;
     var clockOffset = status.serverTime - Date.now() / 1000;
     var view = 'lite', pollTimer = null, tickTimer = null, finishing = false;
+    var rotation = cfg.radarRotation || 0, turning = false, savedRotation = rotation;
 
     var $id = function (id) { return document.getElementById(id); };
     var root = $id('ad');
@@ -269,13 +288,13 @@ $airdefenderPage = array(
         if (live && live.outputError) {
             sub += ' · FPP refused the shutter channels: ' + live.outputError;
         }
-        // Check now: offered when checks depend on show times; shows time left while on.
+        // Start tracking: offered when checks depend on show times; shows time left while on.
         var ovLeft = live && live.overrideUntil ? live.overrideUntil - (Date.now() / 1000 + clockOffset) : 0;
         var canOverride = live && live.loopRunning && live.enabled && live.role !== 'remote';
         hide($id('adOverrideOn'), !(ovLeft > 0));
         hide($id('adOverrideOff'), !(canOverride && !(ovLeft > 0)));
         if (ovLeft > 0) {
-            $id('adOverrideLeft').textContent = 'Check now · ' + (ovLeft >= 3600 ? Math.floor(ovLeft / 3600) + ' h ' : '')
+            $id('adOverrideLeft').textContent = 'Tracking · ' + (ovLeft >= 3600 ? Math.floor(ovLeft / 3600) + ' h ' : '')
                 + Math.ceil((ovLeft % 3600) / 60) + ' min left';
         }
         $id('adBanner').className = 'alert alert-' + cls + ' d-flex flex-wrap align-items-center justify-content-between gap-3';
@@ -407,7 +426,12 @@ $airdefenderPage = array(
         el('line', { x1: 100, y1: 100, x2: ex, y2: ey, 'class': 'beam', 'stroke-width': 2, 'stroke-linecap': 'round' }, undefined, sweep);
         el('circle', { cx: 100, cy: 100, r: R * Math.min(1, (lim.nm || outer) / outer),
                        'class': 'limit', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
-        el('text', { x: 100, y: 9, 'class': 'label', 'font-size': 9, 'text-anchor': 'middle' }, 'N');
+        // The compass points, turned with the radar (its top shows the direction set with the lock button).
+        [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(function (c) {
+            var a = (c[1] - rotation) * Math.PI / 180, r = R - 9;
+            el('text', { x: (100 + r * Math.sin(a)).toFixed(1), y: (100 - r * Math.cos(a) + 3).toFixed(1),
+                         'class': c[0] === 'N' ? 'compass' : 'label', 'font-size': c[0] === 'N' ? 10 : 8, 'text-anchor': 'middle' }, c[0]);
+        });
         el('text', { x: 196, y: 196, 'class': 'limit-label', 'font-size': 8, 'text-anchor': 'end' }, (lim.nm || 5) + ' NM limit');
         el('circle', { cx: 100, cy: 100, r: 4, 'class': 'centre' });
 
@@ -421,15 +445,83 @@ $airdefenderPage = array(
         }
         var planes = live.aircraft || [], inside = 0;
         planes.forEach(function (p) {
-            var r = Math.min(1, p.nm / outer) * R, a = p.brg * Math.PI / 180;
-            var c = el('circle', { cx: (100 + r * Math.sin(a)).toFixed(1), cy: (100 - r * Math.cos(a)).toFixed(1),
-                                   r: p.in ? 5 : 3, 'class': p.in ? 'plane in' : 'plane' });
-            el('title', {}, p.id + ' · ' + p.nm + ' NM · ' + (p.ft === null ? '? ft' : num(p.ft) + ' ft'), c);
+            var r = Math.min(1, p.nm / outer) * R, a = (p.brg - rotation) * Math.PI / 180;
+            var x = (100 + r * Math.sin(a)).toFixed(1), y = (100 - r * Math.cos(a)).toFixed(1);
+            var c, s = p.in ? 1.6 : 1;
+            if (p.trk !== null && p.trk !== undefined) {
+                // A triangle pointing the way the aircraft is heading.
+                c = el('polygon', { points: [0, -6 * s, 4 * s, 5 * s, 0, 2.5 * s, -4 * s, 5 * s].join(' '),
+                                    transform: 'translate(' + x + ' ' + y + ') rotate(' + ((p.trk - rotation + 360) % 360) + ')',
+                                    'class': p.in ? 'plane in' : 'plane' });
+            } else {
+                c = el('circle', { cx: x, cy: y, r: p.in ? 5 : 3, 'class': p.in ? 'plane in' : 'plane' });
+            }
+            el('title', {}, p.id + ' · ' + p.nm + ' NM · ' + (p.ft === null ? '? ft' : num(p.ft) + ' ft')
+                + (p.trk !== null && p.trk !== undefined ? ' · heading ' + compass(p.trk) : ''), c);
             if (p.in) { inside++; }
         });
         $id('adSkyNote').textContent = !live.feed || live.feed.lastOkAgo === null ? 'Waiting for flight data'
             : planes.length + ' aircraft around · ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft';
     }
+
+    /* ---------- turning the radar ---------- */
+    function compass(deg) {
+        return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(((deg % 360) + 360) % 360 / 45) % 8] + ' (' + Math.round(deg) + '\u00b0)';
+    }
+    function setRotation(deg) {
+        rotation = ((Math.round(deg) % 360) + 360) % 360;
+        $id('adTurnTop').textContent = 'Top of the radar: ' + compass(rotation) + '.';
+        renderSky();
+    }
+    function setTurning(on) {
+        turning = on;
+        $id('adRadar').classList.toggle('turning', on);
+        hide($id('adTurnHelp'), !on);
+        $id('adTurnIcon').className = 'fas fa-fw ' + (on ? 'fa-lock-open' : 'fa-lock');
+        $id('adTurn').setAttribute('aria-pressed', on ? 'true' : 'false');
+        $id('adTurn').classList.toggle('active', on);
+        $id('adTurn').classList.toggle('text-body', !on);
+        if (on) { setRotation(rotation); }
+    }
+    $id('adTurn').addEventListener('click', function () {
+        if (!turning) { setTurning(true); return; }
+        setTurning(false);
+        if (rotation === savedRotation) { return; }
+        // Saved with Air Defender's other settings, the way FPP's settings pages save.
+        $.ajax({ url: 'api/plugin/AirDefender/settings/radarRotation', data: '' + rotation, method: 'PUT', timeout: 30000,
+                 processData: false, contentType: 'text/plain; charset=UTF-8' })
+            .done(function () { savedRotation = rotation; toast('Radar turned: ' + compass(rotation) + ' at the top.'); })
+            .fail(function () { toast('Could not save the radar\u2019s direction. Check the FPP logs.', false); });
+    });
+    root.querySelectorAll('[data-turn]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var d = parseInt(b.getAttribute('data-turn'), 10);
+            setRotation(d === 0 ? 0 : rotation + d);
+        });
+    });
+    (function () {
+        var svg = $id('adRadar'), start = null;
+        function angle(ev) {
+            var box = svg.getBoundingClientRect();
+            return Math.atan2(ev.clientX - (box.left + box.width / 2), -(ev.clientY - (box.top + box.height / 2))) * 180 / Math.PI;
+        }
+        svg.addEventListener('pointerdown', function (ev) {
+            if (!turning) { return; }
+            start = { a: angle(ev), r: rotation };
+            svg.setPointerCapture(ev.pointerId);
+        });
+        svg.addEventListener('pointermove', function (ev) {
+            if (!turning || !start) { return; }
+            // Dragging clockwise turns the picture clockwise, so the top moves to a direction further anticlockwise.
+            setRotation(start.r - (angle(ev) - start.a));
+        });
+        ['pointerup', 'pointercancel'].forEach(function (t) {
+            svg.addEventListener(t, function () {
+                if (start) { setRotation(Math.round(rotation / 5) * 5); }   // to the nearest 5 degrees
+                start = null;
+            });
+        });
+    })();
 
     /* ---------- footer ---------- */
     function renderFooter(lastEvent) {
@@ -512,13 +604,13 @@ $airdefenderPage = array(
     });
     $id('adOverrideStart').addEventListener('click', function () {
         busy(this, call('POST', 'action=override&minutes=' + encodeURIComponent($id('adOverrideMin').value))
-            .then(function () { toast('Checking for aircraft now.'); setTimeout(poll, 2500); })   // the loop checks within a couple of seconds
-            .catch(function (e) { toast('Could not start Check now: ' + e.message, false); }));
+            .then(function () { toast('Tracking started.'); setTimeout(poll, 2500); })   // the loop checks within a couple of seconds
+            .catch(function (e) { toast('Could not start tracking: ' + e.message, false); }));
     });
     $id('adOverrideEnd').addEventListener('click', function () {
         busy(this, call('POST', 'action=override_off')
-            .then(function () { toast('Check now ended.'); setTimeout(poll, 2500); })
-            .catch(function (e) { toast('Could not end Check now: ' + e.message, false); }));
+            .then(function () { toast('Tracking stopped.'); setTimeout(poll, 2500); })
+            .catch(function (e) { toast('Could not stop tracking: ' + e.message, false); }));
     });
     $id('adClearLog').addEventListener('click', function () {
         if (!window.confirm('Delete the Air Defender log? This cannot be undone.')) { return; }

@@ -108,8 +108,18 @@ function airdefender_parse_aircraft($data): array
             } elseif (isset($p['altitude']) && is_numeric($p['altitude'])) {
                 $alt = (float) $p['altitude'];   // older dump1090
             }
+            // Direction of travel over the ground (degrees from true north), for
+            // the radar; its heading when the track isn't sent.
+            $track = null;
+            foreach (['track', 'true_heading', 'mag_heading'] as $k) {
+                if (isset($p[$k]) && is_numeric($p[$k])) {
+                    $track = fmod((float) $p[$k] + 360.0, 360.0);
+                    break;
+                }
+            }
             $planes[] = [
                 'id' => trim((string) ($p['flight'] ?? '')) ?: (string) ($p['hex'] ?? 'Unknown'),
+                'track' => $track,
                 'lat' => (float) $p['lat'],
                 'lon' => (float) $p['lon'],
                 'altFt' => $alt,

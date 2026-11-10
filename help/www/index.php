@@ -34,15 +34,19 @@ whether you look or not.</p>
 </ul>
 <p>The line at the top shows the version, whether this FPP is the Player or a Remote, and which <b>Check for aircraft
 during</b> choice is in use.</p>
-<p><b>Check now</b> (Player): checks for aircraft for 30 minutes to 4 hours even
-with no show on, for example while testing a sequence, then turns itself off. The banner shows the time left and an
-<b>End</b> button.</p>
+<p><b>Start tracking</b> (Player): tracks aircraft for 30 minutes to 4 hours even with no show on, for example
+while testing a sequence, then stops by itself. The banner shows the time left and a <b>Stop tracking</b> button.
+(The FPP command for it is still called Air Defender: Check Now, so playlists that use it keep working.)</p>
 
 <h3>Sky (Detailed)</h3>
-<p>Your show is the dot in the middle, north is up, and the dashed yellow ring is your distance limit.
-Yellow dots are aircraft inside your limits (close enough and low enough); grey dots are aircraft that are too
-high or too far. Hover over a dot for its callsign, distance and height (above your show once <b>Show elevation</b> is set in
-Settings). Aircraft on the ground are not shown.
+<p>Your show is the dot in the middle, north is up unless you turn the radar, and the dashed yellow ring is your
+distance limit. Yellow marks are aircraft inside your limits (close enough and low enough); grey marks are aircraft
+that are too high or too far. An aircraft that reports its heading is a small arrow pointing the way it is flying;
+one that doesn't is a dot. Hover over a mark for its callsign, distance, height (above your show once
+<b>Show elevation</b> is set in Settings) and heading. Aircraft on the ground are not shown.</p>
+<p><b>Turning the radar:</b> press the small lock beside the Sky title to unlock it (the ring turns blue and dashed),
+then drag the radar round or use the arrow buttons, so the top matches the way you face your display. <b>North up</b>
+puts it back. Press the lock again to save it; it stays locked so it can't be moved by accident.
 On a Remote, the Sky card says it follows its Player instead.</p>
 
 <h3>Moving heads</h3>

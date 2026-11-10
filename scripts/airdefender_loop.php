@@ -162,6 +162,7 @@ function airdefender_nearby(float $lat, float $lon, float $maxNm, float $maxFt, 
             'nm' => round($d, 2),
             'brg' => (int) round(airdefender_bearing($lat, $lon, $p['lat'], $p['lon'])),
             'ft' => $p['altFt'] !== null ? (int) round($p['altFt']) : null,
+            'trk' => isset($p['track']) && $p['track'] !== null ? (int) round($p['track']) % 360 : null,
             'in' => $d <= $maxNm && $p['altFt'] !== null && $p['altFt'] <= $maxFt,
         ];
     }
@@ -355,7 +356,7 @@ function airdefender_current_counts(array $show, array $only, string $tickedSlot
  *   playing   - Only selected playlists ($only): while one of them plays,
  *               scheduled or started by hand, and shortly before a scheduled
  *               one; nothing ticked means any playlist
- * A Check now override, or not being able to ask fppd, means check. With
+ * Manual tracking (Start tracking), or not being able to ask fppd, means check. With
  * $anyPlaying (Also check whenever FPP is playing), anything FPP plays counts
  * too: a playlist or a single sequence, scheduled or started by hand.
  */
@@ -496,7 +497,7 @@ while (true) {
     $test = airdefender_test_status();
 
     // Only check for aircraft when there is a show to protect (When to Check),
-    // unless a Check now override is on.
+    // unless manual tracking is on.
     if ($now - $showAt >= 2) {
         $showAt = $now;
         $show = airdefender_show_state();
@@ -512,7 +513,7 @@ while (true) {
         && !airdefender_current_counts($show, $onlyPlaylists, $tickedSlot) ? $show['current'] : null;
     if ($wasChecking !== null && $checking !== $wasChecking && $role !== 'remote' && $enabled) {
         airdefender_log($checking
-            ? "Checking for aircraft" . ($overrideUntil !== null ? " (Check now override)."
+            ? "Checking for aircraft" . ($overrideUntil !== null ? " (manual tracking)."
                 : " (" . ($show && !$show['scheduled'] && $show['playing'] ? "started by hand" : "show time")
                     . ($show && $show['current'] !== '' ? ": {$show['current']}" : "") . ").")
             : ($skippedPlaylist !== null

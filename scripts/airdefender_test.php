@@ -159,7 +159,7 @@ function airdefender_test_stop(): array
 }
 
 /*
- * "Check now" override: check for aircraft for a while even outside show
+ * "Start tracking" (manual tracking) override: check for aircraft for a while even outside show
  * times, for example while testing a sequence in the afternoon. Like a test,
  * it stores its end time, so it survives refreshes and ends by itself.
  */
@@ -178,7 +178,7 @@ function airdefender_override_until(): ?int
     if ($until > 0) {
         // Ran out: close it out once, here or wherever it is noticed first.
         @unlink(airdefender_override_file());
-        airdefender_test_log("Check now override ended; back to the Check for aircraft during setting.");
+        airdefender_test_log("Manual tracking ended; back to the Check for aircraft during setting.");
     }
     return null;
 }
@@ -190,7 +190,7 @@ function airdefender_override_start($minutes): ?int
     if (@file_put_contents(airdefender_override_file(), json_encode(['until' => $until, 'minutes' => $minutes]), LOCK_EX) === false) {
         return null;
     }
-    airdefender_test_log("Check now override on for {$minutes} min: checking for aircraft even outside show times.");
+    airdefender_test_log("Manual tracking started for {$minutes} min: checking for aircraft even with no show on.");
     return $until;
 }
 
@@ -198,6 +198,6 @@ function airdefender_override_stop(): void
 {
     if (file_exists(airdefender_override_file())) {
         @unlink(airdefender_override_file());
-        airdefender_test_log("Check now override ended early; back to the Check for aircraft during setting.");
+        airdefender_test_log("Manual tracking stopped early; back to the Check for aircraft during setting.");
     }
 }

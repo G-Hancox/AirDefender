@@ -9,6 +9,11 @@
 - **Air Defender - Help** in FPP's Help menu: a quick start, what it can't see, and links to the README and to
   GitHub's forms for problems, ideas and new flight data services. Settings has the same "Request a service or
   feature" link. Air Defender itself sends nothing.
+- **Turn the radar** so its top matches the way you face your display: press the lock beside Sky, drag it (or use
+  the arrows), press the lock again to save. Locked by default so it can't be moved by accident.
+- **Heading arrows**: aircraft that report a heading show as small arrows pointing the way they fly; the rest stay dots.
+- **Check now is now Start tracking** (and Stop tracking), which says what it does. The FPP command keeps the name
+  Air Defender: Check Now, so playlists that use it keep working.
 - Checked against FPP 10.4.
 
 ## 1.6.1 (2026-11-01)

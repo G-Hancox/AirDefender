@@ -23,7 +23,7 @@
     },
     {
         "name": "Air Defender: Check Now",
-        "description": "Checks for aircraft for the given number of minutes even outside show times, for example while testing a sequence. 0 ends it early. The same as Check now on the dashboard.",
+        "description": "Tracks aircraft for the given number of minutes even outside show times, for example while testing a sequence. 0 stops it early. The same as Start tracking on the dashboard.",
         "script": "check_now.sh",
         "args": [
             {

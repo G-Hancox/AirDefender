@@ -33,11 +33,11 @@ if ($action === 'checknow') {
     $minutes = (int) ($argv[2] ?? 60);
     if ($minutes <= 0) {
         airdefender_override_stop();
-        echo "Check now ended\n";
+        echo "Tracking stopped\n";
         exit(0);
     }
     $until = airdefender_override_start($minutes);
-    echo $until ? "Checking for aircraft until " . date('H:i', $until) . "\n" : "Could not start Check now\n";
+    echo $until ? "Checking for aircraft until " . date('H:i', $until) . "\n" : "Could not start tracking\n";
     exit($until ? 0 : 1);
 }
 
