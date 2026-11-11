@@ -11,6 +11,7 @@
  */
 
 require_once(__DIR__ . "/airdefender_test.php");
+require_once(__DIR__ . "/airdefender_statefile.php");
 
 // The loop counts as stopped once state.json is this old: two missed
 // heartbeats plus the longest a feed can keep it waiting (a receiver search
@@ -56,7 +57,7 @@ function airdefender_event_now(array $state, ?int $now = null): string
 function airdefender_live_status(bool $detailed = false): array
 {
     $now = time();
-    $state = json_decode((string) @file_get_contents(dirname(__DIR__) . "/state.json"), true);
+    $state = airdefender_state_read();
     $state = is_array($state) ? $state : [];
 
     $closedChannels = array_map('intval', array_keys(is_array($state['appliedChannels'] ?? null) ? $state['appliedChannels'] : []));

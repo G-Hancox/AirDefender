@@ -1,5 +1,11 @@
 # Air Defender changelog
 
+## 1.7.2 (dev, not released)
+
+- **Easier on the SD card**: the status the dashboard reads changes on every check while aircraft are about, so
+  it is now kept in memory instead of being written to the SD card each time. Only what must survive a reboot (each
+  head's channel, and the shutters being held) is saved to the card, and only when it changes.
+
 ## 1.7.1 (2026-11-10)
 
 - **Only selected playlists with none ticked now works like All scheduled shows.** Before, it checked while any

@@ -23,7 +23,7 @@ $now = time();
 $airdefenderConfig = airdefender_read_kv_file(airdefender_config_file());
 $role = strtolower(($airdefenderConfig['nodeRole'] ?? '') !== '' ? $airdefenderConfig['nodeRole'] : airdefender_fpp_role()) === 'remote' ? 'remote' : 'master';
 
-$state = json_decode((string) @file_get_contents(dirname(__DIR__) . "/state.json"), true);
+$state = airdefender_state_read();
 $state = is_array($state) ? $state : [];
 $updated = isset($state['lastUpdated']) ? strtotime($state['lastUpdated']) : false;
 

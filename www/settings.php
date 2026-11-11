@@ -61,7 +61,8 @@ function airdefender_row(string $id, string $label, string $field, string $class
 }
 
 $airdefenderModels = airdefender_fpp_models();
-$airdefenderState = json_decode((string) @file_get_contents(dirname(__DIR__) . "/state.json"), true);
+require_once(dirname(__DIR__) . "/scripts/airdefender_statefile.php");
+$airdefenderState = airdefender_state_read();
 $airdefenderLastKnown = is_array($airdefenderState['lastKnownChannels'] ?? null) ? $airdefenderState['lastKnownChannels'] : array();
 
 // Until a role is picked it follows FPP's Player Mode, so show that one.

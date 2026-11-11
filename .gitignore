@@ -1,5 +1,6 @@
 # Runtime files written on the FPP device
 state.json
+heads.json
 test.json
 last_event.json
 *.tmp

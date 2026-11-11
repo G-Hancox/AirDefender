@@ -16,18 +16,24 @@ pkill -f "${PLUGIN_DIR}/scripts/airdefender_loop.php" 2>/dev/null
 # Only overlays set during the fppd run still going are released: after an
 # fppd restart they are already gone, and on FPP 10.0-10.2 deleting one fppd
 # doesn't have would create it at 255 (see airdefender_controller.php).
-if [ -f "${PLUGIN_DIR}/state.json" ]; then
+# heads.json has them from 1.7.2; state.json before that.
+HELD="${PLUGIN_DIR}/heads.json"
+[ -f "${HELD}" ] || HELD="${PLUGIN_DIR}/state.json"
+if [ -f "${HELD}" ]; then
     php -r '
         require $argv[2];
         $s = json_decode((string) @file_get_contents($argv[1]), true);
         $run = AirDefenderOutputs::fppdRunId();
         if ($run === null || ($s["appliedFppdRun"] ?? null) !== $run) { exit; }
         foreach (array_keys($s["appliedChannels"] ?? []) as $ch) { echo (int) $ch, "\n"; }
-    ' "${PLUGIN_DIR}/state.json" "${PLUGIN_DIR}/scripts/airdefender_controller.php" 2>/dev/null | while read -r CH; do
+    ' "${HELD}" "${PLUGIN_DIR}/scripts/airdefender_controller.php" 2>/dev/null | while read -r CH; do
         [ -n "${CH}" ] && curl -s -m 3 -X PUT -H 'Content-Type: application/json' \
             -d '{"delete":true}' "http://127.0.0.1/api/overlays/range/${CH}" >/dev/null
     done
 fi
+
+# The status file kept in memory.
+rm -rf /dev/shm/AirDefender 2>/dev/null
 
 # No restart needed: just before this, FPP asked fppd to unload the plugin,
 # which withdrew the Air Defender commands and stopped the loop (callbacks.sh).

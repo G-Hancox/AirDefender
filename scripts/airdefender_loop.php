@@ -38,6 +38,7 @@ require_once(__DIR__ . "/airdefender_version.php");
 require_once(__DIR__ . "/airdefender_secret.php");
 require_once(__DIR__ . "/airdefender_playlists.php");
 require_once(__DIR__ . "/airdefender_receiver.php");
+require_once(__DIR__ . "/airdefender_statefile.php");
 
 const AIRDEFENDER_PLUGIN = "AirDefender";
 const AIRDEFENDER_DEFAULT_CLEAR_DELAY = 30;
@@ -49,25 +50,33 @@ const AIRDEFENDER_FPP_PLAYER_MODE = 2;     // FPPMode::PLAYER_MODE in FPP's sett
 
 /* ---------- files ---------- */
 
-function airdefender_state_file(): string
+/* Written to a temp file and renamed, so a reader never sees half a file. */
+function airdefender_write_json(string $path, array $data): void
 {
-    return dirname(__DIR__) . "/state.json";
+    $tmp = $path . ".tmp";
+    if (@file_put_contents($tmp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false) {
+        @rename($tmp, $path);
+    }
 }
 
-function airdefender_read_state(): array
-{
-    $raw = @file_get_contents(airdefender_state_file());
-    $state = $raw !== false ? json_decode($raw, true) : null;
-    return is_array($state) ? $state : [];
-}
-
+/* The status file, in memory where possible (see airdefender_statefile.php). */
 function airdefender_write_state(array $state): void
 {
-    $path = airdefender_state_file();
-    $tmp = $path . ".tmp";
-    // Written to a temp file and renamed, so the dashboard never reads half a file.
-    if (@file_put_contents($tmp, json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false) {
-        @rename($tmp, $path);
+    airdefender_write_json(airdefender_state_write_path(), $state);
+}
+
+/*
+ * What must survive a reboot, on the SD card: each head's last channel and the
+ * shutters being held. Written only when it changes (a head re-patched, safety
+ * on or off), not on every check.
+ */
+function airdefender_write_heads(array $heads): void
+{
+    static $last = null;
+    $key = json_encode($heads);
+    if ($key !== $last) {
+        airdefender_write_json(airdefender_heads_path(), $heads);
+        $last = $key;
     }
 }
 
@@ -391,7 +400,15 @@ if (!flock($lock, LOCK_EX | LOCK_NB)) {
     exit(3);
 }
 
-$state = airdefender_read_state();
+// heads.json has what must survive a reboot; before 1.7.2 it was in state.json.
+$state = json_decode((string) @file_get_contents(airdefender_heads_path()), true);
+if (!is_array($state)) {
+    $state = airdefender_state_read();
+}
+// The status file now lives in memory: drop the old copy on the SD card.
+if (airdefender_state_write_path() !== airdefender_state_disk_path()) {
+    @unlink(airdefender_state_disk_path());
+}
 // Overlays a previous run of the loop left, with the fppd run they were set in:
 // they are released only if that fppd is still the one running.
 $outputs = new AirDefenderOutputs(
@@ -835,6 +852,11 @@ while (true) {
     $keyed = $report;
     unset($keyed['lastFetchOk'], $keyed['master']['lastOk']);
     $reportKey = json_encode($keyed);
+    airdefender_write_heads([
+        'lastKnownChannels' => $lastKnown,
+        'appliedChannels' => $outputs->applied(),
+        'appliedFppdRun' => $outputs->appliedRun(),
+    ]);
     if ($reportKey !== $lastReportKey || $now - $lastReportAt >= AIRDEFENDER_STATE_HEARTBEAT_SEC) {
         $report['lastUpdated'] = date('c', $now);
         airdefender_write_state($report);

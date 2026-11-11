@@ -353,10 +353,11 @@ on GitHub. **Air Defender - Help** in FPP's Help menu links there too.
 | Status a Remote reads from its master | `www/master_status.php` |
 | Install, update and uninstall hooks | `scripts/fpp_install.sh`, `scripts/fpp_upgrade.sh`, `scripts/fpp_uninstall.sh` |
 
-Runtime files written on the device (not in git): `state.json`, `test.json`, `override.json`, `last_event.json` and
+Runtime files written on the device (not in git): `heads.json`, `test.json`, `override.json`, `last_event.json` and
 `loop.lock` in the plugin folder, `plugin-AirDefender.log` in FPP's logs folder, and the Player's password in
-`plugindata/AirDefender/`. `state.json` is written when something in it changes (and every 30 seconds), not every
-second. The pages use FPP's styles and Bootstrap, so they follow FPP's light and dark themes.
+`plugindata/AirDefender/`. The status the dashboard reads, `state.json`, is kept in memory (`/dev/shm/AirDefender/`,
+or the plugin folder where that can't be used), written when something in it changes and every 30 seconds.
+`heads.json` holds only what must survive a reboot and is written only when it changes, to spare the SD card. The pages use FPP's styles and Bootstrap, so they follow FPP's light and dark themes.
 
 ## Credits
 
