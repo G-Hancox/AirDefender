@@ -4,6 +4,10 @@
 
 - **The radar sweep keeps time with the checks**: one turn per **Check every** (10 seconds unless changed), with the
   beam passing the top as each check comes in.
+- **Helicopters and drones look different on the radar**: an arrow inside a ring is a helicopter, a hollow arrow is a
+  drone, balloon, glider or other; every symbol still points the way it's heading.
+- **Click an aircraft on the radar** for its details: type and name, callsign, registration, height, speed, climb or
+  descent, and links to a live map and FlightAware. Hovering also shows its type.
 - **Check every is now 5 to 15 seconds** (it was up to 120). Slower checks let a fast aircraft get too close between
   looks; a saved setting above 15 is used as 15.
 

@@ -117,9 +117,28 @@ function airdefender_parse_aircraft($data): array
                     break;
                 }
             }
+            // For the radar's symbols and the details shown when one is clicked; only
+            // what the feed sends (online services add type, name and owner from
+            // their database; a home receiver may not).
+            $text = function ($k) use ($p) {
+                return isset($p[$k]) && is_scalar($p[$k]) && trim((string) $p[$k]) !== '' ? substr(trim((string) $p[$k]), 0, 60) : null;
+            };
+            $rate = $p['baro_rate'] ?? $p['geom_rate'] ?? null;
             $planes[] = [
                 'id' => trim((string) ($p['flight'] ?? '')) ?: (string) ($p['hex'] ?? 'Unknown'),
                 'track' => $track,
+                'info' => array_filter([
+                    'hex' => $text('hex'),
+                    'cat' => $text('category'),
+                    'type' => $text('t'),
+                    'desc' => $text('desc'),
+                    'reg' => $text('r'),
+                    'op' => $text('ownOp'),
+                    'year' => $text('year'),
+                    'sq' => $text('squawk'),
+                    'gs' => isset($p['gs']) && is_numeric($p['gs']) ? (int) round($p['gs']) : null,
+                    'vs' => is_numeric($rate) ? (int) round($rate) : null,
+                ], function ($v) { return $v !== null; }),
                 'lat' => (float) $p['lat'],
                 'lon' => (float) $p['lon'],
                 'altFt' => $alt,

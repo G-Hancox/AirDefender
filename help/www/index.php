@@ -41,9 +41,11 @@ while testing a sequence, then stops by itself. The banner shows the time left a
 <h3>Sky (Detailed)</h3>
 <p>Your show is the dot in the middle, north is up unless you turn the radar, and the dashed yellow ring is your
 distance limit. Yellow marks are aircraft inside your limits (close enough and low enough); grey marks are aircraft
-that are too high or too far. An aircraft that reports its heading is a small arrow pointing the way it is flying;
-one that doesn't is a dot. Hover over a mark for its callsign, distance, height (above your show once
-<b>Show elevation</b> is set in Settings) and heading. Aircraft on the ground are not shown.
+that are too high or too far. An aircraft that reports its heading is a small arrow pointing the way it is flying: solid for a plane, inside a ring
+for a helicopter, and hollow for a drone, balloon, glider or anything else. One that doesn't report a heading is a dot. Hover over a mark for its callsign, distance, height (above your show once
+<b>Show elevation</b> is set in Settings) and heading. <b>Click an aircraft</b> for everything the flight data says about it: its type and name, callsign and
+registration, height, speed, whether it is climbing or descending, and links to follow it on a live map. Online
+services include the type and name; a receiver of your own may only send some of it. Aircraft on the ground are not shown.
 The sweep turns once per <b>Check every</b> (10 seconds unless changed), passing the top as each check comes in. It only turns while Air Defender is checking; in standby, or when it is disabled or not running, the radar
 stops and fades.</p>
 <p><b>Turning the radar:</b> press the small lock beside the Sky title to unlock it (the ring turns blue and dashed),

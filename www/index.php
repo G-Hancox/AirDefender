@@ -54,6 +54,11 @@ $airdefenderPage = array(
     .airdefender-radar .limit { fill: none; stroke: var(--bs-warning); }
     .airdefender-radar .label, .airdefender-radar .plane { fill: var(--bs-secondary-color); }
     .airdefender-radar .limit-label, .airdefender-radar .plane.in { fill: var(--bs-warning); }
+    .airdefender-radar .ring, .airdefender-radar .hollow { fill: none; stroke: var(--bs-secondary-color); stroke-width: 1.2; stroke-linejoin: round; }
+    .airdefender-radar .in .ring, .airdefender-radar .in .hollow { stroke: var(--bs-warning); }
+    .airdefender-radar .hit { fill: transparent; cursor: pointer; }
+    .airdefender-radar .picked { fill: none; stroke: var(--bs-primary); stroke-width: 1.5; }
+    .airdefender-radar.turning .hit { cursor: inherit; }
     .airdefender-radar .compass { fill: var(--bs-body-color); font-weight: 700; }
     .airdefender-radar.turning { cursor: grab; touch-action: none; }
     .airdefender-radar.turning .scope { stroke: var(--bs-primary); stroke-dasharray: 6 4; }
@@ -149,6 +154,15 @@ $airdefenderPage = array(
                 <div class="card-body">
                     <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
                     <div class="form-text text-center" id="adSkyNote"></div>
+                    <div class="border rounded p-2 mt-2 small d-none" id="adPlane" aria-live="polite">
+                        <div class="d-flex align-items-start gap-2">
+                            <div class="fw-semibold me-auto" id="adPlaneTitle"></div>
+                            <button type="button" class="btn-close btn-sm" id="adPlaneClose" aria-label="Close the aircraft details"></button>
+                        </div>
+                        <div class="text-body-secondary mb-1" id="adPlaneSub"></div>
+                        <dl class="row mb-1" id="adPlaneRows"></dl>
+                        <div class="d-flex flex-wrap gap-3" id="adPlaneLinks"></div>
+                    </div>
                     <div class="form-text text-center d-none" id="adTurnHelp">
                         Drag the radar to turn it, or use the arrows. <span class="fw-semibold" id="adTurnTop"></span>
                         <div class="d-flex justify-content-center gap-1 mt-1">
@@ -409,7 +423,72 @@ $airdefenderPage = array(
         }
         return sweepPeriodSec;
     }
+    // What kind of aircraft, from the category it broadcasts (A7 is a helicopter; B and later are gliders,
+    // balloons, drones and the like).
+    function planeKind(p) {
+        if (p.cat === 'A7') { return 'heli'; }
+        if (p.cat && p.cat.charAt(0) >= 'B') { return 'other'; }
+        return 'plane';
+    }
+    var KIND_NAME = { A1: 'Light aircraft', A2: 'Small aircraft', A3: 'Large aircraft', A4: 'Large aircraft (757 class)',
+                      A5: 'Heavy aircraft', A6: 'High-performance aircraft', A7: 'Helicopter', B1: 'Glider',
+                      B2: 'Balloon or airship', B3: 'Parachutist', B4: 'Ultralight', B6: 'Drone', B7: 'Spacecraft' };
+    function planeKey(p) { return p.hex || p.id; }
+
+    // Click an aircraft for everything the feed says about it; it updates with each refresh until closed.
+    var pickedKey = null;
+    function showPicked(planes) {
+        var box = $id('adPlane');
+        if (!pickedKey) { hide(box, true); return; }
+        var p = null;
+        (planes || []).forEach(function (q) { if (planeKey(q) === pickedKey) { p = q; } });
+        hide(box, false);
+        if (!p) {
+            $id('adPlaneSub').textContent = 'Out of range now, or no longer reporting.';
+            $id('adPlaneRows').textContent = ''; $id('adPlaneLinks').textContent = '';
+            return;
+        }
+        $id('adPlaneTitle').textContent = p.desc || p.type || KIND_NAME[p.cat] || 'Aircraft';
+        $id('adPlaneSub').textContent = [p.id !== p.hex ? p.id : '', p.reg, p.op].filter(Boolean).join(' · ')
+            + (p.in ? (p.id !== p.hex || p.reg || p.op ? ' · ' : '') + 'inside your limits' : '');
+        var rows = [
+            ['Type', [p.type, KIND_NAME[p.cat]].filter(Boolean).join(' · ')],
+            ['Built', p.year],
+            ['Distance', p.nm + ' NM ' + compass(p.brg).split(' ')[0] + ' of the show'],
+            ['Height', p.ft === null || p.ft === undefined ? 'Not reported'
+                : num(p.ft) + ' ft' + ((cfg.limits && cfg.limits.elevationFt) || (live.limits && live.limits.elevationFt) ? ' above the show' : '')],
+            ['Climb', p.vs === undefined ? null : Math.abs(p.vs) < 200 ? 'Level' : (p.vs > 0 ? 'Climbing ' : 'Descending ') + num(Math.abs(p.vs)) + ' ft/min'],
+            ['Speed', p.gs === undefined ? null : p.gs + ' kn (' + Math.round(p.gs * 1.15078) + ' mph)'],
+            ['Heading', p.trk === null || p.trk === undefined ? null : compass(p.trk)],
+            ['Squawk', p.sq],
+            ['ICAO code', p.hex ? p.hex.toUpperCase() : null]
+        ];
+        var dl = $id('adPlaneRows'); dl.textContent = '';
+        rows.forEach(function (r) {
+            if (r[1] === null || r[1] === undefined || r[1] === '') { return; }
+            var dt = document.createElement('dt'); dt.className = 'col-5 col-sm-4 fw-normal text-body-secondary'; dt.textContent = r[0];
+            var dd = document.createElement('dd'); dd.className = 'col-7 col-sm-8 mb-0'; dd.textContent = r[1];
+            dl.appendChild(dt); dl.appendChild(dd);
+        });
+        var links = $id('adPlaneLinks'); links.textContent = '';
+        function link(text, href) {
+            var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = text;
+            links.appendChild(a);
+        }
+        if (p.hex) { link('Live map (adsb.fi)', 'https://globe.adsb.fi/?icao=' + encodeURIComponent(p.hex)); }
+        if (p.id && p.id !== p.hex) { link('FlightAware', 'https://www.flightaware.com/live/flight/' + encodeURIComponent(p.id)); }
+    }
+    $id('adRadar').addEventListener('click', function (e) {
+        var t = e.target;
+        if (turning || !t || !t.getAttribute || !t.getAttribute('data-key')) { return; }
+        var key = t.getAttribute('data-key');
+        pickedKey = pickedKey === key ? null : key;
+        renderSky();
+    });
+    $id('adPlaneClose').addEventListener('click', function () { pickedKey = null; renderSky(); });
+
     function renderSky() {
+        hide($id('adPlane'), true);   // shown again below while the radar is drawn
         $id('adFeed').textContent = feedText();
         $id('adFeedLite').textContent = feedText();
         if (view !== 'detailed') { return; }
@@ -468,19 +547,27 @@ $airdefenderPage = array(
         planes.forEach(function (p) {
             var r = Math.min(1, p.nm / outer) * R, a = (p.brg - rotation) * Math.PI / 180;
             var x = (100 + r * Math.sin(a)).toFixed(1), y = (100 - r * Math.cos(a)).toFixed(1);
-            var c, s = p.in ? 1.6 : 1;
+            var s = p.in ? 1.6 : 1, kind = planeKind(p);
+            var g = el('g', { 'class': p.in ? 'plane in' : 'plane', transform: 'translate(' + x + ' ' + y + ')' });
             if (p.trk !== null && p.trk !== undefined) {
-                // A triangle pointing the way the aircraft is heading.
-                c = el('polygon', { points: [0, -6 * s, 4 * s, 5 * s, 0, 2.5 * s, -4 * s, 5 * s].join(' '),
-                                    transform: 'translate(' + x + ' ' + y + ') rotate(' + ((p.trk - rotation + 360) % 360) + ')',
-                                    'class': p.in ? 'plane in' : 'plane' });
+                // An arrow pointing the way it's heading: solid for a plane, inside a rotor ring for a helicopter,
+                // hollow for a drone, balloon, glider or anything else.
+                var t = el('g', { transform: 'rotate(' + ((p.trk - rotation + 360) % 360) + ')' }, undefined, g);
+                var k = kind === 'heli' ? 0.7 * s : s;
+                el('polygon', { points: [0, -6 * k, 4 * k, 5 * k, 0, 2.5 * k, -4 * k, 5 * k].join(' '),
+                                'class': kind === 'other' ? 'hollow' : '' }, undefined, t);
+                if (kind === 'heli') { el('circle', { r: 6.5 * s, 'class': 'ring' }, undefined, t); }
             } else {
-                c = el('circle', { cx: x, cy: y, r: p.in ? 5 : 3, 'class': p.in ? 'plane in' : 'plane' });
+                el('circle', { r: p.in ? 5 : 3 }, undefined, g);
             }
-            el('title', {}, p.id + ' · ' + p.nm + ' NM · ' + (p.ft === null ? '? ft' : num(p.ft) + ' ft')
-                + (p.trk !== null && p.trk !== undefined ? ' · heading ' + compass(p.trk) : ''), c);
+            if (planeKey(p) === pickedKey) { el('circle', { r: 9 * s, 'class': 'picked' }, undefined, g); }
+            // A bigger invisible target, so it's easy to hover or tap.
+            var hit = el('circle', { r: 9, 'class': 'hit', 'data-key': planeKey(p) }, undefined, g);
+            el('title', {}, (p.type ? p.type + ' · ' : '') + p.id + ' · ' + p.nm + ' NM · ' + (p.ft === null ? '? ft' : num(p.ft) + ' ft')
+                + (p.trk !== null && p.trk !== undefined ? ' · heading ' + compass(p.trk) : '') + ' · click for details', hit);
             if (p.in) { inside++; }
         });
+        showPicked(planes);
         $id('adSkyNote').textContent = !live.feed || live.feed.lastOkAgo === null ? 'Waiting for flight data'
             : planes.length + ' aircraft around · ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft';
     }

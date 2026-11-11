@@ -173,7 +173,7 @@ function airdefender_nearby(float $lat, float $lon, float $maxNm, float $maxFt, 
             'ft' => $p['altFt'] !== null ? (int) round($p['altFt']) : null,
             'trk' => isset($p['track']) && $p['track'] !== null ? (int) round($p['track']) % 360 : null,
             'in' => $d <= $maxNm && $p['altFt'] !== null && $p['altFt'] <= $maxFt,
-        ];
+        ] + ($p['info'] ?? []);
     }
     usort($out, function ($a, $b) { return $a['nm'] <=> $b['nm']; });
     return array_slice($out, 0, $max);

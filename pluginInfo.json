@@ -26,6 +26,12 @@
         "summary": "Checks adsb.fi, a free flight-tracking service, for low aircraft near your show and closes your moving heads' shutters while one is close. Your show's location is sent to adsb.fi.",
         "sends": [
             {
+                "to": "www.flightaware.com",
+                "what": "an aircraft's callsign, from your browser",
+                "why": "only when you click FlightAware in an aircraft's details on the radar",
+                "alwaysOn": false
+            },
+            {
                 "to": "api.adsb.lol",
                 "what": "your show's location, rounded to about 1 km, and search radius",
                 "why": "to get the aircraft near your show, only if you choose it or turn it on as adsb.fi's backup",
