@@ -154,14 +154,13 @@ $airdefenderPage = array(
                 <div class="card-body">
                     <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
                     <div class="form-text text-center" id="adSkyNote"></div>
-                    <div class="border rounded p-2 mt-2 small d-none" id="adPlane" aria-live="polite">
-                        <div class="d-flex align-items-start gap-2">
-                            <div class="fw-semibold me-auto" id="adPlaneTitle"></div>
-                            <button type="button" class="btn-close btn-sm" id="adPlaneClose" aria-label="Close the aircraft details"></button>
-                        </div>
-                        <div class="text-body-secondary mb-1" id="adPlaneSub"></div>
-                        <dl class="row mb-1" id="adPlaneRows"></dl>
-                        <div class="d-flex flex-wrap gap-3" id="adPlaneLinks"></div>
+                    <div class="form-text text-center mt-1 d-none" id="adPlane" aria-live="polite">
+                        <span class="fw-semibold text-body" id="adPlaneTitle"></span>
+                        <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline text-body-secondary" id="adPlaneClose"
+                            aria-label="Close the aircraft details"><i class="fas fa-times"></i></button>
+                        <div id="adPlaneSub"></div>
+                        <div id="adPlaneRows"></div>
+                        <div class="d-flex justify-content-center flex-wrap gap-3" id="adPlaneLinks"></div>
                     </div>
                     <div class="form-text text-center d-none" id="adTurnHelp">
                         Drag the radar to turn it, or use the arrows. <span class="fw-semibold" id="adTurnTop"></span>
@@ -449,33 +448,23 @@ $airdefenderPage = array(
             return;
         }
         $id('adPlaneTitle').textContent = p.desc || p.type || KIND_NAME[p.cat] || 'Aircraft';
-        $id('adPlaneSub').textContent = [p.id !== p.hex ? p.id : '', p.reg, p.op].filter(Boolean).join(' · ')
-            + (p.in ? (p.id !== p.hex || p.reg || p.op ? ' · ' : '') + 'inside your limits' : '');
-        var rows = [
-            ['Type', [p.type, KIND_NAME[p.cat]].filter(Boolean).join(' · ')],
-            ['Built', p.year],
-            ['Distance', p.nm + ' NM ' + compass(p.brg).split(' ')[0] + ' of the show'],
-            ['Height', p.ft === null || p.ft === undefined ? 'Not reported'
-                : num(p.ft) + ' ft' + ((cfg.limits && cfg.limits.elevationFt) || (live.limits && live.limits.elevationFt) ? ' above the show' : '')],
-            ['Climb', p.vs === undefined ? null : Math.abs(p.vs) < 200 ? 'Level' : (p.vs > 0 ? 'Climbing ' : 'Descending ') + num(Math.abs(p.vs)) + ' ft/min'],
-            ['Speed', p.gs === undefined ? null : p.gs + ' kn (' + Math.round(p.gs * 1.15078) + ' mph)'],
-            ['Heading', p.trk === null || p.trk === undefined ? null : compass(p.trk)],
-            ['Squawk', p.sq],
-            ['ICAO code', p.hex ? p.hex.toUpperCase() : null]
+        $id('adPlaneSub').textContent = [p.id !== p.hex ? p.id : '', p.reg, p.op, p.cat === 'A7' ? 'helicopter' : '',
+            p.in ? 'inside your limits' : ''].filter(Boolean).join(' · ');
+        // Two short lines under the radar, like the note above it: who it is, then where and how it's flying.
+        var bits = [
+            p.ft === null || p.ft === undefined ? null : num(p.ft) + ' ft',
+            p.vs === undefined ? null : Math.abs(p.vs) < 200 ? 'level' : (p.vs > 0 ? 'climbing' : 'descending'),
+            p.gs === undefined ? null : p.gs + ' kn',
+            p.trk === null || p.trk === undefined ? null : 'heading ' + compass(p.trk).split(' ')[0],
+            p.nm + ' NM ' + compass(p.brg).split(' ')[0]
         ];
-        var dl = $id('adPlaneRows'); dl.textContent = '';
-        rows.forEach(function (r) {
-            if (r[1] === null || r[1] === undefined || r[1] === '') { return; }
-            var dt = document.createElement('dt'); dt.className = 'col-5 col-sm-4 fw-normal text-body-secondary'; dt.textContent = r[0];
-            var dd = document.createElement('dd'); dd.className = 'col-7 col-sm-8 mb-0'; dd.textContent = r[1];
-            dl.appendChild(dt); dl.appendChild(dd);
-        });
+        $id('adPlaneRows').textContent = bits.filter(Boolean).join(' · ');
         var links = $id('adPlaneLinks'); links.textContent = '';
         function link(text, href) {
-            var a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = text;
+            var a = document.createElement('a'); a.className = 'link-secondary'; a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = text;
             links.appendChild(a);
         }
-        if (p.hex) { link('Live map (adsb.fi)', 'https://globe.adsb.fi/?icao=' + encodeURIComponent(p.hex)); }
+        if (p.hex) { link('Live map', 'https://globe.adsb.fi/?icao=' + encodeURIComponent(p.hex)); }
         if (p.id && p.id !== p.hex) { link('FlightAware', 'https://www.flightaware.com/live/flight/' + encodeURIComponent(p.id)); }
     }
     $id('adRadar').addEventListener('click', function (e) {
