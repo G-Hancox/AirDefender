@@ -469,7 +469,9 @@ while (true) {
     $maxFt = max(0, (float) airdefender_setting($settings, 'altitudeThresholdFt', 3000));
     // Heights are compared above the show, not above sea level.
     $elevationFt = airdefender_clamp_elevation(airdefender_setting($settings, 'showElevationFt', 0));
-    $fetchInterval = max(5, (int) airdefender_setting($settings, 'fetchInterval', 10));
+    // 5 to 15 seconds: a slower check lets a fast aircraft get too close between looks (an older setting above 15 is
+    // treated as 15).
+    $fetchInterval = min(15, max(5, (int) airdefender_setting($settings, 'fetchInterval', 10)));
     $clearDelay = max(0, (int) airdefender_setting($settings, 'clearDelaySec', AIRDEFENDER_DEFAULT_CLEAR_DELAY));
     $feedDownSafe = airdefender_truthy(airdefender_setting($settings, 'feedDownSafe', '0'));
     $checkWhen = (string) airdefender_setting($settings, 'checkWhen', 'scheduled');

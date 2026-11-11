@@ -4,6 +4,8 @@
 
 - **The radar sweep keeps time with the checks**: one turn per **Check every** (10 seconds unless changed), with the
   beam passing the top as each check comes in.
+- **Check every is now 5 to 15 seconds** (it was up to 120). Slower checks let a fast aircraft get too close between
+  looks; a saved setting above 15 is used as 15.
 
 ## 1.7.2 (2026-11-10)
 

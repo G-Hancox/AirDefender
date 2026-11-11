@@ -82,7 +82,7 @@ until you pick the model again.</p>
         show, and the note under it shows what that is above sea level.</li>
     <li><b>Hold after it leaves</b>: how long, in seconds, heads stay closed after the last aircraft leaves
         (0&ndash;600, default 30), so one on the edge of the area does not flash them on and off.</li>
-    <li><b>Check every</b>: how often, in seconds, to ask for new flight data (5 to 120). Every 10 seconds is about
+    <li><b>Check every</b>: how often, in seconds, to ask for new flight data (5 to 15; never slower, so a fast aircraft can't get too close between looks). Every 10 seconds is about
         1,800 requests in a 5-hour show night, which matters because free services limit how many they answer. A
         smaller distance may want a quicker check.</li>
 </ul>

@@ -158,10 +158,10 @@
         },
         "fetchInterval": {
             "description": "Check every",
-            "tip": "How often to ask for aircraft while checking. Every 10 s is about 1,800 requests in a 5-hour show night; a smaller distance may want a quicker check.",
+            "tip": "How often to ask for aircraft while checking, from 5 to 15 seconds. Every 10 s is about 1,800 requests in a 5-hour show night; a smaller distance may want a quicker check. No slower than 15 s, so a fast aircraft can't get too close between looks.",
             "type": "number",
             "min": 5,
-            "max": 120,
+            "max": 15,
             "default": "10",
             "suffix": "s"
         },

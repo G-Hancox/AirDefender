@@ -519,6 +519,20 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     });
     if ($id('useFPPLocation')) { $id('useFPPLocation').addEventListener('change', refresh); }
     if ($id('nodeRole')) { $id('nodeRole').addEventListener('change', refresh); }
+    // Check every is 5 to 15 seconds: put an older setting, or a number typed outside that, back in range and save it.
+    (function () {
+        var f = $id('fetchInterval');
+        if (!f) { return; }
+        function clamp() {
+            var v = parseInt(f.value, 10), c = Math.min(15, Math.max(5, isNaN(v) ? 10 : v));
+            if (String(c) !== f.value) {
+                f.value = c;
+                if (typeof window.fetchIntervalChanged === 'function') { window.fetchIntervalChanged(); }   // FPP's helper saves it
+            }
+        }
+        f.addEventListener('change', clamp);
+        clamp();
+    })();
     updatePlaylists();
     refresh();
 })();
