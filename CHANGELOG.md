@@ -1,6 +1,6 @@
 # Air Defender changelog
 
-## 1.7.2 (dev, not released)
+## 1.7.2 (2026-11-10)
 
 - **Easier on the SD card**: the status the dashboard reads changes on every check while aircraft are about, so
   it is now kept in memory instead of being written to the SD card each time. Only what must survive a reboot (each
