@@ -817,6 +817,7 @@ while (true) {
         'feedChosen' => airdefender_feed_label($feedTemplate),
         'nearby' => $role === 'master' && $detecting ? $nearby : [],
         'limits' => ['nm' => $maxNm, 'ft' => $maxFt, 'holdSec' => $clearDelay, 'elevationFt' => $elevationFt],
+        'fetchInterval' => $fetchInterval,
         'safeSince' => $safeSince ? date('c', $safeSince) : null,
         'enabled' => $enabled,
         'checking' => $checking,

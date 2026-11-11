@@ -1,5 +1,10 @@
 # Air Defender changelog
 
+## 1.7.3 (dev, not released)
+
+- **The radar sweep keeps time with the checks**: one turn per **Check every** (10 seconds unless changed), with the
+  beam passing the top as each check comes in.
+
 ## 1.7.2 (2026-11-10)
 
 - **Easier on the SD card**: the status the dashboard reads changes on every check while aircraft are about, so

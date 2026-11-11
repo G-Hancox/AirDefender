@@ -57,7 +57,7 @@ $airdefenderPage = array(
     .airdefender-radar .compass { fill: var(--bs-body-color); font-weight: 700; }
     .airdefender-radar.turning { cursor: grab; touch-action: none; }
     .airdefender-radar.turning .scope { stroke: var(--bs-primary); stroke-dasharray: 6 4; }
-    .airdefender-sweep { transform-origin: 100px 100px; animation: airdefender-spin 6s linear infinite; }
+    .airdefender-sweep { transform-origin: 100px 100px; animation: airdefender-spin linear infinite; }
     @keyframes airdefender-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .airdefender-sweep { animation: none; } }
     .airdefender-radar.idle { opacity: .55; }
@@ -395,6 +395,20 @@ $airdefenderPage = array(
         var label = (f.used || FEED_LABEL) + (f.onBackup ? ' (backup: ' + (f.chosen || 'your chosen service') + ' not answering)' : '');
         return f.lastOkAgo !== null && f.lastOkAgo !== undefined ? label + ' · answering' : 'not checked yet';
     }
+    // The sweep's speed and timing: one turn per "Check every", lined up with the last check. Only moved when the
+    // checks drift more than a second and a half from it, so the second-by-second reports don't make it twitch.
+    var sweepAnchor = 0, sweepPeriodSec = 6;
+    function syncSweep() {
+        var f = (live && live.role !== 'remote' && live.feed) || {};
+        var sec = f.intervalSec >= 1 ? f.intervalSec : 6;
+        if (sec !== sweepPeriodSec) { sweepPeriodSec = sec; sweepAnchor = 0; }
+        if (typeof f.lastOkAgoMs === 'number') {
+            var p = sec * 1000, at = Date.now() - f.lastOkAgoMs;
+            var off = (((at - sweepAnchor) % p) + p) % p;
+            if (!sweepAnchor || Math.min(off, p - off) > 1500) { sweepAnchor = at; }
+        }
+        return sweepPeriodSec;
+    }
     function renderSky() {
         $id('adFeed').textContent = feedText();
         $id('adFeedLite').textContent = feedText();
@@ -423,11 +437,14 @@ $airdefenderPage = array(
         var idle = !!live && (!live.loopRunning || !live.enabled || (live.role !== 'remote' && live.checking === false));
         svg.classList.toggle('idle', idle);
         var sweep = el('g', { 'class': 'airdefender-sweep' + (idle ? ' d-none' : '') });
-        // Rebuilt every refresh: start each one where the turn should be, so it never jumps.
-        sweep.style.animationDelay = (-(Date.now() % 6000) / 1000) + 's';
-        var ex = (100 + R * Math.sin(Math.PI / 3)).toFixed(1), ey = (100 - R * Math.cos(Math.PI / 3)).toFixed(1);
-        el('path', { d: 'M100 100 L100 ' + (100 - R) + ' A' + R + ' ' + R + ' 0 0 1 ' + ex + ' ' + ey + ' Z', 'class': 'wedge' }, undefined, sweep);
-        el('line', { x1: 100, y1: 100, x2: ex, y2: ey, 'class': 'beam', 'stroke-width': 2, 'stroke-linecap': 'round' }, undefined, sweep);
+        // One turn per check: the beam passes the top as each check comes in. Rebuilt every refresh, so each one
+        // starts where the turn should be and it never jumps.
+        var period = syncSweep() * 1000;
+        sweep.style.animationDuration = (period / 1000) + 's';
+        sweep.style.animationDelay = (-(((Date.now() - sweepAnchor) % period) + period) % period / 1000) + 's';
+        var ex = (100 - R * Math.sin(Math.PI / 3)).toFixed(1), ey = (100 - R * Math.cos(Math.PI / 3)).toFixed(1);
+        el('path', { d: 'M100 100 L' + ex + ' ' + ey + ' A' + R + ' ' + R + ' 0 0 1 100 ' + (100 - R) + ' Z', 'class': 'wedge' }, undefined, sweep);
+        el('line', { x1: 100, y1: 100, x2: 100, y2: 100 - R, 'class': 'beam', 'stroke-width': 2, 'stroke-linecap': 'round' }, undefined, sweep);
         el('circle', { cx: 100, cy: 100, r: R * Math.min(1, (lim.nm || outer) / outer),
                        'class': 'limit', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
         // The compass points, turned with the radar (its top shows the direction set with the lock button).

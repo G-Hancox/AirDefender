@@ -44,7 +44,7 @@ distance limit. Yellow marks are aircraft inside your limits (close enough and l
 that are too high or too far. An aircraft that reports its heading is a small arrow pointing the way it is flying;
 one that doesn't is a dot. Hover over a mark for its callsign, distance, height (above your show once
 <b>Show elevation</b> is set in Settings) and heading. Aircraft on the ground are not shown.
-The sweep only turns while Air Defender is checking; in standby, or when it is disabled or not running, the radar
+The sweep turns once per <b>Check every</b> (10 seconds unless changed), passing the top as each check comes in. It only turns while Air Defender is checking; in standby, or when it is disabled or not running, the radar
 stops and fades.</p>
 <p><b>Turning the radar:</b> press the small lock beside the Sky title to unlock it (the ring turns blue and dashed),
 then drag the radar round or use the arrow buttons, so the top matches the way you face your display. <b>North up</b>
