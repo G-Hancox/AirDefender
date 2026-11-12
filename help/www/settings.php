@@ -120,7 +120,7 @@ works the same either way.</p>
     <li><b>Zones</b>: steer a head with <b>Aim</b> (only while nothing is playing), mark the corners of an area, and finish the zone.
         Also: tilt limits, two <b>landmarks</b> per head to <b>Re-align</b> the zones next season, <b>Test zones</b> to trace them with
         the head, and <b>Export</b> / <b>Import</b> to back them up.</li>
-    <li><b>Check</b>: plays your sequences through the DeadZones check, without the lights, and lists each moment a head's beam is on
+    <li><b>Check</b> (optional: DeadZones protects every sequence during the show whether or not you check it): plays your sequences through the DeadZones check, without the lights, and lists each moment a head's beam is on
         while it points into a zone, so you can fix it in xLights. Only while nothing is playing, at low priority; it stops if a show
         starts and only reads the sequence files.</li>
 </ul>

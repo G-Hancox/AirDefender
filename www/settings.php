@@ -492,6 +492,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 
                 <div class="d-none" data-dz-pane="check" role="tabpanel">
                 <h2 class="visually-hidden">Check my sequences</h2>
+                <div class="alert alert-info py-2"><b>Optional.</b> DeadZones protects every sequence during the show whether or not you check it:
+                    this just shows you ahead of time where the shutter will close, so you can tidy those moments up in xLights if you like.</div>
                 <p class="text-body-secondary">
                     Plays your sequences through the DeadZones check, without the lights, and lists each moment a head's beam is on while it points into
                     one of its zones, so you can fix it in xLights. Until then DeadZones just closes the shutter there during the show.
