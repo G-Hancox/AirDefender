@@ -73,6 +73,14 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
 - Runs on whichever FPP outputs the heads (Player sending to a Falcon over the network,
   or a Remote with its own heads), like plane safety.
 
+## Decision (Nov 11): built into Air Defender
+
+DeadZones ships inside Air Defender, not as a separate add-on: one plugin, one head table, one
+dashboard. Three guards: off by default (when off, the compiled part does one check per frame and
+nothing else); the build is optional (if it fails, plane safety still installs and works, and the
+DeadZones tab says it's unavailable); and it switches itself off if anything goes wrong inside it.
+The extra install time is one small file to compile; measure it in Docker and on a Pi in step 3.
+
 ## Step 1 research (Nov 11) - what we found
 
 **The per-frame hook exists and is supported.** FPP's plugin interface (`src/Plugin.h`,
