@@ -1,6 +1,6 @@
 # Air Defender changelog
 
-## 1.7.3 (dev, not released)
+## 1.7.3 (2026-11-11)
 
 - **The radar sweep keeps time with the checks**: one turn per **Check every** (10 seconds unless changed), with the
   beam passing the top as each check comes in.
