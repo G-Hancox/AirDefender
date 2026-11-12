@@ -329,11 +329,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     </table>
                 </div>
                 <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
-                <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                <div class="form-text mt-2 d-none" id="adDzLockedNote">Channels of heads <b>Imported</b> on the Moving heads tab are locked: they came from xLights. Set the head to <b>Manual channel</b> there to edit them.</div>
+                <div class="mt-3 d-flex flex-wrap align-items-center gap-2" id="adDzXlRow">
                     <button type="button" class="btn btn-outline-secondary text-body" id="adXlImport"><i class="fas fa-file-import"></i> Import models from xLights</button>
                     <input type="file" class="d-none" id="adXlFile" accept=".xml,text/xml">
-                    <span class="form-text">Pick <b>xlights_rgbeffects.xml</b> from your show folder: pan, tilt, range, slew and dimmer are filled in for
-                        each head whose name (or FPP model) matches an xLights moving head model; for the rest, you pick which model it is. Check them after.</span>
+                    <span class="form-text">For heads you set up by hand on the Moving heads tab (imported ones already have these). Pick <b>xlights_rgbeffects.xml</b>
+                        from your show folder: pan, tilt, range, slew and dimmer are filled in for each head whose name matches an xLights moving head model; for the rest, you pick which model it is. Check them after.</span>
                 </div>
                 <div class="d-none mt-2 p-2 border rounded" id="adXlPick">
                     <div class="form-text mt-0 mb-2">These heads have no xLights model with the same name. Pick the one each head is:</div>
@@ -606,7 +607,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             var sel = this, name = field(row, 'Name'), prev = setting(key(row, 'Model'), '');
             if (sel.value === '@xlights') {
                 save(key(row, 'Source'), 'xlights'); save(key(row, 'Model'), '', label(row) + ': imported');
-                showRow(row); saveChannel(row); return;
+                showRow(row); saveChannel(row); updateDeadZones(); return;
             }
             if (setting(key(row, 'Source'), '') !== '') { save(key(row, 'Source'), ''); }
             // A head named after its old model takes the new model's name.
@@ -615,6 +616,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 save(key(row, 'Name'), sel.value);
             }
             save(key(row, 'Model'), sel.value, label(row) + (sel.value === '' && prev === '' ? ': manual channel, unlocked' : '’s model'));
+            updateDeadZones();
             showRow(row); saveChannel(row);
         });
         ['Start', 'Offset', 'ClosedValue'].forEach(function (f) {
@@ -649,7 +651,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             field(row, 'Start').disabled = false; field(row, 'Start').value = ''; field(row, 'Start').setAttribute('data-manual', '');
             field(row, 'Offset').value = 1; field(row, 'ClosedValue').value = 0; row.setAttribute('data-channel', 0);
             if (rows.filter(function (r) { return !r.classList.contains('d-none'); }).length > 1) { row.classList.add('d-none'); }
-            showRow(row); updateAdd();
+            showRow(row); updateAdd(); updateDeadZones();
             toast(name + ' removed.');
         });
     });
@@ -722,7 +724,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         row.classList.remove('d-none');
         field(row, 'Enabled').checked = true;
         save(key(row, 'Enabled'), 1);
-        showRow(row); updateAdd();
+        showRow(row); updateAdd(); updateDeadZones();
         field(row, 'Name').focus();
     });
     updateAdd();
@@ -847,7 +849,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     })();
     /* ---------- DeadZones: each head's pan and tilt ---------- */
     function updateDeadZones() {
-        var on = $id('deadZonesEnabled') && $id('deadZonesEnabled').checked, any = false;
+        var on = $id('deadZonesEnabled') && $id('deadZonesEnabled').checked, any = false, anyImported = false, anyByHand = false;
         $id('adDzSetup').classList.toggle('d-none', !on);
         // One row for each head in use on the Moving heads tab, under the name it has there.
         document.querySelectorAll('#adDzHeads tr[data-dz-head]').forEach(function (dz) {
@@ -855,8 +857,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             var used = row && !row.classList.contains('d-none');
             dz.classList.toggle('d-none', !used);
             if (used) { any = true; dz.querySelector('[data-dz-name]').textContent = label(row); }
+            // An Imported head's channels came from xLights: locked here too, like its start and shutter.
+            var imp = used && imported(row);
+            if (imp) { anyImported = true; } else if (used) { anyByHand = true; }
+            ['PanCh', 'TiltCh', 'DimmerCh'].forEach(function (f) { dz.querySelector('[data-dz-field="' + f + '"]').disabled = imp; });
         });
         $id('adDzNone').classList.toggle('d-none', any);
+        $id('adDzXlRow').classList.toggle('d-none', !anyByHand);
+        $id('adDzLockedNote').classList.toggle('d-none', !anyImported);
     }
     document.querySelectorAll('#adDzHeads [data-dz-field]').forEach(function (input) {
         input.addEventListener('change', function () {
@@ -1381,6 +1389,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             rowsEl.textContent = '';
             document.querySelectorAll('#adDzHeads tr[data-dz-head]:not(.d-none)').forEach(function (dz) {
                 var n = dz.getAttribute('data-dz-head'), row = document.querySelector('#adHeads tr[data-head="' + n + '"]');
+                if (imported(row)) { return; }   // already filled in by the Moving heads import
                 var name = label(row), m = byName[xlName(name)] || byName[xlName(modelOf(row))];
                 if (m) { (xlApply(dz, m) ? done : empty).push(name); return; }
                 // No match by name: let them pick (or skip) which xLights moving head this is.
