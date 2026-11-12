@@ -556,7 +556,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-headpic .arm { fill: var(--bs-gray-900); stroke: var(--bs-gray-700); stroke-width: 1; stroke-linejoin: round; }
     .airdefender-headpic .hub { fill: var(--bs-gray-700); stroke: var(--bs-gray-900); stroke-width: 1; }
     .airdefender-headpic .beam-on { stroke: var(--bs-white); stroke-linecap: round; }
-    .airdefender-headpic .beam-off { stroke: var(--bs-secondary-color); stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .airdefender-headpic .lens-off { fill: var(--bs-teal); fill-opacity: .25; stroke: none; }
     .modal-dialog.airdefender-popup { max-width: 26rem; width: calc(100% - 2rem); margin-left: auto; margin-right: auto; }
     .airdefender-dragging { opacity: .6; }
     .airdefender-dragging td { background: var(--bs-tertiary-bg); }
@@ -1187,15 +1187,16 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 poly(fc.pts, 'shade', { 'fill-opacity': (0.45 * (1 - fc.n[2] / len)).toFixed(2) });   // turned away from you: darker
                 if (fc.lens) {
                     poly(ring(add(P, f, L + 0.3), axis, u, A * 0.86, 8, 0.5), 'bezel');
-                    poly(ring(add(P, f, L + 0.6), axis, u, A * 0.7, 8, 0.5), 'lens');
+                    // Lit teal while the beam is on; dark glass while it's off.
+                    poly(ring(add(P, f, L + 0.6), axis, u, A * 0.7, 8, 0.5), aim.beam ? 'lens' : 'lens-off');
                 }
             } });
         });
         // The beam, from the lens.
         var tip = add(P, f, L), end = add(P, f, 150);
-        items.push({ z: f[2] < 0 ? -500 : 500, draw: function () {
+        if (aim.beam) items.push({ z: f[2] < 0 ? -500 : 500, draw: function () {   // no beam while it's off
             var s0 = scr(tip), s1 = scr(end);
-            var e = svgEl('line', { x1: s0[0], y1: s0[1], x2: s1[0], y2: s1[1], 'class': aim.beam ? 'beam-on' : 'beam-off' }, svg);
+            var e = svgEl('line', { x1: s0[0], y1: s0[1], x2: s1[0], y2: s1[1], 'class': 'beam-on' }, svg);
             if (aim.beam) { e.setAttribute('stroke-width', 3 + aim.level / 255 * 7); e.setAttribute('stroke-opacity', (0.4 + aim.level / 255 * 0.6).toFixed(2)); }
         } });
         items.sort(function (x, y) { return x.z - y.z; }).forEach(function (it) { it.draw(); });
