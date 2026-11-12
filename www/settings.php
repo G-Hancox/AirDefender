@@ -555,7 +555,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-headpic .lens { fill: var(--bs-teal); stroke: none; }
     .airdefender-headpic .arm { fill: var(--bs-gray-900); stroke: var(--bs-gray-700); stroke-width: 1; stroke-linejoin: round; }
     .airdefender-headpic .hub { fill: var(--bs-gray-700); stroke: var(--bs-gray-900); stroke-width: 1; }
-    .airdefender-headpic .base { fill: var(--bs-gray-900); stroke: var(--bs-gray-700); stroke-width: 1; }
     .airdefender-headpic .beam-on { stroke: var(--bs-white); stroke-linecap: round; }
     .airdefender-headpic .beam-off { stroke: var(--bs-secondary-color); stroke-width: 1.5; stroke-dasharray: 4 4; }
     .modal-dialog.airdefender-popup { max-width: 26rem; width: calc(100% - 2rem); margin-left: auto; margin-right: auto; }
@@ -1143,16 +1142,15 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         var f = [facing[0] * Math.sin(tilt), Math.cos(tilt), facing[2] * Math.sin(tilt)];       // the beam's direction
         var u = [axis[1] * f[2] - axis[2] * f[1], axis[2] * f[0] - axis[0] * f[2], axis[0] * f[1] - axis[1] * f[0]];
         var P = [0, 0, 0];
-        function scr(v) { var k = 1 + v[2] * 0.0012; return [100 + v[0] * k, 105 - v[1] * k, v[2]]; }   // a touch of perspective
+        function scr(v) { var k = 1 + v[2] * 0.0012; return [100 + v[0] * k, 115 - v[1] * k, v[2]]; }   // a touch of perspective
         function poly(pts, cls, extra) {
             var e = svgEl('polygon', { points: pts.map(function (v) { var q = scr(v); return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '), 'class': cls }, svg);
             Object.keys(extra || {}).forEach(function (k) { e.setAttribute(k, extra[k]); });
             return e;
         }
         svg.textContent = '';
-        // Like xLights' default moving head: a dark base, two flat yoke arms (rectangles with the top corners cut off)
+        // Like xLights' default moving head: no base, just two flat yoke arms (rectangles with the top corners cut off)
         // with a round hub where the head pivots, and an eight-sided head that tapers from the lens to the back.
-        svgEl('rect', { x: 52, y: 178, width: 96, height: 24, rx: 3, 'class': 'base' }, svg);
         var items = [], W = 42;
         function ring(c, a1, a2, r, n, rot) {
             var pts = [];
