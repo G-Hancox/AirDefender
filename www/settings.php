@@ -312,7 +312,13 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     <button type="button" class="btn btn-outline-secondary text-body" id="adXlImport"><i class="fas fa-file-import"></i> Import from xLights</button>
                     <input type="file" class="d-none" id="adXlFile" accept=".xml,text/xml">
                     <span class="form-text">Pick <b>xlights_rgbeffects.xml</b> from your show folder: pan, tilt, range, slew and dimmer are filled in for
-                        each head whose name (or FPP model) matches an xLights moving head model. Check them after.</span>
+                        each head whose name (or FPP model) matches an xLights moving head model; for the rest, you pick which model it is. Check them after.</span>
+                </div>
+                <div class="d-none mt-2 p-2 border rounded" id="adXlPick">
+                    <div class="form-text mt-0 mb-2">These heads have no xLights model with the same name. Pick the one each head is:</div>
+                    <div class="d-flex flex-column gap-2 mb-2" id="adXlPickRows"></div>
+                    <button type="button" class="btn btn-sm btn-primary" id="adXlPickApply">Fill in</button>
+                    <button type="button" class="btn btn-sm btn-link" id="adXlPickCancel">Cancel</button>
                 </div>
                 </div>
 
@@ -1167,48 +1173,78 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     /* ---------- DeadZones: pan, tilt and dimmer from xLights' show file ---------- */
     function xlName(t) { return String(t || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
     $id('adXlImport').addEventListener('click', function () { $id('adXlFile').value = ''; $id('adXlFile').click(); });
+    var xlModels = {};
+    // Fill one head's row from an xLights moving head model; returns how many values it found.
+    function xlApply(dz, m) {
+        var n = dz.getAttribute('data-dz-head');
+        function num(el, attr) { var v = el ? parseFloat(el.getAttribute(attr)) : NaN; return isNaN(v) || v <= 0 ? null : Math.round(v); }
+        var pan = m.getElementsByTagName('PanMotor')[0], tilt = m.getElementsByTagName('TiltMotor')[0];
+        var vals = {
+            // Newer xLights keeps each motor in its own element; older files have them on the model.
+            PanCh: num(pan, 'ChannelCoarse') || num(m, 'DmxPanChannel'),
+            PanRange: num(pan, 'RangeOfMotion') || num(m, 'DmxPanDegOfRot'),
+            PanSlew: num(pan, 'SlewLimit'),
+            TiltCh: num(tilt, 'ChannelCoarse') || num(m, 'DmxTiltChannel'),
+            TiltRange: num(tilt, 'RangeOfMotion') || num(m, 'DmxTiltDegOfRot'),
+            TiltSlew: num(tilt, 'SlewLimit'),
+            DimmerCh: num(m, 'MhDimmerChannel') || num(m, 'DmxDimmerChannel'),
+            ShutterOpen: num(m, 'DmxShutterOpen')
+        };
+        var got = 0;
+        Object.keys(vals).forEach(function (f) {
+            var v = vals[f], input = dz.querySelector('[data-dz-field="' + f + '"]');
+            if (v === null || !input || v < parseInt(input.min, 10) || v > parseInt(input.max, 10)) { return; }
+            got++;
+            if (String(v) !== input.value) { input.value = v; save('head' + n + f, v); }
+        });
+        return got;
+    }
+    function xlDone(done, empty) {
+        aimHeads();
+        if (done.length) { toast('Filled in from xLights: ' + done.join(', ') + '. Check the numbers.'); }
+        if (empty.length) { toast('No pan or tilt found in the xLights model for: ' + empty.join(', ') + '.', false); }
+    }
     $id('adXlFile').addEventListener('change', function () {
         var file = this.files && this.files[0]; if (!file) { return; }
         file.text().then(function (text) {
             var doc = new DOMParser().parseFromString(text, 'text/xml');
             if (doc.getElementsByTagName('parsererror').length) { throw new Error('That file isn\u2019t xLights\u2019 show file (xlights_rgbeffects.xml).'); }
-            var models = {};
+            xlModels = {};
             Array.prototype.forEach.call(doc.getElementsByTagName('model'), function (m) {
-                if (/^DmxMovingHead/.test(m.getAttribute('DisplayAs') || '')) { models[xlName(m.getAttribute('name'))] = m; }
+                if (/^DmxMovingHead/.test(m.getAttribute('DisplayAs') || '')) { xlModels[m.getAttribute('name')] = m; }
             });
-            if (!Object.keys(models).length) { throw new Error('No moving head models found in ' + file.name + '.'); }
-            var done = [], missed = [];
+            var names = Object.keys(xlModels).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
+            if (!names.length) { throw new Error('No moving head models found in ' + file.name + '.'); }
+            var byName = {}; names.forEach(function (k) { byName[xlName(k)] = xlModels[k]; });
+            var done = [], empty = [], rowsEl = $id('adXlPickRows');
+            rowsEl.textContent = '';
             document.querySelectorAll('#adDzHeads tr[data-dz-head]:not(.d-none)').forEach(function (dz) {
                 var n = dz.getAttribute('data-dz-head'), row = document.querySelector('#adHeads tr[data-head="' + n + '"]');
-                var name = label(row), m = models[xlName(name)] || models[xlName(field(row, 'Model').value)];
-                if (!m) { missed.push(name); return; }
-                function num(el, attr) { var v = el ? parseFloat(el.getAttribute(attr)) : NaN; return isNaN(v) || v <= 0 ? null : Math.round(v); }
-                var pan = m.getElementsByTagName('PanMotor')[0], tilt = m.getElementsByTagName('TiltMotor')[0];
-                var vals = {
-                    // Newer xLights keeps each motor in its own element; older files have them on the model.
-                    PanCh: num(pan, 'ChannelCoarse') || num(m, 'DmxPanChannel'),
-                    PanRange: num(pan, 'RangeOfMotion') || num(m, 'DmxPanDegOfRot'),
-                    PanSlew: num(pan, 'SlewLimit'),
-                    TiltCh: num(tilt, 'ChannelCoarse') || num(m, 'DmxTiltChannel'),
-                    TiltRange: num(tilt, 'RangeOfMotion') || num(m, 'DmxTiltDegOfRot'),
-                    TiltSlew: num(tilt, 'SlewLimit'),
-                    DimmerCh: num(m, 'MhDimmerChannel') || num(m, 'DmxDimmerChannel'),
-                    ShutterOpen: num(m, 'DmxShutterOpen')
-                };
-                var got = 0;
-                Object.keys(vals).forEach(function (f) {
-                    var v = vals[f], input = dz.querySelector('[data-dz-field="' + f + '"]');
-                    if (v === null || !input || v < parseInt(input.min, 10) || v > parseInt(input.max, 10)) { return; }
-                    got++;
-                    if (String(v) !== input.value) { input.value = v; save('head' + n + f, v); }
-                });
-                (got ? done : missed).push(name);
+                var name = label(row), m = byName[xlName(name)] || byName[xlName(field(row, 'Model').value)];
+                if (m) { (xlApply(dz, m) ? done : empty).push(name); return; }
+                // No match by name: let them pick (or skip) which xLights moving head this is.
+                var line = document.createElement('label'); line.className = 'd-flex flex-wrap align-items-center gap-2';
+                var t = document.createElement('span'); t.style.minWidth = '7rem'; t.textContent = name;
+                var sel = document.createElement('select'); sel.className = 'form-select form-select-sm w-auto'; sel.setAttribute('data-xl-head', n);
+                [''].concat(names).forEach(function (k) { var o = document.createElement('option'); o.value = k; o.textContent = k || 'Skip this head'; sel.appendChild(o); });
+                line.appendChild(t); line.appendChild(sel); rowsEl.appendChild(line);
             });
-            aimHeads();
-            if (done.length) { toast('Filled in from xLights: ' + done.join(', ') + '. Check the numbers.'); }
-            if (missed.length) { toast('No matching xLights moving head for: ' + missed.join(', ') + '. Name the head here the same as its xLights model, or enter it by hand.', false); }
+            $id('adXlPick').classList.toggle('d-none', !rowsEl.children.length);
+            xlDone(done, empty);
         }).catch(function (e) { toast(e.message, false); });
     });
+    $id('adXlPickApply').addEventListener('click', function () {
+        var done = [], empty = [];
+        document.querySelectorAll('#adXlPickRows select').forEach(function (sel) {
+            if (!sel.value || !xlModels[sel.value]) { return; }
+            var dz = document.querySelector('#adDzHeads tr[data-dz-head="' + sel.getAttribute('data-xl-head') + '"]');
+            var name = dz.querySelector('[data-dz-name]').textContent;
+            (xlApply(dz, xlModels[sel.value]) ? done : empty).push(name);
+        });
+        $id('adXlPick').classList.add('d-none');
+        xlDone(done, empty);
+    });
+    $id('adXlPickCancel').addEventListener('click', function () { $id('adXlPick').classList.add('d-none'); });
 
     // DeadZones' pages (Heads, Zones); the last one used is remembered in this browser.
     function dzTab(name, remember) {
