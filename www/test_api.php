@@ -25,6 +25,8 @@
  *
  *   POST action=aim_start&head=<n> | aim_set&pan=&tilt=&beam=&level= | aim_keep | aim_end
  *                                        -> DeadZones aiming (scripts/airdefender_aim.php)
+ *   POST action=zones_get | zone_save | zone_delete | tilt_limit
+ *                                        -> DeadZones zones (scripts/airdefender_deadzones.php)
  *   GET ...&log=today|yesterday|week&what=events|all -> log lines for View log
  *
  * Anything that changes state is POST only.
@@ -61,6 +63,13 @@ if ($method === 'GET' && isset($_GET['log'])) {
     exit;
 }
 
+if (in_array($action, ['zones_get', 'zone_save', 'zone_delete', 'tilt_limit'], true)) {
+    require_once(dirname(__DIR__) . "/scripts/airdefender_deadzones.php");
+    [$code, $answer] = airdefender_zones_request($_POST);
+    http_response_code($code);
+    echo json_encode($answer);
+    exit;
+}
 if (strpos($action, 'aim_') === 0) {
     require_once(dirname(__DIR__) . "/scripts/airdefender_aim.php");
     [$code, $answer] = airdefender_aim_request($_POST);

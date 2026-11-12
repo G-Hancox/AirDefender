@@ -98,7 +98,11 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
   Plane safety still closes the shutter. The DeadZones check leaves the aimed head alone. Ending sets
   each overlay before deleting it, so FPP 10.0-10.2 can't be left holding a shutter open.
   New per-head settings: Dimmer ch. and Shutter open value.
-- [ ] Step 4: drawing zones (mark points, landmarks and re-align, test zones, export/import), import from xLights.
+- [x] Step 4b: **Zones** page (DeadZones settings now has Heads and Zones): aim a head, **Mark point** /
+  **Undo point** / **Finish zone** (named), **Block below / Block above** for a tilt limit, a drawing of
+  the head's pan/tilt space with its zones and limit, and a list with delete and "Also close" other heads.
+  Zones are saved in zones.json (only when you change them); the loop passes them to the compiled part.
+- [ ] Step 4c: landmarks and Re-align, Test zones, export/import, import from xLights.
 - [ ] Step 5: Check my sequences.
 - [ ] Step 6: real-head testing on a Pi before it goes near dev.
 

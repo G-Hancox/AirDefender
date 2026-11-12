@@ -243,14 +243,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             <?php airdefender_print_group('DeadZones', array('deadZonesEnabled')); ?>
             <div class="alert alert-info">
                 <b>Still being built.</b> DeadZones closes a head's shutter while it points into an area you've masked out.
-                The check itself is in place, but zones can't be drawn on this page yet.
+                Zones can be marked and work; re-aligning them next season, export and import are still to come.
             </div>
             <div class="mb-3" id="adDzStatus" role="status"></div>
             <div id="adDzSetup" class="d-none">
                 <!-- DeadZones' own pages, so the tab doesn't become one long page. -->
                 <ul class="nav nav-tabs mb-3" role="tablist" aria-label="DeadZones pages">
                     <li class="nav-item" role="presentation"><button type="button" class="nav-link active" role="tab" aria-selected="true" data-dz-tab="heads">Heads</button></li>
-                    <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="aim"><i class="fas fa-crosshairs"></i> Aim</button></li>
+                    <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="zones"><i class="fas fa-draw-polygon"></i> Zones</button></li>
                 </ul>
                 <div data-dz-pane="heads" role="tabpanel">
                 <h2 class="visually-hidden">Pan and tilt</h2>
@@ -310,12 +310,13 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
                 </div>
 
-                <div class="d-none" data-dz-pane="aim" role="tabpanel">
-                <h2 class="visually-hidden">Aim a head</h2>
+                <div class="d-none" data-dz-pane="zones" role="tabpanel">
+                <h2 class="visually-hidden">Zones</h2>
                 <p class="text-body-secondary">
-                    Steer one head from here to find the edges of its zones. Only while no show is playing; every other head is left alone.
-                    The shutter opens by itself; the beam starts off and comes on dim. Aiming ends when you leave this page or don't press
-                    anything for two minutes, and plane safety still closes the shutter if an aircraft comes near.
+                    Each head has its own zones, since each sees your yard from a different angle. Pick a head and press <b>Aim</b> to steer it
+                    (only while no show is playing; every other head is left alone). Trace an area by pointing at each corner and pressing
+                    <b>Mark point</b>, then <b>Finish zone</b>. Aiming ends when you leave this page or don't press anything for two minutes, and
+                    plane safety still closes the shutter if an aircraft comes near.
                 </p>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                     <select class="form-select w-auto" id="adAimHead" aria-label="Head to aim"></select>
@@ -354,6 +355,36 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <div class="form-text">Hold an arrow to keep moving; the keyboard's arrow keys work too.</div>
                         </div>
                     </div>
+                    <div class="mt-3">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Mark a zone">
+                            <button type="button" class="btn btn-outline-primary" id="adMarkPoint"><i class="fas fa-map-pin"></i> Mark point</button>
+                            <button type="button" class="btn btn-outline-secondary text-body" id="adMarkUndo" disabled><i class="fas fa-undo"></i> Undo point</button>
+                            <input type="text" class="form-control w-auto" id="adMarkName" maxlength="40" placeholder="Zone name, e.g. Smith house" aria-label="Zone name">
+                            <button type="button" class="btn btn-success" id="adMarkFinish" disabled><i class="fas fa-check"></i> Finish zone</button>
+                            <button type="button" class="btn btn-link" id="adMarkCancel" disabled>Cancel</button>
+                        </div>
+                        <div class="form-text mb-2" id="adMarkInfo">Point at a corner of the area and press Mark point. Three or more points make a zone.</div>
+                        <div class="d-flex flex-wrap align-items-center gap-2" role="group" aria-label="Tilt limit">
+                            <span class="form-text">Tilt limit at this height:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="below">Block below</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="above">Block above</button>
+                            <button type="button" class="btn btn-sm btn-link" data-tilt-limit="clear">Clear</button>
+                        </div>
+                        <div class="form-text">"Too low" can be lower or higher tilt numbers depending on the fixture: use whichever shades the side you don't want in the picture below.</div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-4 align-items-start mt-4" id="adZonesArea">
+                    <div>
+                        <h3 class="h6 mb-1">Where this head can point <span class="text-body-secondary fw-normal" id="adZonesFor"></span></h3>
+                        <svg class="airdefender-zonemap border rounded" id="adZoneMap" viewBox="-8 -8 272 272" role="img" aria-label="This head's zones, by pan (across) and tilt (up)"></svg>
+                        <div class="form-text">Across is pan, up is tilt (0-255). Shaded areas close the shutter.</div>
+                    </div>
+                    <div class="flex-grow-1" style="min-width: 16rem; max-width: 34rem">
+                        <h3 class="h6">Zones</h3>
+                        <div class="list-group" id="adZoneList"></div>
+                        <div class="form-text" id="adZoneNone">No zones for this head yet.</div>
+                    </div>
                 </div>
                 </div>
 
@@ -363,6 +394,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 </div>
 
 <style>
+    .airdefender-zonemap { width: min(100%, 18rem); aspect-ratio: 1; display: block; background: var(--bs-body-bg); }
+    .airdefender-zonemap .zone { fill: var(--bs-warning); fill-opacity: .35; stroke: var(--bs-warning); stroke-width: 1.5; }
+    .airdefender-zonemap .limit { fill: var(--bs-danger); fill-opacity: .2; }
+    .airdefender-zonemap .draft { fill: var(--bs-primary); fill-opacity: .15; stroke: var(--bs-primary); stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .airdefender-zonemap .dot { fill: var(--bs-primary); }
+    .airdefender-zonemap .here { fill: none; stroke: var(--bs-body-color); stroke-width: 1.5; }
+    .airdefender-zonemap .grid { stroke: var(--bs-border-color); stroke-width: .75; }
+    .airdefender-zonemap .label { fill: var(--bs-body-color); font-size: 11px; }
     .airdefender-pad { display: grid; grid-template-columns: repeat(3, 3.25rem); grid-auto-rows: 3.25rem; gap: .35rem; touch-action: none; }
     .airdefender-pad .btn { width: 100%; height: 100%; }
     .airdefender-pad-read { align-self: center; line-height: 1.2; }
@@ -759,7 +798,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         $id('adAimStop').classList.toggle('d-none', !on);
         $id('adAimStart').classList.toggle('d-none', on);
         $id('adAimHead').disabled = on;
-        if (!on) { return; }
+        if (!on) { zonesDraw(); return; }
         $id('adAimRead').innerHTML = '';
         ['Pan ' + aim.pan, 'Tilt ' + aim.tilt].forEach(function (t) { var d = document.createElement('div'); d.textContent = t; $id('adAimRead').appendChild(d); });
         // Lit (yellow, solid bulb) while the beam is on; plain with an outline bulb while it's off, like xLights' Output to Lights.
@@ -769,6 +808,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         beam.title = aim.beam ? 'Beam is on: press to turn it off' : 'Beam is off: press to turn it on';
         beam.innerHTML = '<i class="' + (aim.beam ? 'fas' : 'far') + ' fa-lightbulb"></i> Beam';
         $id('adAimLevel').value = aim.level;
+        zonesDraw();
     }
     function aimSend(fields) {
         // One request at a time; presses made meanwhile are sent together afterwards, so holding an arrow never queues up.
@@ -843,15 +883,143 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         aimLastPress = Date.now(); aim.level = parseInt(this.value, 10);
         aimSend({ action: 'aim_set', level: aim.level, beam: aim.beam ? 1 : 0 });
     });
-    // DeadZones' pages (Heads, Aim); the last one used is remembered in this browser.
+    /* ---------- DeadZones: marking and listing zones ---------- */
+    var zonesData = null, draft = [];
+    var SVGNS = 'http://www.w3.org/2000/svg';
+    function zoneHead() { return $id('adAimHead').value; }
+    function svgEl(tag, attrs, parent, text) {
+        var e = document.createElementNS(SVGNS, tag);
+        Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+        if (text !== undefined) { e.textContent = text; }
+        parent.appendChild(e);
+        return e;
+    }
+    function pts(list) { return list.map(function (p) { return p[0] + ',' + (255 - p[1]); }).join(' '); }   // tilt goes up the picture
+    function zonesLoad() {
+        post({ action: 'zones_get' }).then(function (d) { zonesData = d.heads || {}; zonesDraw(); })
+            .catch(function (e) { toast('Could not read the zones: ' + e.message, false); });
+    }
+    function zonesSaved(d) { if (zonesData && d && d.head) { zonesData[String(d.head)] = d.zones; } zonesDraw(); }
+    function zonesDraw() {
+        var map = $id('adZoneMap'), head = zoneHead(), h = zonesData && head ? zonesData[head] : null;
+        $id('adZonesArea').classList.toggle('d-none', !head);
+        if (!head) { return; }
+        var opt = $id('adAimHead').selectedOptions[0];
+        $id('adZonesFor').textContent = opt ? '(' + opt.textContent + ')' : '';
+        map.textContent = '';
+        [0, 64, 128, 192, 255].forEach(function (v) {
+            svgEl('line', { x1: v, y1: 0, x2: v, y2: 255, 'class': 'grid' }, map);
+            svgEl('line', { x1: 0, y1: v, x2: 255, y2: v, 'class': 'grid' }, map);
+        });
+        if (h) {
+            if (h.tiltMin > 0) { svgEl('rect', { x: 0, y: 255 - h.tiltMin, width: 255, height: h.tiltMin, 'class': 'limit' }, map); }
+            if (h.tiltMax < 255) { svgEl('rect', { x: 0, y: 0, width: 255, height: 255 - h.tiltMax, 'class': 'limit' }, map); }
+            h.zones.forEach(function (z) {
+                svgEl('polygon', { points: pts(z.points), 'class': 'zone' }, map, undefined);
+                var cx = 0, cy = 0;
+                z.points.forEach(function (p) { cx += p[0]; cy += 255 - p[1]; });
+                svgEl('text', { x: cx / z.points.length, y: cy / z.points.length, 'class': 'label', 'text-anchor': 'middle' }, map, z.name);
+            });
+        }
+        if (draft.length) {
+            svgEl(draft.length > 2 ? 'polygon' : 'polyline', { points: pts(draft), 'class': 'draft' }, map);
+            draft.forEach(function (p) { svgEl('circle', { cx: p[0], cy: 255 - p[1], r: 3.5, 'class': 'dot' }, map); });
+        }
+        if (aim && String(aim.head) === head) {
+            svgEl('circle', { cx: aim.pan, cy: 255 - aim.tilt, r: 7, 'class': 'here' }, map);
+            svgEl('line', { x1: aim.pan - 11, y1: 255 - aim.tilt, x2: aim.pan + 11, y2: 255 - aim.tilt, 'class': 'here' }, map);
+            svgEl('line', { x1: aim.pan, y1: 255 - aim.tilt - 11, x2: aim.pan, y2: 255 - aim.tilt + 11, 'class': 'here' }, map);
+        }
+        // The list, with which other heads each zone also closes.
+        var list = $id('adZoneList'); list.textContent = '';
+        var zones = h ? h.zones : [];
+        $id('adZoneNone').classList.toggle('d-none', zones.length > 0);
+        // Any other head in use can be closed with it (it needs no pan or tilt of its own for that).
+        var others = Array.prototype.slice.call(document.querySelectorAll('#adDzHeads tr[data-dz-head]:not(.d-none)'))
+            .filter(function (r) { return r.getAttribute('data-dz-head') !== head; })
+            .map(function (r) { return { value: r.getAttribute('data-dz-head'), textContent: r.querySelector('[data-dz-name]').textContent }; });
+        zones.forEach(function (z, i) {
+            var item = document.createElement('div'); item.className = 'list-group-item';
+            var top = document.createElement('div'); top.className = 'd-flex align-items-center gap-2';
+            var name = document.createElement('span'); name.className = 'fw-semibold me-auto'; name.textContent = z.name;
+            var info = document.createElement('span'); info.className = 'form-text m-0'; info.textContent = z.points.length + ' points';
+            var del = document.createElement('button'); del.type = 'button'; del.className = 'btn btn-sm btn-outline-danger';
+            del.innerHTML = '<i class="fas fa-trash"></i>'; del.setAttribute('aria-label', 'Delete ' + z.name);
+            del.addEventListener('click', function () {
+                if (!window.confirm('Delete the zone "' + z.name + '"?')) { return; }
+                post({ action: 'zone_delete', head: head, index: i }).then(function (d) { zonesSaved(d); toast('Zone deleted.'); })
+                    .catch(function (e) { toast(e.message, false); });
+            });
+            top.appendChild(name); top.appendChild(info); top.appendChild(del); item.appendChild(top);
+            if (others.length) {
+                var also = document.createElement('div'); also.className = 'd-flex flex-wrap align-items-center gap-2 mt-1 small';
+                var lab = document.createElement('span'); lab.className = 'text-body-secondary'; lab.textContent = 'Also close:'; also.appendChild(lab);
+                others.forEach(function (o) {
+                    var wrap = document.createElement('label'); wrap.className = 'd-inline-flex align-items-center gap-1';
+                    var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'form-check-input m-0';
+                    cb.checked = (z.alsoCloses || []).indexOf(parseInt(o.value, 10)) >= 0;
+                    cb.addEventListener('change', function () {
+                        var ids = Array.prototype.slice.call(also.querySelectorAll('input')).map(function (c, k) { return c.checked ? parseInt(others[k].value, 10) : 0; }).filter(Boolean);
+                        post({ action: 'zone_save', head: head, index: i, name: z.name, points: JSON.stringify(z.points), alsoCloses: JSON.stringify(ids) })
+                            .then(function (d) { zonesSaved(d); toast('Saved.'); }).catch(function (e) { toast(e.message, false); });
+                    });
+                    wrap.appendChild(cb); wrap.appendChild(document.createTextNode(o.textContent)); also.appendChild(wrap);
+                });
+                item.appendChild(also);
+            }
+            list.appendChild(item);
+        });
+        markButtons();
+    }
+    function markButtons() {
+        $id('adMarkPoint').disabled = !aim;
+        $id('adMarkUndo').disabled = !draft.length;
+        $id('adMarkCancel').disabled = !draft.length;
+        $id('adMarkFinish').disabled = draft.length < 3;
+        document.querySelectorAll('[data-tilt-limit="below"],[data-tilt-limit="above"]').forEach(function (b) { b.disabled = !aim; });
+        $id('adMarkInfo').textContent = !aim ? 'Press Aim to steer the head, then mark the corners of an area.'
+            : draft.length === 0 ? 'Point at a corner of the area and press Mark point. Three or more points make a zone.'
+            : draft.length < 3 ? draft.length + ' point' + (draft.length === 1 ? '' : 's') + ' marked: keep going round the area.'
+            : draft.length + ' points marked. Name it and press Finish zone, or keep marking.';
+    }
+    $id('adMarkPoint').addEventListener('click', function () {
+        if (!aim) { return; }
+        aimLastPress = Date.now();
+        var last = draft[draft.length - 1];
+        if (last && last[0] === aim.pan && last[1] === aim.tilt) { toast('That point is already marked: move the head first.', false); return; }
+        draft.push([aim.pan, aim.tilt]); zonesDraw();
+    });
+    $id('adMarkUndo').addEventListener('click', function () { draft.pop(); zonesDraw(); });
+    $id('adMarkCancel').addEventListener('click', function () { draft = []; zonesDraw(); });
+    $id('adMarkFinish').addEventListener('click', function () {
+        var head = zoneHead(), name = $id('adMarkName').value.trim();
+        post({ action: 'zone_save', head: head, name: name, points: JSON.stringify(draft) }).then(function (d) {
+            draft = []; $id('adMarkName').value = ''; zonesSaved(d);
+            toast('Zone saved' + (name ? ': ' + name : '') + '. The shutter now closes there.');
+        }).catch(function (e) { toast(e.message, false); });
+    });
+    document.querySelectorAll('[data-tilt-limit]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var side = b.getAttribute('data-tilt-limit');
+            if (side !== 'clear' && !aim) { return; }
+            aimLastPress = Date.now();
+            post({ action: 'tilt_limit', head: zoneHead(), side: side, tilt: aim ? aim.tilt : 0 }).then(function (d) {
+                zonesSaved(d);
+                toast(side === 'clear' ? 'Tilt limit cleared.' : 'Tilt limit set at ' + aim.tilt + '.');
+            }).catch(function (e) { toast(e.message, false); });
+        });
+    });
+    $id('adAimHead').addEventListener('change', function () { draft = []; zonesDraw(); });
+
+    // DeadZones' pages (Heads, Zones); the last one used is remembered in this browser.
     function dzTab(name, remember) {
         document.querySelectorAll('[data-dz-tab]').forEach(function (b) {
             var on = b.getAttribute('data-dz-tab') === name;
             b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
         });
         document.querySelectorAll('[data-dz-pane]').forEach(function (p) { p.classList.toggle('d-none', p.getAttribute('data-dz-pane') !== name); });
-        if (name !== 'aim') { aimLeave(); }   // aiming only while its page is showing
-        if (name === 'aim') { aimHeads(); }
+        if (name !== 'zones') { aimLeave(); }   // aiming only while its page is showing
+        if (name === 'zones') { aimHeads(); zonesLoad(); }
         if (remember) { try { localStorage.setItem('airdefenderDzTab', name); } catch (e) {} }
     }
     document.querySelectorAll('[data-dz-tab]').forEach(function (b) {

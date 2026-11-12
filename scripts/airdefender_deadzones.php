@@ -176,3 +176,120 @@ if (!function_exists('airdefender_deadzones_file')) {
         }
     }
 }
+
+if (!function_exists('airdefender_zones_request')) {
+
+    define('AIRDEFENDER_ZONES_PER_HEAD', 16);
+    define('AIRDEFENDER_ZONE_POINTS', 64);
+
+    /* Save the user's zones (zones.json), only when they change something on the Zones page. */
+    function airdefender_zones_write(array $z): bool
+    {
+        $file = airdefender_deadzones_zones_file();
+        $tmp = $file . '.tmp';
+        if (@file_put_contents($tmp, json_encode($z, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) === false) {
+            return false;
+        }
+        @chmod($tmp, 0644);
+        return @rename($tmp, $file);
+    }
+
+    /* One head's zones and tilt limits, tidied. */
+    function airdefender_zones_head(array $z, int $id): array
+    {
+        $h = is_array($z['heads'][(string) $id] ?? null) ? $z['heads'][(string) $id] : [];
+        return [
+            'tiltMin' => max(0, min(255, (int) ($h['tiltMin'] ?? 0))),
+            'tiltMax' => max(0, min(255, (int) ($h['tiltMax'] ?? 255))),
+            'zones' => array_values(is_array($h['zones'] ?? null) ? $h['zones'] : []),
+        ];
+    }
+
+    /*
+     * The Zones page's requests. $req: action and its fields.
+     *   zones_get                                    -> every head's zones and tilt limits
+     *   zone_save   head, name, points (JSON [[pan,tilt],...]), alsoCloses (JSON [ids]), index (to replace one; else added)
+     *   zone_delete head, index
+     *   tilt_limit  head, side (below|above|clear), tilt
+     * Returns [http status, answer].
+     */
+    function airdefender_zones_request(array $req): array
+    {
+        $action = (string) ($req['action'] ?? '');
+        $z = airdefender_deadzones_zones();
+        if (!isset($z['heads']) || !is_array($z['heads'])) {
+            $z['heads'] = [];
+        }
+        if ($action === 'zones_get') {
+            $out = [];
+            for ($n = 1; $n <= 8; $n++) {
+                $out[(string) $n] = airdefender_zones_head($z, $n);
+            }
+            return [200, ['heads' => $out]];
+        }
+        $id = (int) ($req['head'] ?? 0);
+        if ($id < 1 || $id > 8) {
+            return [400, ['error' => 'Pick a head first.']];
+        }
+        $h = airdefender_zones_head($z, $id);
+        if ($action === 'zone_save') {
+            $points = json_decode((string) ($req['points'] ?? ''), true);
+            $clean = [];
+            foreach (is_array($points) ? $points : [] as $p) {
+                if (is_array($p) && count($p) >= 2 && is_numeric($p[0]) && is_numeric($p[1])) {
+                    $clean[] = [max(0, min(255, (int) round($p[0]))), max(0, min(255, (int) round($p[1])))];
+                }
+            }
+            if (count($clean) < 3) {
+                return [400, ['error' => 'A zone needs at least 3 points: mark each corner of the area.']];
+            }
+            if (count($clean) > AIRDEFENDER_ZONE_POINTS) {
+                return [400, ['error' => 'A zone can have up to ' . AIRDEFENDER_ZONE_POINTS . ' points.']];
+            }
+            $also = json_decode((string) ($req['alsoCloses'] ?? '[]'), true);
+            $also = array_values(array_unique(array_filter(array_map('intval', is_array($also) ? $also : []),
+                function ($o) use ($id) { return $o >= 1 && $o <= 8 && $o !== $id; })));
+            $name = trim(preg_replace('/\s+/', ' ', (string) ($req['name'] ?? '')));
+            $name = $name !== '' ? $name : 'Zone ' . (count($h['zones']) + 1);
+            $name = function_exists('mb_substr') ? mb_substr($name, 0, 40) : substr($name, 0, 40);
+            $zone = ['name' => $name, 'points' => $clean, 'alsoCloses' => $also];
+            $index = isset($req['index']) && is_numeric($req['index']) ? (int) $req['index'] : -1;
+            if ($index >= 0 && $index < count($h['zones'])) {
+                $h['zones'][$index] = $zone;
+            } elseif (count($h['zones']) >= AIRDEFENDER_ZONES_PER_HEAD) {
+                return [400, ['error' => 'A head can have up to ' . AIRDEFENDER_ZONES_PER_HEAD . ' zones.']];
+            } else {
+                $h['zones'][] = $zone;
+            }
+        } elseif ($action === 'zone_delete') {
+            $index = (int) ($req['index'] ?? -1);
+            if ($index < 0 || $index >= count($h['zones'])) {
+                return [400, ['error' => 'That zone is already gone.']];
+            }
+            array_splice($h['zones'], $index, 1);
+        } elseif ($action === 'tilt_limit') {
+            $side = (string) ($req['side'] ?? '');
+            $tilt = max(0, min(255, (int) ($req['tilt'] ?? 0)));
+            if ($side === 'below') {
+                $h['tiltMin'] = $tilt;
+            } elseif ($side === 'above') {
+                $h['tiltMax'] = $tilt;
+            } elseif ($side === 'clear') {
+                $h['tiltMin'] = 0;
+                $h['tiltMax'] = 255;
+            } else {
+                return [400, ['error' => 'Unknown tilt limit.']];
+            }
+            if ($h['tiltMin'] >= $h['tiltMax']) {
+                return [400, ['error' => "That would block every tilt: the two limits would cross. Clear the tilt limit and set it again."]];
+            }
+        } else {
+            return [400, ['error' => 'Unknown action']];
+        }
+        $z['heads'][(string) $id] = $h;
+        if (!airdefender_zones_write($z)) {
+            return [500, ['error' => 'Could not save the zones in ' . airdefender_deadzones_dir() . '. Check file permissions.']];
+        }
+        return [200, ['head' => $id, 'zones' => $h]];
+    }
+}
