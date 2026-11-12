@@ -421,6 +421,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             </div>
                             <div class="mb-2">
                                 <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adAimBeam" aria-pressed="false"><i class="far fa-lightbulb"></i> Beam</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adAimReset" title="Back to rest: pan 0, tilt 0, beam off"><i class="fas fa-undo"></i> Reset</button>
                                 <span class="form-text d-none" id="adAimNoDim">No dimmer channel set for this head: the beam is the show's.</span>
                             </div>
                             <label class="form-text d-block" for="adAimLevel">Brightness</label>
@@ -1134,6 +1135,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         if (!aim) { return; }
         aimLastPress = Date.now(); aim.beam = !aim.beam; aimShow();
         aimSend({ action: 'aim_set', beam: aim.beam ? 1 : 0, level: aim.level });
+    });
+    // Back to rest in one press: pan 0, tilt 0, beam off (as when aiming starts).
+    $id('adAimReset').addEventListener('click', function () {
+        if (!aim) { return; }
+        aimLastPress = Date.now(); aim.pan = 0; aim.tilt = 0; aim.beam = false; aimShow();
+        aimSend({ action: 'aim_set', pan: 0, tilt: 0, beam: 0, level: aim.level });
     });
     $id('adAimLevel').addEventListener('change', function () {
         if (!aim) { return; }
