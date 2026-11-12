@@ -12,9 +12,9 @@ does not replace your own obligations for sky-pointing beams and lasers.</div>
 <h3>Lite and Detailed</h3>
 <p>The switch at the top picks how much the dashboard shows. Your choice is remembered in this browser.</p>
 <ul>
-    <li><b>Lite</b> (default): the status banner, Test, a one-line summary of the heads, and the last event.
+    <li><b>Lite</b> (default): the status banner, a one-line summary of the heads, and the last event.
         Refreshes every 5 seconds.</li>
-    <li><b>Detailed</b>: adds the <b>Sky</b> radar and every head with its channel. Refreshes every 2 seconds.</li>
+    <li><b>Detailed</b>: adds the <b>Sky</b> radar, the <b>Aircraft</b> card and every head with its channel. Refreshes every 2 seconds.</li>
 </ul>
 <p>Either way, the dashboard only asks FPP for anything while it is open; the detection loop does the same work
 whether you look or not.</p>
@@ -43,15 +43,20 @@ while testing a sequence, then stops by itself. The banner shows the time left a
 distance limit. Yellow marks are aircraft inside your limits (close enough and low enough); grey marks are aircraft
 that are too high or too far. An aircraft that reports its heading is a small arrow pointing the way it is flying: solid for a plane, inside a ring
 for a helicopter, and hollow for a drone, balloon, glider or anything else. One that doesn't report a heading is a dot. Hover over a mark for its callsign, distance, height (above your show once
-<b>Show elevation</b> is set in Settings) and heading. <b>Click an aircraft</b> for everything the flight data says about it: its type and name, callsign and
-registration, height, speed, whether it is climbing or descending, and links to follow it on a live map. Online
-services include the type and name; a receiver of your own may only send some of it. Aircraft on the ground are not shown.
+<b>Show elevation</b> is set in Settings) and heading. Tap an aircraft for its details in the <b>Aircraft</b> card. Aircraft on the ground are not shown.
 The sweep turns once per <b>Check every</b> (10 seconds unless changed), passing the top as each check comes in. It only turns while Air Defender is checking; in standby, or when it is disabled or not running, the radar
 stops and fades.</p>
 <p><b>Turning the radar:</b> press the small lock beside the Sky title to unlock it (the ring turns blue and dashed),
 then drag the radar round or use the arrow buttons, so the top matches the way you face your display. <b>North up</b>
 puts it back. Press the lock again to save it; it stays locked so it can't be moved by accident.
 On a Remote, the Sky card says it follows its Player instead.</p>
+
+<h3>Aircraft (Detailed)</h3>
+<p>Tap an aircraft on the radar for everything the flight data says about it: type and name, callsign, registration and
+owner, distance, height, climb or descent, speed, heading, and links to follow it on a live map or FlightAware. Tap it
+again, tap empty radar, or press &times; to clear it. With nothing picked, the card names the nearest aircraft.</p>
+<p>While an aircraft holds the heads closed, the card shows <b>that</b> aircraft by itself, marked <b>Holding the heads
+closed</b>, and taps on other aircraft wait until the all clear, so it's always clear why the heads are shut.</p>
 
 <h3>Moving heads</h3>
 <p>Each enabled head, its FPP channel, and whether Air Defender is holding its shutter <b>Closed</b> or the
@@ -72,7 +77,7 @@ the summary line counts them.</p>
 open.</p>
 
 <h3>Test Mode</h3>
-<p>Pick a length (5 seconds to 30 minutes) and press <b>Start Test</b> to close the shutters for that long,
+<p>Tests have their own <b>Test</b> tab at the top of the dashboard, beside <b>Status</b>. Pick a length (5 seconds to 30 minutes) and press <b>Start Test</b> to close the shutters for that long,
 so you can go outside and watch the heads go dark and come back. The countdown keeps going if you refresh or
 open the page somewhere else, and <b>Stop Test</b> ends it early. A test started on the Player also closes
 the heads on every Remote. You can also start and stop a test from a playlist, schedule or command preset

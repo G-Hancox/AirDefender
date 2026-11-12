@@ -94,14 +94,96 @@ $airdefenderPage = array(
             </select>
             <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideStart">Start tracking</button>
         </div>
+        <button type="button" class="btn btn-danger d-none" id="adBannerTestStop">Stop test</button>
         <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOn">
             <span class="badge text-bg-secondary fs-6" id="adOverrideLeft"></span>
             <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideEnd">Stop tracking</button>
         </div>
     </div>
 
+    <ul class="nav nav-tabs mb-3" role="tablist" aria-label="Air Defender pages">
+        <li class="nav-item" role="presentation"><button type="button" class="nav-link active" role="tab" aria-selected="true" data-tab="status"><i class="fas fa-fw fa-satellite-dish"></i> Status</button></li>
+        <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-tab="test"><i class="fas fa-fw fa-stopwatch"></i> Test</button></li>
+    </ul>
+
+    <div data-pane="status" role="tabpanel">
     <div class="row g-3">
+        <div class="col-md-6 col-xl-4 d-none" data-detail>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
+                    <span class="fw-bold">Sky</span>
+                    <small class="text-body-secondary text-end flex-grow-1" id="adFeed"></small>
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-body py-0 px-1" id="adTurn"
+                        title="Rotate the radar to set your north: click to unlock, then drag" aria-pressed="false"
+                        aria-label="Rotate the radar to set your north"><i class="fas fa-fw fa-lock" id="adTurnIcon"></i></button>
+                </div>
+                <div class="card-body">
+                    <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
+                    <div class="form-text text-center" id="adSkyNote"></div>
+                    <div class="form-text text-center d-none" id="adTurnHelp">
+                        Drag the radar to turn it, or use the arrows. <span class="fw-semibold" id="adTurnTop"></span>
+                        <div class="d-flex justify-content-center gap-1 mt-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="-15" aria-label="Turn left 15 degrees"><i class="fas fa-undo"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="0">North up</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="15" aria-label="Turn right 15 degrees"><i class="fas fa-redo"></i></button>
+                        </div>
+                        Press the lock to save it.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4 d-none" data-detail>
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
+                    <span class="fw-bold">Aircraft</span><small class="text-end" id="adPlaneState"></small>
+                </div>
+                <div class="card-body" aria-live="polite">
+                    <div class="text-body-secondary" id="adPlaneEmpty"></div>
+                    <div class="d-none" id="adPlane">
+                        <div class="d-flex align-items-start gap-2">
+                            <div class="me-auto">
+                                <div class="fw-semibold fs-5" id="adPlaneTitle"></div>
+                                <div class="text-body-secondary" id="adPlaneSub"></div>
+                            </div>
+                            <button type="button" class="btn-close" id="adPlaneClose" aria-label="Clear the selected aircraft"></button>
+                        </div>
+                        <dl class="row mb-2 mt-2" id="adPlaneRows"></dl>
+                        <div class="d-flex flex-wrap gap-3" id="adPlaneLinks"></div>
+                        <div class="form-text d-none" id="adPlaneLocked">Other aircraft are locked until the all clear.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-md-6 col-xl-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
+                    <span class="fw-bold">Moving heads</span><small class="text-body-secondary text-end" id="adFeedLite" data-lite></small>
+                </div>
+                <div class="card-body">
+                    <div id="adHeadsSummary" data-lite></div>
+                    <div class="list-group list-group-flush d-none" id="adHeadsList" data-detail></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="text-break flex-grow-1"><span class="text-body-secondary">Last event</span> &middot; <span id="adLastEvent"><?php echo htmlspecialchars($airdefenderPage['lastEvent']); ?></span></div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <small class="text-body-secondary" id="adLimits"></small>
+                <button type="button" class="buttons" id="adViewLog" title="When the heads were closed and opened, and tests">View log</button>
+                <button type="button" class="buttons" id="adClearLog" title="Delete the Air Defender log, which lists aircraft that passed nearby. It is kept until you clear it.">Clear log</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div class="d-none" data-pane="test" role="tabpanel">
+    <div class="row g-3">
+        <div class="col-lg-8 col-xl-6">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
                     <span class="fw-bold">Test</span><small class="text-body-secondary">closes the heads for a while</small>
@@ -142,61 +224,17 @@ $airdefenderPage = array(
             </div>
         </div>
 
-        <div class="col-md-6 col-xl-4 d-none" data-detail>
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
-                    <span class="fw-bold">Sky</span>
-                    <small class="text-body-secondary text-end flex-grow-1" id="adFeed"></small>
-                    <button type="button" class="btn btn-sm btn-outline-secondary text-body py-0 px-1" id="adTurn"
-                        title="Rotate the radar to set your north: click to unlock, then drag" aria-pressed="false"
-                        aria-label="Rotate the radar to set your north"><i class="fas fa-fw fa-lock" id="adTurnIcon"></i></button>
-                </div>
-                <div class="card-body">
-                    <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
-                    <div class="form-text text-center" id="adSkyNote"></div>
-                    <div class="form-text text-center mt-1 d-none" id="adPlane" aria-live="polite">
-                        <span class="fw-semibold text-body" id="adPlaneTitle"></span>
-                        <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline text-body-secondary" id="adPlaneClose"
-                            aria-label="Close the aircraft details"><i class="fas fa-times"></i></button>
-                        <div id="adPlaneSub"></div>
-                        <div id="adPlaneRows"></div>
-                        <div class="d-flex justify-content-center flex-wrap gap-3" id="adPlaneLinks"></div>
-                    </div>
-                    <div class="form-text text-center d-none" id="adTurnHelp">
-                        Drag the radar to turn it, or use the arrows. <span class="fw-semibold" id="adTurnTop"></span>
-                        <div class="d-flex justify-content-center gap-1 mt-1">
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="-15" aria-label="Turn left 15 degrees"><i class="fas fa-undo"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="0">North up</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-turn="15" aria-label="Turn right 15 degrees"><i class="fas fa-redo"></i></button>
-                        </div>
-                        Press the lock to save it.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-4">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
-                    <span class="fw-bold">Moving heads</span><small class="text-body-secondary text-end" id="adFeedLite" data-lite></small>
-                </div>
-                <div class="card-body">
-                    <div id="adHeadsSummary" data-lite></div>
-                    <div class="list-group list-group-flush d-none" id="adHeadsList" data-detail></div>
-                </div>
+        <div class="col-lg-4 col-xl-6">
+            <div class="small text-body-secondary">
+                <p>A test closes every head's shutter for the time you pick, so you can go outside and check the heads go dark
+                    and come back. It doesn't need an aircraft, a show, or the flight data.</p>
+                <p>A test started on the Player also closes the heads on every Remote. While it runs, the banner at the top has a
+                    <b>Stop test</b> button on every tab.</p>
+                <p class="mb-0">Playlists and schedules can run one too, with the <b>Air Defender: Start Test</b> and
+                    <b>Air Defender: Stop Test</b> commands.</p>
             </div>
         </div>
     </div>
-
-    <div class="card mt-3">
-        <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div class="text-break flex-grow-1"><span class="text-body-secondary">Last event</span> &middot; <span id="adLastEvent"><?php echo htmlspecialchars($airdefenderPage['lastEvent']); ?></span></div>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <small class="text-body-secondary" id="adLimits"></small>
-                <button type="button" class="buttons" id="adViewLog" title="When the heads were closed and opened, and tests">View log</button>
-                <button type="button" class="buttons" id="adClearLog" title="Delete the Air Defender log, which lists aircraft that passed nearby. It is kept until you clear it.">Clear log</button>
-            </div>
-        </div>
     </div>
 
     <div class="alert alert-secondary mt-3 mb-0 small">
@@ -311,6 +349,7 @@ $airdefenderPage = array(
             $id('adOverrideLeft').textContent = 'Tracking · ' + (ovLeft >= 3600 ? Math.floor(ovLeft / 3600) + ' h ' : '')
                 + Math.ceil((ovLeft % 3600) / 60) + ' min left';
         }
+        hide($id('adBannerTestStop'), !(status.active && left > 0));
         $id('adBanner').className = 'alert alert-' + cls + ' d-flex flex-wrap align-items-center justify-content-between gap-3';
         $id('adBannerTitle').textContent = title;
         $id('adBannerSub').textContent = sub;
@@ -434,50 +473,83 @@ $airdefenderPage = array(
                       B2: 'Balloon or airship', B3: 'Parachutist', B4: 'Ultralight', B6: 'Drone', B7: 'Spacecraft' };
     function planeKey(p) { return p.hex || p.id; }
 
-    // Click an aircraft for everything the feed says about it; it updates with each refresh until closed.
-    var pickedKey = null;
+    // The Aircraft card. Tap an aircraft on the radar for everything the flight data says about it. While an
+    // aircraft holds the heads closed, the card shows that one instead, and taps on others wait for the all clear.
+    var pickedKey = null, lockedKey = null;
+    function lockedNow() {
+        return !!(live && live.role !== 'remote' && live.safe && (live.reason === 'aircraft' || live.reason === 'hold'));
+    }
+    function shownKey(planes) {
+        if (!lockedNow()) { lockedKey = null; return pickedKey; }
+        if (live.reason === 'aircraft') {
+            // The nearest aircraft inside the limits (the list comes nearest first).
+            for (var i = 0; i < planes.length; i++) { if (planes[i].in) { lockedKey = planeKey(planes[i]); break; } }
+        }
+        return lockedKey;
+    }
     function showPicked(planes) {
-        var box = $id('adPlane');
-        if (!pickedKey) { hide(box, true); return; }
-        var p = null;
-        (planes || []).forEach(function (q) { if (planeKey(q) === pickedKey) { p = q; } });
-        hide(box, false);
+        planes = planes || [];
+        var empty = $id('adPlaneEmpty'), box = $id('adPlane'), state = $id('adPlaneState');
+        var locked = lockedNow(), key = shownKey(planes), p = null;
+        planes.forEach(function (q) { if (planeKey(q) === key) { p = q; } });
+        state.className = 'text-end ' + (locked ? 'text-warning-emphasis fw-semibold' : 'text-body-secondary');
+        state.textContent = locked ? (live.reason === 'aircraft' ? 'Holding the heads closed' : 'Left your limits · hold time')
+            : p ? 'Selected' : '';
+        hide($id('adPlaneClose'), locked);
+        hide($id('adPlaneLocked'), !locked);
         if (!p) {
-            $id('adPlaneSub').textContent = 'Out of range now, or no longer reporting.';
-            $id('adPlaneRows').textContent = ''; $id('adPlaneLinks').textContent = '';
+            hide(box, true); hide(empty, false);
+            if (live && live.role === 'remote') { empty.textContent = 'This Remote follows its Player; its dashboard shows the aircraft.'; return; }
+            var near = planes[0];
+            empty.textContent = locked ? 'The aircraft has left the flight data.'
+                : (key ? 'That aircraft is out of range now. ' : '') + 'Tap an aircraft on the radar for its details.'
+                  + (near ? ' Nearest: ' + near.id + ' · ' + near.nm + ' NM' + (near.ft === null ? '' : ' · ' + num(near.ft) + ' ft') + '.' : '');
             return;
         }
+        hide(empty, true); hide(box, false);
         $id('adPlaneTitle').textContent = p.desc || p.type || KIND_NAME[p.cat] || 'Aircraft';
-        $id('adPlaneSub').textContent = [p.id !== p.hex ? p.id : '', p.reg, p.op, p.cat === 'A7' ? 'helicopter' : '',
-            p.in ? 'inside your limits' : ''].filter(Boolean).join(' · ');
-        // Two short lines under the radar, like the note above it: who it is, then where and how it's flying.
-        var bits = [
-            p.ft === null || p.ft === undefined ? null : num(p.ft) + ' ft',
-            p.vs === undefined ? null : Math.abs(p.vs) < 200 ? 'level' : (p.vs > 0 ? 'climbing' : 'descending'),
-            p.gs === undefined ? null : p.gs + ' kn',
-            p.trk === null || p.trk === undefined ? null : 'heading ' + compass(p.trk).split(' ')[0],
-            p.nm + ' NM ' + compass(p.brg).split(' ')[0]
+        $id('adPlaneSub').textContent = [p.id !== p.hex ? p.id : '', p.reg !== p.id ? p.reg : '', p.op].filter(Boolean).join(' · ')
+            || 'No callsign';
+        var above = live && live.limits && live.limits.elevationFt;
+        var rows = [
+            ['Type', [p.type, KIND_NAME[p.cat]].filter(Boolean).join(' · ')],
+            ['Distance', p.nm + ' NM ' + compass(p.brg).split(' ')[0] + ' of the show'],
+            ['Height', p.ft === null || p.ft === undefined ? 'Not reported' : num(p.ft) + ' ft' + (above ? ' above the show' : '')],
+            ['Climb', p.vs === undefined ? null : Math.abs(p.vs) < 200 ? 'Level' : (p.vs > 0 ? 'Climbing ' : 'Descending ') + num(Math.abs(p.vs)) + ' ft/min'],
+            ['Speed', p.gs === undefined ? null : p.gs + ' kn (' + Math.round(p.gs * 1.15078) + ' mph)'],
+            ['Heading', p.trk === null || p.trk === undefined ? null : compass(p.trk)],
+            ['Limits', p.in ? 'Inside' : 'Outside (too far or too high)'],
+            ['Built', p.year],
+            ['Squawk', p.sq],
+            ['ICAO code', p.hex ? p.hex.toUpperCase() : null]
         ];
-        $id('adPlaneRows').textContent = bits.filter(Boolean).join(' · ');
+        var dl = $id('adPlaneRows'); dl.textContent = '';
+        rows.forEach(function (r) {
+            if (r[1] === null || r[1] === undefined || r[1] === '') { return; }
+            var dt = document.createElement('dt'); dt.className = 'col-4 fw-normal text-body-secondary'; dt.textContent = r[0];
+            var dd = document.createElement('dd'); dd.className = 'col-8 mb-1'; dd.textContent = r[1];
+            dl.appendChild(dt); dl.appendChild(dd);
+        });
         var links = $id('adPlaneLinks'); links.textContent = '';
         function link(text, href) {
-            var a = document.createElement('a'); a.className = 'link-secondary'; a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = text;
-            links.appendChild(a);
+            var a = document.createElement('a'); a.className = 'link-secondary'; a.href = href; a.target = '_blank';
+            a.rel = 'noopener noreferrer'; a.textContent = text; links.appendChild(a);
         }
-        if (p.hex) { link('Live map', 'https://globe.adsb.fi/?icao=' + encodeURIComponent(p.hex)); }
+        if (p.hex) { link('Live map (adsb.fi)', 'https://globe.adsb.fi/?icao=' + encodeURIComponent(p.hex)); }
         if (p.id && p.id !== p.hex) { link('FlightAware', 'https://www.flightaware.com/live/flight/' + encodeURIComponent(p.id)); }
     }
     $id('adRadar').addEventListener('click', function (e) {
         var t = e.target;
-        if (turning || !t || !t.getAttribute || !t.getAttribute('data-key')) { return; }
+        if (turning || lockedNow() || !t || !t.getAttribute) { return; }   // locked until the all clear
         var key = t.getAttribute('data-key');
+        if (!key) { if (pickedKey) { pickedKey = null; renderSky(); } return; }   // tapping empty radar clears it
         pickedKey = pickedKey === key ? null : key;
         renderSky();
     });
     $id('adPlaneClose').addEventListener('click', function () { pickedKey = null; renderSky(); });
 
     function renderSky() {
-        hide($id('adPlane'), true);   // shown again below while the radar is drawn
+        showPicked([]);   // the Aircraft card; filled in below once the radar is drawn
         $id('adFeed').textContent = feedText();
         $id('adFeedLite').textContent = feedText();
         if (view !== 'detailed') { return; }
@@ -532,7 +604,7 @@ $airdefenderPage = array(
             $id('adSkyNote').textContent = 'Standby: not checking right now.';
             return;
         }
-        var planes = live.aircraft || [], inside = 0;
+        var planes = live.aircraft || [], inside = 0, highlight = shownKey(planes);
         planes.forEach(function (p) {
             var r = Math.min(1, p.nm / outer) * R, a = (p.brg - rotation) * Math.PI / 180;
             var x = (100 + r * Math.sin(a)).toFixed(1), y = (100 - r * Math.cos(a)).toFixed(1);
@@ -549,7 +621,7 @@ $airdefenderPage = array(
             } else {
                 el('circle', { r: p.in ? 5 : 3 }, undefined, g);
             }
-            if (planeKey(p) === pickedKey) { el('circle', { r: 9 * s, 'class': 'picked' }, undefined, g); }
+            if (planeKey(p) === highlight) { el('circle', { r: 9 * s, 'class': 'picked' }, undefined, g); }
             // A bigger invisible target, so it's easy to hover or tap.
             var hit = el('circle', { r: 9, 'class': 'hit', 'data-key': planeKey(p) }, undefined, g);
             el('title', {}, (p.type ? p.type + ' · ' : '') + p.id + ' · ' + p.nm + ' NM · ' + (p.ft === null ? '? ft' : num(p.ft) + ' ft')
@@ -699,6 +771,22 @@ $airdefenderPage = array(
             .then(function () { toast('Test started: heads closing.'); setTimeout(poll, 1500); })   // the loop needs about a second to move the heads
             .catch(function (e) { toast('Could not start the test: ' + e.message, false); }));
     });
+    $id('adBannerTestStop').addEventListener('click', function () { $id('adTestStop').click(); });
+
+    // Status and Test tabs; the last one used is remembered in this browser.
+    function setTab(name, remember) {
+        root.querySelectorAll('[data-tab]').forEach(function (b) {
+            var on = b.getAttribute('data-tab') === name;
+            b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        root.querySelectorAll('[data-pane]').forEach(function (p) { hide(p, p.getAttribute('data-pane') !== name); });
+        if (remember) { try { localStorage.setItem('airdefenderTab', name); } catch (e) { /* not kept */ } }
+    }
+    root.querySelectorAll('[data-tab]').forEach(function (b) {
+        b.addEventListener('click', function () { setTab(b.getAttribute('data-tab'), true); });
+    });
+    try { if (localStorage.getItem('airdefenderTab') === 'test') { setTab('test', false); } } catch (e) { /* default tab */ }
+
     $id('adTestStop').addEventListener('click', function () {
         busy(this, call('POST', 'action=stop')
             .then(function () { toast('Test stopped.'); setTimeout(poll, 1500); })
