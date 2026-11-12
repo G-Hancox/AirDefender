@@ -41,6 +41,12 @@
                 "feedFallback",
                 "feedDownSafe"
             ]
+        },
+        "airdefenderDeadZones": {
+            "description": "DeadZones",
+            "settings": [
+                "deadZonesEnabled"
+            ]
         }
     },
     "settings": {
@@ -207,6 +213,12 @@
         "feedDownSafe": {
             "description": "Close heads if the feed is down",
             "tip": "Off: if the service stops answering, heads stay as they are unless an aircraft was near. On: they close until it answers again. Stricter, but an internet outage keeps them closed.",
+            "type": "checkbox",
+            "default": "0"
+        },
+        "deadZonesEnabled": {
+            "description": "Enable DeadZones",
+            "tip": "Off unless you turn it on. DeadZones will close a head's shutter while it points into an area you've masked out, like a neighbour's house or the road. It is still being built: for now this only stores each head's pan and tilt details, and changes nothing on the lights.",
             "type": "checkbox",
             "default": "0"
         }

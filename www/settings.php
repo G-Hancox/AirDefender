@@ -144,6 +144,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-when-tab" data-bs-toggle="tab" href="#ad-when" role="tab" aria-controls="ad-when" aria-selected="false">When &amp; where</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-limits-tab" data-bs-toggle="tab" href="#ad-limits" role="tab" aria-controls="ad-limits" aria-selected="false">Limits</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-feed-tab" data-bs-toggle="tab" href="#ad-feed" role="tab" aria-controls="ad-feed" aria-selected="false">Flight data</a></li>
+        <li class="nav-item"><a class="nav-link" id="ad-dz-tab" data-bs-toggle="tab" href="#ad-dz" role="tab" aria-controls="ad-dz" aria-selected="false">DeadZones</a></li>
     </ul>
 
     <div class="tab-content">
@@ -236,6 +237,61 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <div class="tab-pane fade" id="ad-feed" role="tabpanel" aria-labelledby="ad-feed-tab">
             <?php airdefender_print_group('Flight data', array('adsbSourceUrl', 'receiverAddress', 'feedFallback', 'feedDownSafe', $airdefenderFeedRows),
                 array('adsbSourceUrl' => $airdefenderFeedOptions)); ?>
+        </div>
+
+        <div class="tab-pane fade" id="ad-dz" role="tabpanel" aria-labelledby="ad-dz-tab">
+            <?php airdefender_print_group('DeadZones', array('deadZonesEnabled')); ?>
+            <div class="alert alert-info">
+                <b>Still being built.</b> DeadZones will close a head's shutter while it points into an area you've masked out.
+                For now this page only stores each head's pan and tilt details; zones can't be drawn yet and nothing changes on the lights.
+            </div>
+            <div id="adDzSetup" class="d-none">
+                <h2>Pan and tilt</h2>
+                <p class="text-body-secondary">
+                    For each head on the <b>Moving heads</b> tab, enter where pan and tilt are in the fixture's DMX chart, as you did for the shutter.
+                    <b>Fine ch.</b> is the second channel of a 16-bit pan or tilt; leave it empty for 8-bit. <b>Range</b> is how far it can turn
+                    (often 540&deg; pan, 270&deg; tilt) and <b>Speed</b> how fast (the slew limit in xLights, 180&deg; a second unless you changed it).
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle airdefender-heads" id="adDzHeads">
+                        <thead>
+                            <tr><th scope="col" rowspan="2">Head</th><th scope="colgroup" colspan="4" class="text-center border-start">Pan</th><th scope="colgroup" colspan="4" class="text-center border-start">Tilt</th></tr>
+                            <tr>
+                                <?php foreach (array('Pan', 'Tilt') as $airdefenderAxis): ?>
+                                    <th scope="col" class="border-start" title="<?php echo $airdefenderAxis; ?>'s channel in the fixture's DMX chart">Channel</th>
+                                    <th scope="col" title="The fine channel of a 16-bit <?php echo strtolower($airdefenderAxis); ?>; empty for 8-bit">Fine ch.</th>
+                                    <th scope="col" title="How many degrees it can turn">Range &deg;</th>
+                                    <th scope="col" title="How fast it turns, in degrees a second (xLights' slew limit)">Speed &deg;/s</th>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php
+                        // field => [default shown when empty, min, max, what it is]
+                        $airdefenderDzFields = array(
+                            'Ch' => array('', 1, 512, 'channel'), 'Fine' => array('', 1, 512, 'fine channel'),
+                            'Range' => array(null, 1, 3600, 'range in degrees'), 'Slew' => array('180', 1, 3600, 'speed in degrees a second'),
+                        );
+                        for ($n = 1; $n <= AIRDEFENDER_HEADS; $n++): ?>
+                            <tr data-dz-head="<?php echo $n; ?>" class="d-none">
+                                <th scope="row" class="fw-normal" data-dz-name></th>
+                                <?php foreach (array('Pan' => '540', 'Tilt' => '270') as $airdefenderAxis => $airdefenderRange):
+                                    foreach ($airdefenderDzFields as $f => $info):
+                                        $default = $f === 'Range' ? $airdefenderRange : $info[0];
+                                        $v = (int) airdefender_page_setting("head{$n}{$airdefenderAxis}{$f}", '0');
+                                        $shown = $v > 0 ? (string) $v : (in_array($f, array('Range', 'Slew'), true) ? $default : ''); ?>
+                                    <td<?php echo $f === 'Ch' ? ' class="border-start"' : ''; ?>><input type="number" class="form-control form-control-sm"
+                                        data-dz-field="<?php echo $airdefenderAxis . $f; ?>" data-dz-default="<?php echo $default; ?>" data-dz-what="<?php echo strtolower($airdefenderAxis) . ' ' . $info[3]; ?>"
+                                        value="<?php echo $shown; ?>" min="<?php echo $info[1]; ?>" max="<?php echo $info[2]; ?>" step="1"
+                                        aria-label="Head <?php echo $n; ?> <?php echo strtolower($airdefenderAxis) . ' ' . $info[3]; ?>"></td>
+                                <?php endforeach; endforeach; ?>
+                            </tr>
+                        <?php endfor; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
+            </div>
         </div>
     </div>
 </div>
@@ -396,6 +452,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             var name = label(row);
             var blank = { Enabled: 0, Name: '', Model: '', Start: 0, Offset: 1, ClosedValue: 0, Channel: 0 };
             Object.keys(blank).forEach(function (f) { save(key(row, f), blank[f]); });
+            // Its DeadZones pan and tilt details go too, so a new head in this slot starts clean.
+            document.querySelectorAll('#adDzHeads tr[data-dz-head="' + row.getAttribute('data-head') + '"] [data-dz-field]').forEach(function (input) {
+                var k = key(row, input.getAttribute('data-dz-field'));
+                if (setting(k, '0') !== '0') { save(k, 0); }
+                input.value = input.getAttribute('data-dz-default');
+            });
             field(row, 'Enabled').checked = false; field(row, 'Name').value = ''; field(row, 'Model').value = '';
             field(row, 'Start').disabled = false; field(row, 'Start').value = ''; field(row, 'Start').setAttribute('data-manual', '');
             field(row, 'Offset').value = 1; field(row, 'ClosedValue').value = 0; row.setAttribute('data-channel', 0);
@@ -533,7 +595,46 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         f.addEventListener('change', clamp);
         clamp();
     })();
+    /* ---------- DeadZones: each head's pan and tilt ---------- */
+    function updateDeadZones() {
+        var on = $id('deadZonesEnabled') && $id('deadZonesEnabled').checked, any = false;
+        $id('adDzSetup').classList.toggle('d-none', !on);
+        // One row for each head in use on the Moving heads tab, under the name it has there.
+        document.querySelectorAll('#adDzHeads tr[data-dz-head]').forEach(function (dz) {
+            var row = document.querySelector('#adHeads tr[data-head="' + dz.getAttribute('data-dz-head') + '"]');
+            var used = row && !row.classList.contains('d-none');
+            dz.classList.toggle('d-none', !used);
+            if (used) { any = true; dz.querySelector('[data-dz-name]').textContent = label(row); }
+        });
+        $id('adDzNone').classList.toggle('d-none', any);
+    }
+    document.querySelectorAll('#adDzHeads [data-dz-field]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var dz = this.closest('tr'), f = this.getAttribute('data-dz-field'), k = 'head' + dz.getAttribute('data-dz-head') + f;
+            var name = dz.querySelector('[data-dz-name]').textContent, what = this.getAttribute('data-dz-what');
+            var lo = parseInt(this.min, 10), hi = parseInt(this.max, 10), fallback = this.getAttribute('data-dz-default');
+            if (this.value.trim() === '') {
+                // Emptied: back to its default (range and speed), or not set (0) for a channel.
+                this.value = fallback;
+                save(k, fallback === '' ? 0 : fallback, name + '’s ' + what);
+                return;
+            }
+            var v = parseInt(this.value, 10);
+            if (isNaN(v) || v < lo || v > hi) {
+                toast(name + ': enter ' + lo + ' to ' + hi + ' for the ' + what + '.', false);
+                var old = parseInt(setting(k, '0'), 10);
+                this.value = old > 0 ? old : fallback;
+                return;
+            }
+            this.value = v;
+            save(k, v, name + '’s ' + what);
+        });
+    });
+    if ($id('deadZonesEnabled')) { $id('deadZonesEnabled').addEventListener('change', updateDeadZones); }
+    if ($id('ad-dz-tab')) { $id('ad-dz-tab').addEventListener('shown.bs.tab', updateDeadZones); }
+
     updatePlaylists();
     refresh();
+    updateDeadZones();
 })();
 </script>
