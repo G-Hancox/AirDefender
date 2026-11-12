@@ -37,7 +37,7 @@ if (!function_exists('airdefender_aim_file')) {
         if (!is_dir($dir)) {
             @mkdir($dir, 0755);
         }
-        return (is_dir($dir) && is_writable($dir) ? $dir : airdefender_plugindata_dir()) . '/aim.json';
+        return (is_dir($dir) && is_writable($dir) ? $dir : airdefender_deadzones_dir()) . '/aim.json';
     }
 
     function airdefender_aim_read(): ?array

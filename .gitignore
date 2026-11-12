@@ -11,3 +11,8 @@ loop.lock
 *.o
 *.so
 *.dylib
+
+# DeadZones, when FPP's plugindata folder can't be written (see airdefender_deadzones.php)
+deadzones.json
+zones.json
+aim.json

@@ -23,14 +23,34 @@ require_once(__DIR__ . '/airdefender_paths.php');
 
 if (!function_exists('airdefender_deadzones_file')) {
 
+    /*
+     * Where DeadZones keeps its files: FPP's plugindata/AirDefender folder, made if
+     * needed. If that can't be written (seen in FPP's Docker image, where the
+     * plugindata folder belongs to root), the plugin's own folder instead. The
+     * compiled part looks in both.
+     */
+    function airdefender_deadzones_dir(): string
+    {
+        static $dir = null;
+        if ($dir === null) {
+            $data = airdefender_plugindata_dir();
+            if (!is_dir($data)) {
+                @mkdir(dirname($data), 0755, true);   // FPP's plugindata folder
+                @mkdir($data, 0700);
+            }
+            $dir = is_dir($data) && is_writable($data) ? $data : dirname(__DIR__);
+        }
+        return $dir;
+    }
+
     function airdefender_deadzones_file(): string
     {
-        return airdefender_plugindata_dir() . '/deadzones.json';
+        return airdefender_deadzones_dir() . '/deadzones.json';
     }
 
     function airdefender_deadzones_zones_file(): string
     {
-        return airdefender_plugindata_dir() . '/zones.json';
+        return airdefender_deadzones_dir() . '/zones.json';
     }
 
     /* The user's zones, or an empty set. Read again only when the file changes. */
@@ -129,7 +149,7 @@ if (!function_exists('airdefender_deadzones_file')) {
      */
     function airdefender_deadzones_sync(array $settings, array $resolved): void
     {
-        static $last = null;
+        static $last = null, $failed = false;
         $file = airdefender_deadzones_file();
         $runtime = airdefender_deadzones_runtime($settings, $resolved, airdefender_deadzones_zones());
         $json = json_encode($runtime, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -143,17 +163,16 @@ if (!function_exists('airdefender_deadzones_file')) {
                 return;
             }
         }
-        $dir = dirname($file);
-        if (!is_dir(dirname($dir))) {
-            @mkdir(dirname($dir), 0755, true);   // FPP's plugindata folder
-        }
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0700);
-        }
         // Written to a temp file and renamed, so fppd never reads half a file.
         $tmp = $file . '.tmp';
         if (@file_put_contents($tmp, $json) !== false && @rename($tmp, $file)) {
             $last = $json;
+            $failed = false;
+        } elseif (empty($failed)) {
+            $failed = true;   // said once, not every second
+            if (function_exists('airdefender_log')) {
+                airdefender_log("DeadZones: could not write {$file}; DeadZones can't use the latest settings until it can.");
+            }
         }
     }
 }

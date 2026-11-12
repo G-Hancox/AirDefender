@@ -48,8 +48,11 @@ class AirDefenderPlugin : public FPPPlugins::Plugin, public FPPPlugins::ChannelD
 public:
     AirDefenderPlugin() :
         FPPPlugins::Plugin("AirDefender"), FPPPlugins::ChannelDataPlugin(), FPPPlugins::APIProviderPlugin() {
-        configFile = FPP_DIR_MEDIA("/plugindata/AirDefender/deadzones.json");
         pluginDir = FPP_DIR_PLUGIN("/AirDefender");
+        // FPP's plugindata folder, or the plugin's own folder where that can't be written (see airdefender_deadzones.php).
+        configFiles[0] = FPP_DIR_MEDIA("/plugindata/AirDefender/deadzones.json");
+        configFiles[1] = pluginDir + "/deadzones.json";
+        configFile = configFiles[0];
         LogInfo(VB_PLUGIN, "Air Defender: DeadZones loaded (off until it is set up and turned on)\n");
         // fppd loads a plugin as scripts or as compiled, never both, so with this library loaded the
         // lifecycle callbacks don't run: start plane safety's detection loop here instead, in the
@@ -104,7 +107,8 @@ public:
 private:
     DzEngine engine;
     std::mutex mutex;            // the frame check and the status request are on different threads
-    std::string configFile;
+    std::string configFile;      // whichever of configFiles is in use
+    std::string configFiles[2];
     std::string pluginDir;
     std::string error;           // why DeadZones turned itself off, or why its file couldn't be used
     long long lastLook = 0;
@@ -140,7 +144,7 @@ private:
      * (scripts/airdefender_aim.php); 0 if none, or if it hasn't been touched for 30 s (the page has gone).
      */
     int aimedHead() {
-        const std::string paths[] = { "/dev/shm/AirDefender/aim.json", FPP_DIR_MEDIA("/plugindata/AirDefender/aim.json") };
+        const std::string paths[] = { "/dev/shm/AirDefender/aim.json", FPP_DIR_MEDIA("/plugindata/AirDefender/aim.json"), pluginDir + "/aim.json" };
         for (const std::string& path : paths) {
             struct stat st;
             if (stat(path.c_str(), &st) != 0) {
@@ -160,8 +164,16 @@ private:
 
     /* Called with the mutex held. Reads the file again only when its time or size has changed. */
     void reloadIfChanged() {
-        struct stat st;
-        if (stat(configFile.c_str(), &st) != 0) {
+        struct stat st, other;
+        // Use whichever of the two places has the newer file.
+        bool a = stat(configFiles[0].c_str(), &st) == 0, b = stat(configFiles[1].c_str(), &other) == 0;
+        if (b && (!a || other.st_mtime > st.st_mtime)) {
+            st = other;
+            configFile = configFiles[1];
+        } else {
+            configFile = configFiles[0];
+        }
+        if (!a && !b) {
             if (fileTime != -1 || fileSize != -1) {   // it was there and has gone: off
                 fileTime = -1; fileSize = -1;
                 engine.setConfig(DzConfig());
