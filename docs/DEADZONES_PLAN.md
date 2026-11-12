@@ -85,9 +85,11 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
   live status on the DeadZones tab, and API docs. Tested: the check's tests (zones, margin, hold, slew,
   tilt limit, a zone closing other heads; about 2 microseconds a frame for 8 heads), the config reader
   against a file written by the PHP side, and a syntax check against FPP's real headers.
-- [ ] Step 3 (on a real FPP): build it with FPP's makefiles (Docker or a Pi), time the build, see it
-  load in fppd and the status show on the DeadZones tab. Couldn't be done here: FPP's Docker image
-  can't be downloaded from this workspace.
+- [x] Step 3 (on a real FPP, Docker, Nov 11): builds with FPP's makefiles in 1.5 s; FPP loads it
+  ("ready and switched off" on the DeadZones tab); the compiled part starts plane safety's loop
+  (dashboard in Standby). Found and fixed on the way: the build looking in the wrong folder, and
+  fppd loading a plugin as scripts or compiled, never both (callbacks.sh now says c++ when built,
+  the library starts/stops the loop, postStart.sh is the safety net).
 - [ ] Step 4: drawing zones (mark points, landmarks and re-align, test zones, export/import), import from xLights.
 - [ ] Step 5: Check my sequences.
 - [ ] Step 6: real-head testing on a Pi before it goes near dev.
