@@ -32,6 +32,32 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
 2. Press **Mark point**; repeat around the area, like tracing its outline.
 3. Save. The outline is a no-go zone for that head.
 
+## Settings and pages (from planning, Nov 11)
+
+- **Enable DeadZones** switch in Air Defender's settings, off by default.
+- A **Mapping** tab (the masking page) to draw and test zones.
+- **Which heads a zone applies to:** all heads, or only the ones ticked. A zone can belong to
+  one head (its own pan/tilt outline) or be shared by several.
+- **Lag per head:** heads physically trail the data, so the shutter stays closed after the
+  data leaves a zone. Better than a fixed delay: use each head's **pan and tilt slew limits**
+  (degrees per second) to work out where the head really is, and keep the shutter closed
+  until that position has left the zone. xLights moving head models have slew limits; find
+  out whether they reach FPP when models are uploaded, or offer to import them, with a
+  per-head value to type in (and a sensible default) when they aren't there.
+- **Edge margin** so a head wobbling on an edge doesn't flicker.
+- **Test zones** button that traces each zone's outline with the head, to check after a
+  head drifts or is swapped.
+- **Check my sequences** (manual): reads the sequence files and lists each moment a head
+  would point into a DeadZone, to fix in xLights. Reads only; writes one small report.
+- **Dimmer as well as shutter**, per head, for fixtures that open with the dimmer.
+
+## Other things to plan for
+
+- The compiled part hooks into FPP itself: rebuild and retest after major FPP releases.
+- FPP's maintainers review compiled code more closely: build cleanly on install, fail safe.
+- Runs on whichever FPP outputs the heads (Player sending to a Falcon over the network,
+  or a Remote with its own heads), like plane safety.
+
 ## To work out
 
 - How FPP builds a plugin's C++ part on install, and what the plugin checker expects.
