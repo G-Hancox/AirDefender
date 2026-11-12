@@ -398,6 +398,61 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 </div>
                 <div class="airdefender-aimgrid" id="adAimGrid">
                   <div class="d-none airdefender-contents" id="adAimPanel">
+                    <div class="airdefender-a-more">
+                        <ul class="nav nav-tabs" role="tablist" aria-label="What to do while aiming">
+                            <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-more-tab="mark"><i class="fas fa-map-pin"></i> Mark zones</button></li>
+                            <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-more-tab="tilt">Tilt limits</button></li>
+                            <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-more-tab="landmarks">Landmarks</button></li>
+                            <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-more-tab="test">Test zones</button></li>
+                        </ul>
+                        <div class="border border-top-0 rounded-bottom p-3">
+                            <div class="d-none" data-more-pane="mark" role="tabpanel">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Mark a zone">
+                            <button type="button" class="btn btn-outline-primary" id="adMarkPoint"><i class="fas fa-map-pin"></i> Mark point</button>
+                            <button type="button" class="btn btn-outline-secondary text-body" id="adMarkUndo" disabled><i class="fas fa-undo"></i> Undo point</button>
+                            <input type="text" class="form-control w-auto" id="adMarkName" maxlength="40" placeholder="Zone name, e.g. Smith house" aria-label="Zone name">
+                            <button type="button" class="btn btn-success" id="adMarkFinish" disabled><i class="fas fa-check"></i> Finish zone</button>
+                            <button type="button" class="btn btn-link" id="adMarkCancel" disabled>Cancel</button>
+                        </div>
+                        <div class="form-text mb-2" id="adMarkInfo">Point at a corner of the area and press Mark point. Three or more points make a zone.</div>
+                            </div>
+                            <div class="d-none" data-more-pane="tilt" role="tabpanel">
+                        <div class="d-flex flex-wrap align-items-center gap-2" role="group" aria-label="Tilt limit">
+                            <span class="form-text">Tilt limit at this height:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="below">Block below</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="above">Block above</button>
+                            <button type="button" class="btn btn-sm btn-link" data-tilt-limit="clear">Clear</button>
+                        </div>
+                        <div class="form-text">"Too low" can be lower or higher tilt numbers depending on the fixture: use whichever shades the side you don't want on the map.</div>
+                            </div>
+                            <div class="d-none" data-more-pane="landmarks" role="tabpanel">
+                        <div class="form-text mt-0 mb-2">Landmarks are for next season: save them with your zones now, then re-align the zones with them if a head goes back up a little differently.</div>
+                        <p class="form-text mt-0 mb-2">Aim at one or two things that won't move (a chimney, a pole, a corner of the house) and save them with
+                            your zones. If the head goes back up a little differently next year, aim at them again and press <b>Re-align</b>: every zone moves to match.
+                            Two landmarks far apart also fix a head that's turned or tipped.</p>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Save landmarks">
+                            <span class="form-text">This season:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark="1"><i class="fas fa-flag"></i> Save landmark 1 here</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark="2"><i class="fas fa-flag"></i> Save landmark 2 here</button>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Re-align zones">
+                            <span class="form-text">Next season:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark-now="1">Landmark 1 is here now</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark-now="2">Landmark 2 is here now</button>
+                            <button type="button" class="btn btn-sm btn-primary" id="adRealign" disabled><i class="fas fa-arrows-alt"></i> Re-align</button>
+                            <button type="button" class="btn btn-sm btn-link d-none" id="adRealignUndo">Undo re-align</button>
+                        </div>
+                        <div class="form-text" id="adRealignInfo"></div>
+                            </div>
+                            <div class="d-none" data-more-pane="test" role="tabpanel">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary text-body" id="adTestZones" disabled><i class="fas fa-route"></i> Test zones</button>
+                        <button type="button" class="btn btn-outline-danger d-none" id="adTestStop">Stop test</button>
+                        <span class="form-text" id="adTestInfo">The head traces round each zone's edge so you can check it outside (turn the beam on to see it).</span>
+                    </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="airdefender-a-ctl d-flex flex-wrap gap-3 align-items-start">
                         <div class="airdefender-pad" role="group" aria-label="Move the head">
                             <span></span>
@@ -438,60 +493,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             </div>
                             <svg class="airdefender-headpic" id="adHeadPic" viewBox="0 0 200 210" role="img" aria-label="The head, seen from the front of the house"></svg>
                             <div class="form-text">From the front of the house. A guide only: check the real head.</div>
-                        </div>
-                    </div>
-                    <div class="airdefender-a-mark">
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Mark a zone">
-                            <button type="button" class="btn btn-outline-primary" id="adMarkPoint"><i class="fas fa-map-pin"></i> Mark point</button>
-                            <button type="button" class="btn btn-outline-secondary text-body" id="adMarkUndo" disabled><i class="fas fa-undo"></i> Undo point</button>
-                            <input type="text" class="form-control w-auto" id="adMarkName" maxlength="40" placeholder="Zone name, e.g. Smith house" aria-label="Zone name">
-                            <button type="button" class="btn btn-success" id="adMarkFinish" disabled><i class="fas fa-check"></i> Finish zone</button>
-                            <button type="button" class="btn btn-link" id="adMarkCancel" disabled>Cancel</button>
-                        </div>
-                        <div class="form-text mb-2" id="adMarkInfo">Point at a corner of the area and press Mark point. Three or more points make a zone.</div>
-                    </div>
-                    <div class="airdefender-a-more">
-                        <ul class="nav nav-tabs" role="tablist">
-                            <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-more-tab="tilt">Tilt limits</button></li>
-                            <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-more-tab="landmarks">Landmarks</button></li>
-                            <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-more-tab="test">Test zones</button></li>
-                        </ul>
-                        <div class="border border-top-0 rounded-bottom p-3">
-                            <div class="d-none" data-more-pane="tilt" role="tabpanel">
-                        <div class="d-flex flex-wrap align-items-center gap-2" role="group" aria-label="Tilt limit">
-                            <span class="form-text">Tilt limit at this height:</span>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="below">Block below</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="above">Block above</button>
-                            <button type="button" class="btn btn-sm btn-link" data-tilt-limit="clear">Clear</button>
-                        </div>
-                        <div class="form-text">"Too low" can be lower or higher tilt numbers depending on the fixture: use whichever shades the side you don't want on the map.</div>
-                            </div>
-                            <div class="d-none" data-more-pane="landmarks" role="tabpanel">
-                        <div class="form-text mt-0 mb-2">Landmarks are for next season: save them with your zones now, then re-align the zones with them if a head goes back up a little differently.</div>
-                        <p class="form-text mt-0 mb-2">Aim at one or two things that won't move (a chimney, a pole, a corner of the house) and save them with
-                            your zones. If the head goes back up a little differently next year, aim at them again and press <b>Re-align</b>: every zone moves to match.
-                            Two landmarks far apart also fix a head that's turned or tipped.</p>
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Save landmarks">
-                            <span class="form-text">This season:</span>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark="1"><i class="fas fa-flag"></i> Save landmark 1 here</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark="2"><i class="fas fa-flag"></i> Save landmark 2 here</button>
-                        </div>
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Re-align zones">
-                            <span class="form-text">Next season:</span>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark-now="1">Landmark 1 is here now</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark-now="2">Landmark 2 is here now</button>
-                            <button type="button" class="btn btn-sm btn-primary" id="adRealign" disabled><i class="fas fa-arrows-alt"></i> Re-align</button>
-                            <button type="button" class="btn btn-sm btn-link d-none" id="adRealignUndo">Undo re-align</button>
-                        </div>
-                        <div class="form-text" id="adRealignInfo"></div>
-                            </div>
-                            <div class="d-none" data-more-pane="test" role="tabpanel">
-                    <div class="d-flex flex-wrap align-items-center gap-2">
-                        <button type="button" class="btn btn-outline-secondary text-body" id="adTestZones" disabled><i class="fas fa-route"></i> Test zones</button>
-                        <button type="button" class="btn btn-outline-danger d-none" id="adTestStop">Stop test</button>
-                        <span class="form-text" id="adTestInfo">The head traces round each zone's edge so you can check it outside (turn the beam on to see it).</span>
-                    </div>
-                            </div>
                         </div>
                     </div>
                   </div>
@@ -567,19 +568,19 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-grip { cursor: grab; touch-action: none; }
     .airdefender-contents { display: contents; }
     .airdefender-aimgrid { display: grid; gap: 1rem 1.5rem; align-items: start; margin-top: 1rem;
-        grid-template-columns: minmax(0, 1fr); grid-template-areas: "ctl" "map" "mark" "pic" "more" "list"; }
+        grid-template-columns: minmax(0, 1fr); grid-template-areas: "more" "ctl" "map" "pic" "list"; }
     .airdefender-a-ctl { grid-area: ctl; } .airdefender-a-pic { grid-area: pic; max-width: 12rem; } .airdefender-a-map { grid-area: map; }
     .airdefender-a-ctl > div:last-child { max-width: 15rem; }
     /* These fill their area but don't widen the columns (long text wraps instead of pushing the map aside). */
-    .airdefender-a-mark, .airdefender-a-more, .airdefender-a-list { width: 0; min-width: 100%; }
-    .airdefender-a-mark { grid-area: mark; } .airdefender-a-more { grid-area: more; } .airdefender-a-list { grid-area: list; min-width: 0; }
+    .airdefender-a-more, .airdefender-a-list { width: 0; min-width: 100%; }
+    .airdefender-a-more { grid-area: more; } .airdefender-a-list { grid-area: list; min-width: 0; }
     @media (min-width: 768px) {
         .airdefender-aimgrid { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "map list"; }
-        .airdefender-aimgrid.airdefender-aiming { grid-template-areas: "ctl map" "pic map" "mark mark" "more list"; }
+        .airdefender-aimgrid.airdefender-aiming { grid-template-areas: "more map" "ctl map" "pic list"; }
     }
     @media (min-width: 1200px) {
         .airdefender-aimgrid.airdefender-aiming { grid-template-columns: max-content max-content minmax(18rem, 1fr);
-            grid-template-areas: "ctl pic map" "mark mark map" "more more list"; }
+            grid-template-areas: "more more map" "ctl pic map" "ctl pic list"; }
     }
     .airdefender-checklist { max-height: 30rem; overflow-y: auto; }
     .airdefender-headpic { width: 10rem; max-width: 100%; height: auto; display: block; }
@@ -1147,9 +1148,10 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         aimLastPress = Date.now(); aim.level = parseInt(this.value, 10);
         aimSend({ action: 'aim_set', level: aim.level, beam: aim.beam ? 1 : 0 });
     });
-    // Tilt limits, Landmarks and Test zones: one at a time, in tabs; the last one used is remembered in this browser.
+    // While aiming: Mark zones, Tilt limits, Landmarks or Test zones, one at a time in tabs above the controls;
+    // the last one used is remembered in this browser.
     function moreTab(name) {
-        if (!document.querySelector('[data-more-pane="' + name + '"]')) { name = 'tilt'; }
+        if (!document.querySelector('[data-more-pane="' + name + '"]')) { name = 'mark'; }
         document.querySelectorAll('[data-more-tab]').forEach(function (b) {
             var on = b.getAttribute('data-more-tab') === name;
             b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -1158,7 +1160,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         try { localStorage.setItem('airdefenderMoreTab', name); } catch (e) {}
     }
     document.querySelectorAll('[data-more-tab]').forEach(function (b) { b.addEventListener('click', function () { moreTab(b.getAttribute('data-more-tab')); }); });
-    (function () { var t = 'tilt'; try { t = localStorage.getItem('airdefenderMoreTab') || 'tilt'; } catch (e) {} moreTab(t); })();
+    (function () { var t = 'mark'; try { t = localStorage.getItem('airdefenderMoreTab') || 'mark'; } catch (e) {} moreTab(t); })();
 
     /* ---------- DeadZones: a picture of the head being aimed, seen from the front of the house ---------- */
     // Which way it faces at rest (DMX pan 0), remembered in this browser for each head; only turns the picture.
