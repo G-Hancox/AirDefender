@@ -396,8 +396,9 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     <button type="button" class="btn btn-outline-danger d-none" id="adAimStop">Stop aiming</button>
                     <span class="form-text" id="adAimMsg" role="status"></span>
                 </div>
-                <div class="d-none" id="adAimPanel">
-                    <div class="d-flex flex-wrap gap-4 align-items-start">
+                <div class="airdefender-aimgrid" id="adAimGrid">
+                  <div class="d-none airdefender-contents" id="adAimPanel">
+                    <div class="airdefender-a-ctl d-flex flex-wrap gap-3 align-items-start">
                         <div class="airdefender-pad" role="group" aria-label="Move the head">
                             <span></span>
                             <button type="button" class="btn btn-outline-secondary text-body" data-aim-move="0,1" aria-label="Tilt up"><i class="fas fa-chevron-up"></i></button>
@@ -426,6 +427,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <input type="range" class="form-range" id="adAimLevel" min="5" max="255" step="5" value="64" style="max-width: 14rem">
                             <div class="form-text">Hold an arrow to keep moving; the keyboard's arrow keys work too.</div>
                         </div>
+                    </div>
+                    <div class="airdefender-a-pic">
                         <div class="airdefender-headview">
                             <div class="form-text mb-1">At rest, the head faces</div>
                             <div class="btn-group mb-2" role="group" aria-label="Which way the head faces at rest, seen from the front of the house">
@@ -434,10 +437,10 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                                 <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-rest="90">Right</button>
                             </div>
                             <svg class="airdefender-headpic" id="adHeadPic" viewBox="0 0 200 210" role="img" aria-label="The head, seen from the front of the house"></svg>
-                            <div class="form-text">Seen from the front of the house. A picture only: check the real head.</div>
+                            <div class="form-text">From the front of the house. A guide only: check the real head.</div>
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div class="airdefender-a-mark">
                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Mark a zone">
                             <button type="button" class="btn btn-outline-primary" id="adMarkPoint"><i class="fas fa-map-pin"></i> Mark point</button>
                             <button type="button" class="btn btn-outline-secondary text-body" id="adMarkUndo" disabled><i class="fas fa-undo"></i> Undo point</button>
@@ -446,16 +449,23 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <button type="button" class="btn btn-link" id="adMarkCancel" disabled>Cancel</button>
                         </div>
                         <div class="form-text mb-2" id="adMarkInfo">Point at a corner of the area and press Mark point. Three or more points make a zone.</div>
+                    </div>
+                    <div class="airdefender-a-more">
+                    <details class="airdefender-more" data-more="tilt">
+                        <summary>Tilt limits</summary>
+                        <div class="pt-2">
                         <div class="d-flex flex-wrap align-items-center gap-2" role="group" aria-label="Tilt limit">
                             <span class="form-text">Tilt limit at this height:</span>
                             <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="below">Block below</button>
                             <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="above">Block above</button>
                             <button type="button" class="btn btn-sm btn-link" data-tilt-limit="clear">Clear</button>
                         </div>
-                        <div class="form-text">"Too low" can be lower or higher tilt numbers depending on the fixture: use whichever shades the side you don't want in the picture below.</div>
-                    </div>
-                    <div class="mt-3">
-                        <h3 class="h6 mb-1">Landmarks, for next season</h3>
+                        <div class="form-text">"Too low" can be lower or higher tilt numbers depending on the fixture: use whichever shades the side you don't want on the map.</div>
+                        </div>
+                    </details>
+                    <details class="airdefender-more" data-more="landmarks">
+                        <summary>Landmarks, for next season</summary>
+                        <div class="pt-2">
                         <p class="form-text mt-0 mb-2">Aim at one or two things that won't move (a chimney, a pole, a corner of the house) and save them with
                             your zones. If the head goes back up a little differently next year, aim at them again and press <b>Re-align</b>: every zone moves to match.
                             Two landmarks far apart also fix a head that's turned or tipped.</p>
@@ -472,20 +482,28 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <button type="button" class="btn btn-sm btn-link d-none" id="adRealignUndo">Undo re-align</button>
                         </div>
                         <div class="form-text" id="adRealignInfo"></div>
-                    </div>
-                    <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                        </div>
+                    </details>
+                    <details class="airdefender-more" data-more="test">
+                        <summary>Test zones</summary>
+                        <div class="pt-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
                         <button type="button" class="btn btn-outline-secondary text-body" id="adTestZones" disabled><i class="fas fa-route"></i> Test zones</button>
                         <button type="button" class="btn btn-outline-danger d-none" id="adTestStop">Stop test</button>
                         <span class="form-text" id="adTestInfo">The head traces round each zone's edge so you can check it outside (turn the beam on to see it).</span>
                     </div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-4 align-items-start mt-4" id="adZonesArea">
+                        </div>
+                    </details>
+                    </div>
+                  </div>
+                  <div class="airdefender-a-map" id="adZonesArea">
                     <div>
                         <h3 class="h6 mb-1">Where this head can point <span class="text-body-secondary fw-normal" id="adZonesFor"></span></h3>
                         <svg class="airdefender-zonemap border rounded" id="adZoneMap" viewBox="-8 -8 272 272" role="img" aria-label="This head's zones, by pan (across) and tilt (up)"></svg>
                         <div class="form-text">Across is pan, up is tilt (0-255). Shaded areas close the shutter.</div>
                     </div>
+                  </div>
+                  <div class="airdefender-a-list">
                     <div class="flex-grow-1" style="min-width: 16rem; max-width: 34rem">
                         <h3 class="h6">Zones</h3>
                         <div class="list-group airdefender-zonelist" id="adZoneList"></div>
@@ -497,6 +515,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         </div>
                         <div class="form-text">A backup of every head's zones, tilt limits and landmarks. Importing replaces them all.</div>
                     </div>
+                  </div>
                 </div>
                 </div>
 
@@ -547,8 +566,24 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     /* Keep the head table's inputs usable on a phone: the table scrolls sideways in its own box. */
     .airdefender-heads { min-width: 46rem; }
     .airdefender-grip { cursor: grab; touch-action: none; }
+    .airdefender-contents { display: contents; }
+    .airdefender-aimgrid { display: grid; gap: 1rem 1.5rem; align-items: start; margin-top: 1rem;
+        grid-template-columns: minmax(0, 1fr); grid-template-areas: "ctl" "map" "mark" "pic" "more" "list"; }
+    .airdefender-a-ctl { grid-area: ctl; } .airdefender-a-pic { grid-area: pic; max-width: 12rem; } .airdefender-a-map { grid-area: map; }
+    .airdefender-a-ctl > div:last-child { max-width: 15rem; }
+    .airdefender-a-mark { grid-area: mark; } .airdefender-a-more { grid-area: more; } .airdefender-a-list { grid-area: list; min-width: 0; }
+    @media (min-width: 768px) {
+        .airdefender-aimgrid { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "map list"; }
+        .airdefender-aimgrid.airdefender-aiming { grid-template-areas: "ctl map" "pic map" "mark mark" "more list"; }
+    }
+    @media (min-width: 1200px) {
+        .airdefender-aimgrid.airdefender-aiming { grid-template-columns: max-content max-content minmax(18rem, 1fr);
+            grid-template-areas: "ctl pic map" "mark mark map" "more more list"; }
+    }
+    .airdefender-more { border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); padding: .4rem .75rem; margin-bottom: .5rem; }
+    .airdefender-more > summary { cursor: pointer; font-weight: 600; }
     .airdefender-checklist { max-height: 30rem; overflow-y: auto; }
-    .airdefender-headpic { width: 12rem; max-width: 100%; height: auto; display: block; }
+    .airdefender-headpic { width: 10rem; max-width: 100%; height: auto; display: block; }
     .airdefender-headpic .body { fill: var(--bs-gray-800); stroke: var(--bs-gray-900); stroke-width: 1; stroke-linejoin: round; }
     .airdefender-headpic .shade { fill: var(--bs-black); stroke: none; }
     .airdefender-headpic .bezel { fill: var(--bs-gray-900); stroke: none; }
@@ -1023,6 +1058,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     function aimShow() {
         var on = !!aim;
         $id('adAimPanel').classList.toggle('d-none', !on);
+        $id('adAimGrid').classList.toggle('airdefender-aiming', on);
         $id('adAimStop').classList.toggle('d-none', !on);
         $id('adAimStart').classList.toggle('d-none', on);
         $id('adAimHead').disabled = on;
@@ -1112,6 +1148,13 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         aimLastPress = Date.now(); aim.level = parseInt(this.value, 10);
         aimSend({ action: 'aim_set', level: aim.level, beam: aim.beam ? 1 : 0 });
     });
+    // Tilt limits, Landmarks and Test zones fold away; which are open is remembered in this browser.
+    document.querySelectorAll('details[data-more]').forEach(function (d) {
+        var k = 'airdefenderMore' + d.getAttribute('data-more');
+        try { d.open = localStorage.getItem(k) === '1'; } catch (e) {}
+        d.addEventListener('toggle', function () { try { localStorage.setItem(k, d.open ? '1' : '0'); } catch (e) {} });
+    });
+
     /* ---------- DeadZones: a picture of the head being aimed, seen from the front of the house ---------- */
     // Which way it faces at rest (DMX pan 0), remembered in this browser for each head; only turns the picture.
     function restOf(head) { try { var v = localStorage.getItem('airdefenderRest' + head); return v === null ? 0 : parseInt(v, 10) || 0; } catch (e) { return 0; } }
