@@ -249,17 +249,16 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 <h2>Pan and tilt</h2>
                 <p class="text-body-secondary">
                     For each head on the <b>Moving heads</b> tab, enter where pan and tilt are in the fixture's DMX chart, as you did for the shutter.
-                    <b>Fine ch.</b> is the second channel of a 16-bit pan or tilt; leave it empty for 8-bit. <b>Range</b> is how far it can turn
+                    <b>Range</b> is how far it can turn
                     (often 540&deg; pan, 270&deg; tilt) and <b>Speed</b> how fast (the slew limit in xLights, 180&deg; a second unless you changed it).
                 </p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle airdefender-heads" id="adDzHeads">
                         <thead>
-                            <tr><th scope="col" rowspan="2">Head</th><th scope="colgroup" colspan="4" class="text-center border-start">Pan</th><th scope="colgroup" colspan="4" class="text-center border-start">Tilt</th></tr>
+                            <tr><th scope="col" rowspan="2">Head</th><th scope="colgroup" colspan="3" class="text-center border-start">Pan</th><th scope="colgroup" colspan="3" class="text-center border-start">Tilt</th></tr>
                             <tr>
                                 <?php foreach (array('Pan', 'Tilt') as $airdefenderAxis): ?>
                                     <th scope="col" class="border-start" title="<?php echo $airdefenderAxis; ?>'s channel in the fixture's DMX chart">Channel</th>
-                                    <th scope="col" title="The fine channel of a 16-bit <?php echo strtolower($airdefenderAxis); ?>; empty for 8-bit">Fine ch.</th>
                                     <th scope="col" title="How many degrees it can turn">Range &deg;</th>
                                     <th scope="col" title="How fast it turns, in degrees a second (xLights' slew limit)">Speed &deg;/s</th>
                                 <?php endforeach; ?>
@@ -269,7 +268,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         <?php
                         // field => [default shown when empty, min, max, what it is]
                         $airdefenderDzFields = array(
-                            'Ch' => array('', 1, 512, 'channel'), 'Fine' => array('', 1, 512, 'fine channel'),
+                            // The main (coarse) channel is enough: about 2 degrees a step, plenty for a zone's edge.
+                            'Ch' => array('', 1, 512, 'channel'),
                             'Range' => array(null, 1, 3600, 'range in degrees'), 'Slew' => array('180', 1, 3600, 'speed in degrees a second'),
                         );
                         for ($n = 1; $n <= AIRDEFENDER_HEADS; $n++): ?>

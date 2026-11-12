@@ -77,8 +77,8 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
 
 - [x] Step 1: research (below).
 - [x] Step 2: **Enable DeadZones** setting and a **DeadZones** tab in Settings with each head's pan and
-  tilt details (channel, fine channel, range, speed), saved as `head<N>PanCh`, `PanFine`, `PanRange`,
-  `PanSlew` and the same for `Tilt`. Stored only; nothing reads them yet.
+  tilt details (channel, range, speed), saved as `head<N>PanCh`, `PanRange`, `PanSlew` and the same for
+  `Tilt`. No fine channel: the main channel gives about 2 degrees a step, plenty for a zone's edge. Stored only; nothing reads them yet.
 - [ ] Step 3: the compiled per-frame check, with the fail-safe; time the build.
 - [ ] Step 4: drawing zones (mark points, landmarks and re-align, test zones, export/import), import from xLights.
 - [ ] Step 5: Check my sequences.
