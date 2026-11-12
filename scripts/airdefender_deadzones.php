@@ -198,11 +198,110 @@ if (!function_exists('airdefender_zones_request')) {
     function airdefender_zones_head(array $z, int $id): array
     {
         $h = is_array($z['heads'][(string) $id] ?? null) ? $z['heads'][(string) $id] : [];
-        return [
+        $out = [
             'tiltMin' => max(0, min(255, (int) ($h['tiltMin'] ?? 0))),
             'tiltMax' => max(0, min(255, (int) ($h['tiltMax'] ?? 255))),
             'zones' => array_values(is_array($h['zones'] ?? null) ? $h['zones'] : []),
+            // Up to two easy-to-find spots, marked with the zones, to re-align them by next season.
+            'landmarks' => [],
         ];
+        foreach (['1', '2'] as $slot) {
+            $l = $h['landmarks'][$slot] ?? null;
+            if (is_array($l) && is_numeric($l[0] ?? null) && is_numeric($l[1] ?? null)) {
+                $out['landmarks'][$slot] = [max(0, min(255, (int) $l[0])), max(0, min(255, (int) $l[1]))];
+            }
+        }
+        if (is_array($h['beforeRealign'] ?? null)) {
+            $out['beforeRealign'] = $h['beforeRealign'];   // what Undo re-align puts back
+        }
+        return $out;
+    }
+
+    /*
+     * Move a head's zones (and tilt limit) to where its landmarks are now: with one landmark, everything
+     * shifts by the same amount; with two, it also turns and stretches to match (the head was remounted a
+     * little twisted, or nearer). Returns [new head, error].
+     */
+    function airdefender_zones_realign(array $h, array $now): array
+    {
+        $old = $h['landmarks'];
+        $slots = array_values(array_filter(['1', '2'], function ($s) use ($old, $now) { return isset($old[$s], $now[$s]); }));
+        if (!$slots) {
+            return [null, 'Mark where at least one landmark is now (and it must have been saved with the zones).'];
+        }
+        $a = $old[$slots[0]]; $a2 = $now[$slots[0]];
+        $s = 1.0; $cos = 1.0; $sin = 0.0;
+        if (count($slots) === 2) {
+            $b = $old[$slots[1]]; $b2 = $now[$slots[1]];
+            $vx = $b[0] - $a[0]; $vy = $b[1] - $a[1]; $wx = $b2[0] - $a2[0]; $wy = $b2[1] - $a2[1];
+            $lv = sqrt($vx * $vx + $vy * $vy); $lw = sqrt($wx * $wx + $wy * $wy);
+            if ($lv >= 8 && $lw >= 8) {
+                $s = $lw / $lv;
+                $turn = atan2($wy, $wx) - atan2($vy, $vx);
+                $cos = cos($turn); $sin = sin($turn);
+                if ($s < 0.6 || $s > 1.6 || abs($turn) > 0.6) {
+                    return [null, "The two landmarks have moved too differently to line the zones up (the head looks quite differently mounted). Check you aimed at the same two spots; if the head really moved a lot, re-mark its zones."];
+                }
+            }
+        }
+        $map = function ($p) use ($a, $a2, $s, $cos, $sin) {
+            $x = $p[0] - $a[0]; $y = $p[1] - $a[1];
+            return [max(0, min(255, (int) round($a2[0] + $s * ($x * $cos - $y * $sin)))),
+                    max(0, min(255, (int) round($a2[1] + $s * ($x * $sin + $y * $cos))))];
+        };
+        $before = ['tiltMin' => $h['tiltMin'], 'tiltMax' => $h['tiltMax'], 'zones' => $h['zones'], 'landmarks' => $h['landmarks']];
+        foreach ($h['zones'] as $i => $zone) {
+            $h['zones'][$i]['points'] = array_map($map, $zone['points']);
+        }
+        // The tilt limit moves up or down with the first landmark.
+        $dy = $a2[1] - $a[1];
+        if ($h['tiltMin'] > 0) { $h['tiltMin'] = max(0, min(254, $h['tiltMin'] + $dy)); }
+        if ($h['tiltMax'] < 255) { $h['tiltMax'] = max(1, min(255, $h['tiltMax'] + $dy)); }
+        foreach ($slots as $slot) {
+            $h['landmarks'][$slot] = $now[$slot];
+        }
+        $h['beforeRealign'] = $before;
+        return [$h, null];
+    }
+
+    /* A whole zones file from Export, checked and tidied (bad zones are left out). Null if it isn't one. */
+    function airdefender_zones_clean_import($data): ?array
+    {
+        if (!is_array($data) || !is_array($data['heads'] ?? null)) {
+            return null;
+        }
+        $out = ['heads' => []];
+        foreach ($data['heads'] as $id => $h) {
+            $id = (int) $id;
+            if ($id < 1 || $id > 8 || !is_array($h)) {
+                continue;
+            }
+            $clean = airdefender_zones_head(['heads' => [(string) $id => $h]], $id);
+            unset($clean['beforeRealign']);
+            $zones = [];
+            foreach ($clean['zones'] as $zone) {
+                $pts = [];
+                foreach ((is_array($zone['points'] ?? null) ? $zone['points'] : []) as $p) {
+                    if (is_array($p) && is_numeric($p[0] ?? null) && is_numeric($p[1] ?? null)) {
+                        $pts[] = [max(0, min(255, (int) $p[0])), max(0, min(255, (int) $p[1]))];
+                    }
+                }
+                if (count($pts) >= 3 && count($pts) <= AIRDEFENDER_ZONE_POINTS && count($zones) < AIRDEFENDER_ZONES_PER_HEAD) {
+                    $name = trim((string) ($zone['name'] ?? ''));
+                    $zones[] = [
+                        'name' => substr($name !== '' ? $name : 'Zone ' . (count($zones) + 1), 0, 40),
+                        'points' => $pts,
+                        'alsoCloses' => array_values(array_filter(array_map('intval', is_array($zone['alsoCloses'] ?? null) ? $zone['alsoCloses'] : []),
+                            function ($o) use ($id) { return $o >= 1 && $o <= 8 && $o !== $id; })),
+                    ];
+                }
+            }
+            $clean['zones'] = $zones;
+            $out['heads'][(string) $id] = $clean;
+        }
+        if (isset($data['margin']) && is_numeric($data['margin'])) { $out['margin'] = max(0, min(50, (float) $data['margin'])); }
+        if (isset($data['holdMs']) && is_numeric($data['holdMs'])) { $out['holdMs'] = max(0, min(5000, (int) $data['holdMs'])); }
+        return $out;
     }
 
     /*
@@ -211,6 +310,10 @@ if (!function_exists('airdefender_zones_request')) {
      *   zone_save   head, name, points (JSON [[pan,tilt],...]), alsoCloses (JSON [ids]), index (to replace one; else added)
      *   zone_delete head, index
      *   tilt_limit  head, side (below|above|clear), tilt
+     *   landmark_set head, slot (1|2), pan, tilt (or clear=1)
+     *   realign     head, now1 / now2 (JSON [pan,tilt]: where landmark 1 / 2 is now)
+     *   realign_undo head
+     *   zones_import zones (JSON, a file from Export) -> replaces every head's zones
      * Returns [http status, answer].
      */
     function airdefender_zones_request(array $req): array
@@ -219,6 +322,21 @@ if (!function_exists('airdefender_zones_request')) {
         $z = airdefender_deadzones_zones();
         if (!isset($z['heads']) || !is_array($z['heads'])) {
             $z['heads'] = [];
+        }
+        if ($action === 'zones_import') {
+            $clean = airdefender_zones_clean_import(json_decode((string) ($req['zones'] ?? ''), true));
+            if ($clean === null) {
+                return [400, ['error' => "That isn't an Air Defender zones file (exported from the Zones page)."]];
+            }
+            if (!airdefender_zones_write($clean)) {
+                return [500, ['error' => 'Could not save the zones in ' . airdefender_deadzones_dir() . '. Check file permissions.']];
+            }
+            $count = 0;
+            foreach ($clean['heads'] as $h) { $count += count($h['zones']); }
+            $req = ['action' => 'zones_get'];
+            [$code, $answer] = airdefender_zones_request($req);
+            $answer['imported'] = $count;
+            return [$code, $answer];
         }
         if ($action === 'zones_get') {
             $out = [];
@@ -267,6 +385,35 @@ if (!function_exists('airdefender_zones_request')) {
                 return [400, ['error' => 'That zone is already gone.']];
             }
             array_splice($h['zones'], $index, 1);
+        } elseif ($action === 'landmark_set') {
+            $slot = (string) ($req['slot'] ?? '');
+            if ($slot !== '1' && $slot !== '2') {
+                return [400, ['error' => 'Unknown landmark.']];
+            }
+            if (($req['clear'] ?? '') === '1') {
+                unset($h['landmarks'][$slot]);
+            } else {
+                $h['landmarks'][$slot] = [max(0, min(255, (int) ($req['pan'] ?? 0))), max(0, min(255, (int) ($req['tilt'] ?? 0)))];
+            }
+        } elseif ($action === 'realign') {
+            $now = [];
+            foreach (['1', '2'] as $slot) {
+                $p = json_decode((string) ($req['now' . $slot] ?? ''), true);
+                if (is_array($p) && is_numeric($p[0] ?? null) && is_numeric($p[1] ?? null)) {
+                    $now[$slot] = [max(0, min(255, (int) $p[0])), max(0, min(255, (int) $p[1]))];
+                }
+            }
+            [$moved, $err] = airdefender_zones_realign($h, $now);
+            if ($moved === null) {
+                return [400, ['error' => $err]];
+            }
+            $h = $moved;
+        } elseif ($action === 'realign_undo') {
+            if (!is_array($h['beforeRealign'] ?? null)) {
+                return [400, ['error' => 'Nothing to undo.']];
+            }
+            $b = $h['beforeRealign'];
+            $h = ['tiltMin' => $b['tiltMin'] ?? 0, 'tiltMax' => $b['tiltMax'] ?? 255, 'zones' => $b['zones'] ?? [], 'landmarks' => $b['landmarks'] ?? []];
         } elseif ($action === 'tilt_limit') {
             $side = (string) ($req['side'] ?? '');
             $tilt = max(0, min(255, (int) ($req['tilt'] ?? 0)));
@@ -285,6 +432,9 @@ if (!function_exists('airdefender_zones_request')) {
             }
         } else {
             return [400, ['error' => 'Unknown action']];
+        }
+        if ($action !== 'realign') {
+            unset($h['beforeRealign']);   // Undo re-align only straight after one, so it can't undo later changes too
         }
         $z['heads'][(string) $id] = $h;
         if (!airdefender_zones_write($z)) {

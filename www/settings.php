@@ -243,7 +243,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             <?php airdefender_print_group('DeadZones', array('deadZonesEnabled')); ?>
             <div class="alert alert-info">
                 <b>Still being built.</b> DeadZones closes a head's shutter while it points into an area you've masked out.
-                Zones can be marked and work; re-aligning them next season, export and import are still to come.
+                Marking, re-aligning, testing and backing up zones all work; checking your sequences against them, and DeadZones on the dashboard, are still to come.
             </div>
             <div class="mb-3" id="adDzStatus" role="status"></div>
             <div id="adDzSetup" class="d-none">
@@ -308,6 +308,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     </table>
                 </div>
                 <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
+                <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary text-body" id="adXlImport"><i class="fas fa-file-import"></i> Import from xLights</button>
+                    <input type="file" class="d-none" id="adXlFile" accept=".xml,text/xml">
+                    <span class="form-text">Pick <b>xlights_rgbeffects.xml</b> from your show folder: pan, tilt, range, slew and dimmer are filled in for
+                        each head whose name (or FPP model) matches an xLights moving head model. Check them after.</span>
+                </div>
                 </div>
 
                 <div class="d-none" data-dz-pane="zones" role="tabpanel">
@@ -372,6 +378,30 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         </div>
                         <div class="form-text">"Too low" can be lower or higher tilt numbers depending on the fixture: use whichever shades the side you don't want in the picture below.</div>
                     </div>
+                    <div class="mt-3">
+                        <h3 class="h6 mb-1">Landmarks, for next season</h3>
+                        <p class="form-text mt-0 mb-2">Aim at one or two things that won't move (a chimney, a pole, a corner of the house) and save them with
+                            your zones. If the head goes back up a little differently next year, aim at them again and press <b>Re-align</b>: every zone moves to match.
+                            Two landmarks far apart also fix a head that's turned or tipped.</p>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Save landmarks">
+                            <span class="form-text">This season:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark="1"><i class="fas fa-flag"></i> Save landmark 1 here</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark="2"><i class="fas fa-flag"></i> Save landmark 2 here</button>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Re-align zones">
+                            <span class="form-text">Next season:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark-now="1">Landmark 1 is here now</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-landmark-now="2">Landmark 2 is here now</button>
+                            <button type="button" class="btn btn-sm btn-primary" id="adRealign" disabled><i class="fas fa-arrows-alt"></i> Re-align</button>
+                            <button type="button" class="btn btn-sm btn-link d-none" id="adRealignUndo">Undo re-align</button>
+                        </div>
+                        <div class="form-text" id="adRealignInfo"></div>
+                    </div>
+                    <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary text-body" id="adTestZones" disabled><i class="fas fa-route"></i> Test zones</button>
+                        <button type="button" class="btn btn-outline-danger d-none" id="adTestStop">Stop test</button>
+                        <span class="form-text" id="adTestInfo">The head traces round each zone's edge so you can check it outside (turn the beam on to see it).</span>
+                    </div>
                 </div>
 
                 <div class="d-flex flex-wrap gap-4 align-items-start mt-4" id="adZonesArea">
@@ -384,6 +414,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         <h3 class="h6">Zones</h3>
                         <div class="list-group airdefender-zonelist" id="adZoneList"></div>
                         <div class="form-text" id="adZoneNone">No zones for this head yet.</div>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adZonesExport"><i class="fas fa-download"></i> Export zones</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adZonesImport"><i class="fas fa-upload"></i> Import zones</button>
+                            <input type="file" class="d-none" id="adZonesFile" accept=".json,application/json">
+                        </div>
+                        <div class="form-text">A backup of every head's zones, tilt limits and landmarks. Importing replaces them all.</div>
                     </div>
                 </div>
                 </div>
@@ -401,6 +437,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-zonemap .limit { fill: var(--bs-danger); fill-opacity: .2; }
     .airdefender-zonemap .draft { fill: var(--bs-primary); fill-opacity: .15; stroke: var(--bs-primary); stroke-width: 1.5; stroke-dasharray: 4 3; }
     .airdefender-zonemap .dot { fill: var(--bs-primary); }
+    .airdefender-zonemap .mark { fill: var(--bs-warning); stroke: var(--bs-body-color); stroke-width: 1; }
     .airdefender-zonemap .here { fill: none; stroke: var(--bs-body-color); stroke-width: 1.5; }
     .airdefender-zonemap .grid { stroke: var(--bs-border-color); stroke-width: .75; }
     .airdefender-zonemap .label { fill: var(--bs-body-color); font-size: 11px; }
@@ -923,6 +960,13 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 svgEl('text', { x: cx / z.points.length, y: cy / z.points.length, 'class': 'label', 'text-anchor': 'middle' }, map, z.name);
             });
         }
+        if (h && h.landmarks) {
+            ['1', '2'].forEach(function (k) {
+                var l = h.landmarks[k]; if (!l) { return; }
+                svgEl('polygon', { points: [[l[0], l[1] + 6], [l[0] + 6, l[1]], [l[0], l[1] - 6], [l[0] - 6, l[1]]].map(function (p) { return p[0] + ',' + (255 - p[1]); }).join(' '), 'class': 'mark' }, map);
+                svgEl('text', { x: l[0] + 8, y: 255 - l[1] + 4, 'class': 'label' }, map, k);
+            });
+        }
         if (draft.length) {
             svgEl(draft.length > 2 ? 'polygon' : 'polyline', { points: pts(draft), 'class': 'draft' }, map);
             draft.forEach(function (p) { svgEl('circle', { cx: p[0], cy: 255 - p[1], r: 3.5, 'class': 'dot' }, map); });
@@ -979,6 +1023,21 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         $id('adMarkCancel').disabled = !draft.length;
         $id('adMarkFinish').disabled = draft.length < 3;
         document.querySelectorAll('[data-tilt-limit="below"],[data-tilt-limit="above"]').forEach(function (b) { b.disabled = !aim; });
+        var h = zonesData ? zonesData[zoneHead()] : null, lm = h && h.landmarks ? h.landmarks : {};
+        document.querySelectorAll('[data-landmark],[data-landmark-now]').forEach(function (b) { b.disabled = !aim || tracing; });
+        document.querySelectorAll('[data-landmark-now]').forEach(function (b) {
+            var k = b.getAttribute('data-landmark-now');
+            b.disabled = b.disabled || !lm[k];
+            b.classList.toggle('active', !!realignNow[k]);
+        });
+        $id('adRealign').disabled = !aim || tracing || !Object.keys(realignNow).length;
+        $id('adRealignUndo').classList.toggle('d-none', !(h && h.beforeRealign));
+        $id('adRealignInfo').textContent = !lm['1'] && !lm['2'] ? 'No landmarks saved for this head yet.'
+            : 'Saved: ' + ['1', '2'].filter(function (k) { return lm[k]; }).map(function (k) { return 'landmark ' + k + ' (pan ' + lm[k][0] + ', tilt ' + lm[k][1] + ')'; }).join(', ')
+              + (Object.keys(realignNow).length ? '. Marked now: ' + Object.keys(realignNow).map(function (k) { return 'landmark ' + k; }).join(', ') + ': press Re-align.' : '.');
+        $id('adTestZones').disabled = !aim || tracing || !(h && h.zones.length);
+        $id('adTestZones').classList.toggle('d-none', tracing);
+        $id('adTestStop').classList.toggle('d-none', !tracing);
         $id('adMarkInfo').textContent = !aim ? 'Press Aim to steer the head, then mark the corners of an area.'
             : draft.length === 0 ? 'Point at a corner of the area and press Mark point. Three or more points make a zone.'
             : draft.length < 3 ? draft.length + ' point' + (draft.length === 1 ? '' : 's') + ' marked: keep going round the area.'
@@ -1011,7 +1070,145 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             }).catch(function (e) { toast(e.message, false); });
         });
     });
-    $id('adAimHead').addEventListener('change', function () { draft = []; zonesDraw(); });
+    $id('adAimHead').addEventListener('change', function () { draft = []; realignNow = {}; zonesDraw(); });
+
+    /* ---------- DeadZones: landmarks and re-aligning next season ---------- */
+    var realignNow = {}, tracing = null;
+    document.querySelectorAll('[data-landmark]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            if (!aim) { return; }
+            aimLastPress = Date.now();
+            var k = b.getAttribute('data-landmark'), h = zonesData ? zonesData[zoneHead()] : null;
+            if (h && h.landmarks && h.landmarks[k] && !window.confirm('Replace landmark ' + k + '? Only do this when the zones are right for where the head is now.')) { return; }
+            post({ action: 'landmark_set', head: zoneHead(), slot: k, pan: aim.pan, tilt: aim.tilt }).then(function (d) {
+                delete realignNow[k]; zonesSaved(d); toast('Landmark ' + k + ' saved at pan ' + aim.pan + ', tilt ' + aim.tilt + '.');
+            }).catch(function (e) { toast(e.message, false); });
+        });
+    });
+    document.querySelectorAll('[data-landmark-now]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            if (!aim) { return; }
+            aimLastPress = Date.now();
+            realignNow[b.getAttribute('data-landmark-now')] = [aim.pan, aim.tilt]; markButtons();
+        });
+    });
+    $id('adRealign').addEventListener('click', function () {
+        var f = { action: 'realign', head: zoneHead() };
+        Object.keys(realignNow).forEach(function (k) { f['now' + k] = JSON.stringify(realignNow[k]); });
+        post(f).then(function (d) { realignNow = {}; zonesSaved(d); toast('Zones re-aligned. Use Test zones to check them.'); })
+            .catch(function (e) { toast(e.message, false); });
+    });
+    $id('adRealignUndo').addEventListener('click', function () {
+        post({ action: 'realign_undo', head: zoneHead() }).then(function (d) { zonesSaved(d); toast('Re-align undone.'); })
+            .catch(function (e) { toast(e.message, false); });
+    });
+
+    /* ---------- DeadZones: Test zones (the head traces each outline) ---------- */
+    function traceStop(msg) {
+        if (tracing) { clearInterval(tracing.timer); tracing = null; }
+        $id('adTestInfo').textContent = msg || 'The head traces round each zone\u2019s edge so you can check it outside (turn the beam on to see it).';
+        markButtons();
+    }
+    $id('adTestZones').addEventListener('click', function () {
+        var h = zonesData ? zonesData[zoneHead()] : null;
+        if (!aim || !h || !h.zones.length) { return; }
+        // Every point along every edge, about 3 steps apart, with a short pause at the start of each zone.
+        var path = [];
+        h.zones.forEach(function (z, zi) {
+            var p = z.points.concat([z.points[0]]);
+            for (var w = 0; w < 6; w++) { path.push({ p: p[0], zone: zi }); }
+            for (var i = 1; i < p.length; i++) {
+                var dx = p[i][0] - p[i - 1][0], dy = p[i][1] - p[i - 1][1], n = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / 3));
+                for (var j = 1; j <= n; j++) { path.push({ p: [Math.round(p[i - 1][0] + dx * j / n), Math.round(p[i - 1][1] + dy * j / n)], zone: zi }); }
+            }
+        });
+        var at = 0;
+        tracing = { timer: setInterval(function () {
+            if (!aim) { traceStop('Test stopped: aiming ended.'); return; }
+            if (aimBusy) { return; }   // wait for the head to catch up rather than pile up requests
+            if (at >= path.length) { traceStop('Test finished: every zone traced.'); return; }
+            var step = path[at++];
+            aimLastPress = Date.now();
+            aim.pan = step.p[0]; aim.tilt = step.p[1];
+            $id('adTestInfo').textContent = 'Tracing ' + h.zones[step.zone].name + ' (' + (step.zone + 1) + ' of ' + h.zones.length + ')\u2026';
+            aimShow();
+            aimSend({ action: 'aim_set', pan: aim.pan, tilt: aim.tilt });
+        }, 150) };
+        markButtons();
+    });
+    $id('adTestStop').addEventListener('click', function () { traceStop('Test stopped.'); });
+
+    /* ---------- DeadZones: export and import ---------- */
+    $id('adZonesExport').addEventListener('click', function () {
+        post({ action: 'zones_get' }).then(function (d) {
+            var heads = {};
+            Object.keys(d.heads || {}).forEach(function (k) {
+                var h = d.heads[k];
+                if (h.zones.length || h.tiltMin > 0 || h.tiltMax < 255 || Object.keys(h.landmarks || {}).length) {
+                    heads[k] = { tiltMin: h.tiltMin, tiltMax: h.tiltMax, zones: h.zones, landmarks: h.landmarks };
+                }
+            });
+            var blob = new Blob([JSON.stringify({ airdefenderZones: 1, exported: new Date().toISOString(), heads: heads }, null, 1)], { type: 'application/json' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = 'airdefender-zones-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+        }).catch(function (e) { toast('Could not export the zones: ' + e.message, false); });
+    });
+    $id('adZonesImport').addEventListener('click', function () { $id('adZonesFile').value = ''; $id('adZonesFile').click(); });
+    $id('adZonesFile').addEventListener('change', function () {
+        var file = this.files && this.files[0]; if (!file) { return; }
+        if (!window.confirm('Replace every head\u2019s zones, tilt limits and landmarks with the ones in ' + file.name + '?')) { return; }
+        file.text().then(function (text) { return post({ action: 'zones_import', zones: text }); })
+            .then(function (d) { zonesData = d.heads || {}; draft = []; realignNow = {}; zonesDraw(); toast('Imported ' + d.imported + ' zone' + (d.imported === 1 ? '' : 's') + '.'); })
+            .catch(function (e) { toast(e.message, false); });
+    });
+
+    /* ---------- DeadZones: pan, tilt and dimmer from xLights' show file ---------- */
+    function xlName(t) { return String(t || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    $id('adXlImport').addEventListener('click', function () { $id('adXlFile').value = ''; $id('adXlFile').click(); });
+    $id('adXlFile').addEventListener('change', function () {
+        var file = this.files && this.files[0]; if (!file) { return; }
+        file.text().then(function (text) {
+            var doc = new DOMParser().parseFromString(text, 'text/xml');
+            if (doc.getElementsByTagName('parsererror').length) { throw new Error('That file isn\u2019t xLights\u2019 show file (xlights_rgbeffects.xml).'); }
+            var models = {};
+            Array.prototype.forEach.call(doc.getElementsByTagName('model'), function (m) {
+                if (/^DmxMovingHead/.test(m.getAttribute('DisplayAs') || '')) { models[xlName(m.getAttribute('name'))] = m; }
+            });
+            if (!Object.keys(models).length) { throw new Error('No moving head models found in ' + file.name + '.'); }
+            var done = [], missed = [];
+            document.querySelectorAll('#adDzHeads tr[data-dz-head]:not(.d-none)').forEach(function (dz) {
+                var n = dz.getAttribute('data-dz-head'), row = document.querySelector('#adHeads tr[data-head="' + n + '"]');
+                var name = label(row), m = models[xlName(name)] || models[xlName(field(row, 'Model').value)];
+                if (!m) { missed.push(name); return; }
+                function num(el, attr) { var v = el ? parseFloat(el.getAttribute(attr)) : NaN; return isNaN(v) || v <= 0 ? null : Math.round(v); }
+                var pan = m.getElementsByTagName('PanMotor')[0], tilt = m.getElementsByTagName('TiltMotor')[0];
+                var vals = {
+                    // Newer xLights keeps each motor in its own element; older files have them on the model.
+                    PanCh: num(pan, 'ChannelCoarse') || num(m, 'DmxPanChannel'),
+                    PanRange: num(pan, 'RangeOfMotion') || num(m, 'DmxPanDegOfRot'),
+                    PanSlew: num(pan, 'SlewLimit'),
+                    TiltCh: num(tilt, 'ChannelCoarse') || num(m, 'DmxTiltChannel'),
+                    TiltRange: num(tilt, 'RangeOfMotion') || num(m, 'DmxTiltDegOfRot'),
+                    TiltSlew: num(tilt, 'SlewLimit'),
+                    DimmerCh: num(m, 'MhDimmerChannel') || num(m, 'DmxDimmerChannel'),
+                    ShutterOpen: num(m, 'DmxShutterOpen')
+                };
+                var got = 0;
+                Object.keys(vals).forEach(function (f) {
+                    var v = vals[f], input = dz.querySelector('[data-dz-field="' + f + '"]');
+                    if (v === null || !input || v < parseInt(input.min, 10) || v > parseInt(input.max, 10)) { return; }
+                    got++;
+                    if (String(v) !== input.value) { input.value = v; save('head' + n + f, v); }
+                });
+                (got ? done : missed).push(name);
+            });
+            aimHeads();
+            if (done.length) { toast('Filled in from xLights: ' + done.join(', ') + '. Check the numbers.'); }
+            if (missed.length) { toast('No matching xLights moving head for: ' + missed.join(', ') + '. Name the head here the same as its xLights model, or enter it by hand.', false); }
+        }).catch(function (e) { toast(e.message, false); });
+    });
 
     // DeadZones' pages (Heads, Zones); the last one used is remembered in this browser.
     function dzTab(name, remember) {
@@ -1020,7 +1217,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
         });
         document.querySelectorAll('[data-dz-pane]').forEach(function (p) { p.classList.toggle('d-none', p.getAttribute('data-dz-pane') !== name); });
-        if (name !== 'zones') { aimLeave(); }   // aiming only while its page is showing
+        if (name !== 'zones') { traceStop(); aimLeave(); }   // aiming only while its page is showing
         if (name === 'zones') { aimHeads(); zonesLoad(); }
         if (remember) { try { localStorage.setItem('airdefenderDzTab', name); } catch (e) {} }
     }
