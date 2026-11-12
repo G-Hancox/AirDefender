@@ -1133,9 +1133,11 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             var on = parseInt(b.getAttribute('data-rest'), 10) === rest;
             b.classList.toggle('active', on); b.classList.toggle('text-body', !on);
         });
-        // DMX to angles: pan turns from its rest direction across its range; tilt's middle is straight up.
+        // DMX to angles, from the rest position (pan 0, tilt 0): pan 0 faces the rest direction picked above and turns
+        // across the pan range. Tilt's range is centred on straight up: tilt 0 is its low end on the facing side (about
+        // 45 degrees below level on a 270-degree head), and raising it swings the beam up, over the top and down the back.
         var pan = (rest + aim.pan / 255 * headRange(head, 'PanRange', 540)) * Math.PI / 180;
-        var tilt = (aim.tilt / 255 - 0.5) * headRange(head, 'TiltRange', 270) * Math.PI / 180;
+        var tilt = (0.5 - aim.tilt / 255) * headRange(head, 'TiltRange', 270) * Math.PI / 180;   // from straight up, toward the facing side
         // x right, y up, z toward you (you stand in front of the house).
         function add(a, b, k) { return [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]; }
         var facing = [Math.sin(pan), 0, Math.cos(pan)], axis = [Math.cos(pan), 0, -Math.sin(pan)];
