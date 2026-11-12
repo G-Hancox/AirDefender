@@ -33,6 +33,13 @@ if [ -f "${HELD}" ]; then
 fi
 
 # The status file kept in memory.
+# A head being aimed from the DeadZones tab right now: give it back to the show (its pan, tilt,
+# dimmer and shutter overlays), so nothing is left held after the plugin has gone.
+if [ -f "${PLUGIN_DIR}/scripts/airdefender_aim.php" ]; then
+    php -r 'require $argv[1]; airdefender_aim_end("Air Defender was uninstalled");' \
+        "${PLUGIN_DIR}/scripts/airdefender_aim.php" >/dev/null 2>&1 || true
+fi
+
 rm -rf /dev/shm/AirDefender 2>/dev/null
 
 # No restart needed: just before this, FPP asked fppd to unload the plugin,

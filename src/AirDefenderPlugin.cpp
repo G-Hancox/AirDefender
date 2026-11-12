@@ -78,7 +78,8 @@ public:
         // background, exactly as callbacks.sh would (the script waits for an old loop to go first).
         runScript("airdefender_start.sh", true);
     }
-    virtual ~AirDefenderPlugin() {}
+    // A sequence check still running must be stopped before its thread object goes (else std::terminate).
+    virtual ~AirDefenderPlugin() { stopCheck(); }
 
     /* fppd stopping, or unloading the plugin to update or uninstall it: stop the loop, as callbacks.sh would. */
     virtual std::function<bool()> shutdown() override {

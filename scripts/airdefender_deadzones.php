@@ -314,6 +314,7 @@ if (!function_exists('airdefender_zones_request')) {
      *   realign     head, now1 / now2 (JSON [pan,tilt]: where landmark 1 / 2 is now)
      *   realign_undo head
      *   zones_import zones (JSON, a file from Export) -> replaces every head's zones
+     *   head_clear  head (removed on the Moving heads tab: its zones go, and other zones stop closing it)
      *   heads_reorder order (JSON: the old head numbers in their new order)
      * Returns [http status, answer].
      */
@@ -338,6 +339,26 @@ if (!function_exists('airdefender_zones_request')) {
             [$code, $answer] = airdefender_zones_request($req);
             $answer['imported'] = $count;
             return [$code, $answer];
+        }
+        if ($action === 'head_clear') {
+            // A head was removed on the Moving heads tab: its zones go too, and no other zone closes it any more.
+            $id = (int) ($req['head'] ?? 0);
+            if ($id < 1 || $id > 8) {
+                return [400, ['error' => 'Unknown head.']];
+            }
+            $had = isset($z['heads'][(string) $id]);
+            unset($z['heads'][(string) $id]);
+            foreach ($z['heads'] as $k => $h) {
+                foreach ((is_array($h['zones'] ?? null) ? $h['zones'] : []) as $i => $zone) {
+                    $also = is_array($zone['alsoCloses'] ?? null) ? $zone['alsoCloses'] : [];
+                    $left = array_values(array_filter($also, function ($o) use ($id) { return (int) $o !== $id; }));
+                    if (count($left) !== count($also)) { $z['heads'][$k]['zones'][$i]['alsoCloses'] = $left; $had = true; }
+                }
+            }
+            if ($had && !airdefender_zones_write($z)) {
+                return [500, ['error' => 'Could not save the zones in ' . airdefender_deadzones_dir() . '. Check file permissions.']];
+            }
+            return [200, ['cleared' => $id]];
         }
         if ($action === 'heads_reorder') {
             // The heads were dragged into a new order on the Moving heads tab: order[i] is the head that is now head i+1.

@@ -80,6 +80,6 @@
             }
         ],
         "closedCode": false,
-        "other": "While an aircraft is near, or during a test, it overrides the shutter channels of the moving heads you list using FPP's channel overlays. A read-only status page on FPP's web server lets Remote FPPs check the Player. On a Remote, the Player's UI password is kept in plugindata, readable only by the fpp user. adsb.lol is sent the location too only if you choose it or turn it on as a backup."
+        "other": "While an aircraft is near, or during a test, it overrides the shutter channels of the moving heads you list using FPP's channel overlays. A read-only status page on FPP's web server lets Remote FPPs check the Player. On a Remote, the Player's UI password is kept in plugindata, readable only by the fpp user. adsb.lol is sent the location too only if you choose it or turn it on as a backup. With DeadZones turned on (it is off by default), a compiled part built at install runs inside fppd and closes a head's shutter in each frame while it points into an area you marked. Importing heads from xLights reads your xLights files in your browser only; nothing is sent anywhere."
     }
 }

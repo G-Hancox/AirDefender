@@ -524,7 +524,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-zonemap .mark { fill: var(--bs-warning); stroke: var(--bs-body-color); stroke-width: 1; }
     .airdefender-zonemap .here { fill: none; stroke: var(--bs-body-color); stroke-width: 1.5; }
     .airdefender-zonemap .grid { stroke: var(--bs-border-color); stroke-width: .75; }
-    .airdefender-zonemap .label { fill: var(--bs-body-color); font-size: 11px; }
+    .airdefender-zonemap .label { fill: var(--bs-body-color); }
     .airdefender-pad { display: grid; grid-template-columns: repeat(3, 3.25rem); grid-auto-rows: 3.25rem; gap: .35rem; touch-action: none; }
     .airdefender-pad .btn { width: 100%; height: 100%; }
     .airdefender-pad-read { align-self: center; line-height: 1.2; }
@@ -560,7 +560,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         var v = (typeof pluginSettings !== 'undefined' && pluginSettings[key] !== undefined) ? String(pluginSettings[key]) : '';
         return v === '' ? fallback : v;
     }
-    function toast(text, ok) { $.jGrowl(text, { themeState: ok === false ? 'danger' : 'success' }); }
+    // jGrowl shows its text as HTML: names come from the user's own heads and files, so they go in as plain text.
+    function toast(text, ok) { var t = document.createElement('div'); t.textContent = text; $.jGrowl(t.innerHTML, { themeState: ok === false ? 'danger' : 'success' }); }
 
     /* Save one setting the way FPP's helpers do (config/plugin.AirDefender), with a readable message. */
     function save(key, value, label) {
@@ -705,6 +706,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 if (setting(k, blankValue) !== blankValue) { save(k, blankValue); }
                 input.value = def;
             });
+            post({ action: 'head_clear', head: row.getAttribute('data-head') }).catch(function (e) { toast(name + '\u2019s zones: ' + e.message, false); });
             field(row, 'Enabled').checked = false; field(row, 'Name').value = ''; field(row, 'Model').value = '';
             field(row, 'Start').disabled = false; field(row, 'Start').value = ''; field(row, 'Start').setAttribute('data-manual', '');
             field(row, 'Offset').value = 1; field(row, 'ClosedValue').value = 0; row.setAttribute('data-channel', 0);
@@ -1125,14 +1127,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 svgEl('polygon', { points: pts(z.points), 'class': 'zone' }, map, undefined);
                 var cx = 0, cy = 0;
                 z.points.forEach(function (p) { cx += p[0]; cy += 255 - p[1]; });
-                svgEl('text', { x: cx / z.points.length, y: cy / z.points.length, 'class': 'label', 'text-anchor': 'middle' }, map, z.name);
+                svgEl('text', { x: cx / z.points.length, y: cy / z.points.length, 'class': 'label', 'font-size': 11, 'text-anchor': 'middle' }, map, z.name);
             });
         }
         if (h && h.landmarks) {
             ['1', '2'].forEach(function (k) {
                 var l = h.landmarks[k]; if (!l) { return; }
                 svgEl('polygon', { points: [[l[0], l[1] + 6], [l[0] + 6, l[1]], [l[0], l[1] - 6], [l[0] - 6, l[1]]].map(function (p) { return p[0] + ',' + (255 - p[1]); }).join(' '), 'class': 'mark' }, map);
-                svgEl('text', { x: l[0] + 8, y: 255 - l[1] + 4, 'class': 'label' }, map, k);
+                svgEl('text', { x: l[0] + 8, y: 255 - l[1] + 4, 'class': 'label', 'font-size': 11 }, map, k);
             });
         }
         if (draft.length) {

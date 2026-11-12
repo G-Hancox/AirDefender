@@ -288,7 +288,8 @@ $airdefenderPage = array(
     var $id = function (id) { return document.getElementById(id); };
     var root = $id('ad');
     function hide(el, hidden) { el.classList.toggle('d-none', !!hidden); }
-    function toast(text, ok) { $.jGrowl(text, { themeState: ok === false ? 'danger' : 'success' }); }
+    // jGrowl shows its text as HTML: names come from the user's own heads and files, so they go in as plain text.
+    function toast(text, ok) { var t = document.createElement('div'); t.textContent = text; $.jGrowl(t.innerHTML, { themeState: ok === false ? 'danger' : 'success' }); }
 
     function fmtClock(sec) {
         sec = Math.max(0, Math.ceil(sec));

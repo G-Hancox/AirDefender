@@ -12,7 +12,7 @@ OBJECTS_AirDefender_so += src/AirDefenderPlugin.o
 LIBS_AirDefender_so += -L${SRCDIR} -lfpp -ljsoncpp
 CXXFLAGS_src/AirDefenderPlugin.o += -I${SRCDIR}
 
-%.o: %.cpp Makefile src/DeadZonesCore.h src/DeadZonesConfig.h
+%.o: %.cpp Makefile src/DeadZonesCore.h src/DeadZonesConfig.h src/DeadZonesCheck.h
 	$(CCACHE) $(CC) $(CFLAGS) $(CXXFLAGS) $(CXXFLAGS_$@) -c $< -o $@
 
 libAirDefender.$(SHLIB_EXT): $(OBJECTS_AirDefender_so) ${SRCDIR}/libfpp.$(SHLIB_EXT)
