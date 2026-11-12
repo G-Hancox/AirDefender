@@ -105,14 +105,14 @@ $airdefenderPage = array(
         </div>
     </div>
 
-    <ul class="nav nav-tabs mb-3" role="tablist" aria-label="Air Defender pages">
+    <ul class="nav nav-tabs justify-content-end mb-3" role="tablist" aria-label="Air Defender pages">
         <li class="nav-item" role="presentation"><button type="button" class="nav-link active" role="tab" aria-selected="true" data-tab="status"><i class="fas fa-fw fa-satellite-dish"></i> Status</button></li>
         <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-tab="test"><i class="fas fa-fw fa-stopwatch"></i> Test</button></li>
     </ul>
 
     <div data-pane="status" role="tabpanel">
     <div class="row g-3">
-        <div class="col-md-6 col-xl-4 d-none" data-detail>
+        <div class="col-md-6 col-xl-4 order-xl-2 d-none" data-detail>
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
                     <span class="fw-bold">Sky</span>
@@ -137,7 +137,7 @@ $airdefenderPage = array(
             </div>
         </div>
 
-        <div class="col-md-6 col-xl-4 d-none" data-detail>
+        <div class="col-md-6 col-xl-4 order-xl-1 d-none" data-detail>
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
                     <span class="fw-bold">Aircraft</span><small class="text-end" id="adPlaneState"></small>
@@ -160,7 +160,7 @@ $airdefenderPage = array(
             </div>
         </div>
 
-        <div class="col-md-6 col-xl-4">
+        <div class="col-md-6 col-xl-4 order-xl-3">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
                     <span class="fw-bold">Moving heads</span><small class="text-body-secondary text-end" id="adFeedLite" data-lite></small>
