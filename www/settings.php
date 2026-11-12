@@ -549,12 +549,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-grip { cursor: grab; touch-action: none; }
     .airdefender-checklist { max-height: 30rem; overflow-y: auto; }
     .airdefender-headpic { width: 12rem; max-width: 100%; height: auto; display: block; }
-    .airdefender-headpic .body { fill: var(--bs-secondary-bg); stroke: var(--bs-body-color); stroke-width: 1.2; stroke-linejoin: round; }
-    .airdefender-headpic .shade { fill: var(--bs-body-color); stroke: none; }
-    .airdefender-headpic .lens { fill: var(--bs-info); stroke: var(--bs-body-color); stroke-width: 1; }
-    .airdefender-headpic .yoke { stroke: var(--bs-secondary-color); stroke-width: 5; stroke-linecap: round; }
-    .airdefender-headpic .base { fill: var(--bs-tertiary-bg); stroke: var(--bs-body-color); stroke-width: 1.2; }
-    .airdefender-headpic .beam-on { stroke: var(--bs-warning); stroke-linecap: round; }
+    .airdefender-headpic .body { fill: var(--bs-gray-800); stroke: var(--bs-gray-900); stroke-width: 1; stroke-linejoin: round; }
+    .airdefender-headpic .shade { fill: var(--bs-black); stroke: none; }
+    .airdefender-headpic .bezel { fill: var(--bs-gray-900); stroke: none; }
+    .airdefender-headpic .lens { fill: var(--bs-teal); stroke: none; }
+    .airdefender-headpic .arm { fill: var(--bs-gray-900); stroke: var(--bs-gray-700); stroke-width: 1; stroke-linejoin: round; }
+    .airdefender-headpic .hub { fill: var(--bs-gray-700); stroke: var(--bs-gray-900); stroke-width: 1; }
+    .airdefender-headpic .base { fill: var(--bs-gray-900); stroke: var(--bs-gray-700); stroke-width: 1; }
+    .airdefender-headpic .beam-on { stroke: var(--bs-white); stroke-linecap: round; }
     .airdefender-headpic .beam-off { stroke: var(--bs-secondary-color); stroke-width: 1.5; stroke-dasharray: 4 4; }
     .modal-dialog.airdefender-popup { max-width: 26rem; width: calc(100% - 2rem); margin-left: auto; margin-right: auto; }
     .airdefender-dragging { opacity: .6; }
@@ -1148,46 +1150,53 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             return e;
         }
         svg.textContent = '';
-        // Base and yoke (the yoke turns with pan; the base doesn't).
-        svgEl('rect', { x: 62, y: 178, width: 76, height: 22, rx: 4, 'class': 'base' }, svg);
-        var arms = [-1, 1].map(function (side) { return { top: add(P, axis, side * 40), z: axis[2] * side * 40 }; });
-        var bottomArm = function (a) { return add(a.top, [0, -1, 0], 70); };
-        var items = [];
-        arms.forEach(function (a) { items.push({ z: a.z, draw: function () { var t = scr(a.top), b = scr(bottomArm(a)); svgEl('line', { x1: t[0], y1: t[1], x2: b[0], y2: b[1], 'class': 'yoke' }, svg); } }); });
-        items.push({ z: -1000, draw: function () {
-            var l = scr(bottomArm(arms[0])), r = scr(bottomArm(arms[1]));
-            svgEl('line', { x1: l[0], y1: l[1], x2: r[0], y2: r[1], 'class': 'yoke' }, svg);
-        } });
-        // The head: tapered, wide at the lens end (front), narrow at the back.
-        var L = 28, A = 30, a = 16, cnr = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
-        var front = cnr.map(function (c) { return add(add(add(P, f, L), axis, c[0] * A), u, c[1] * A); });
-        var back = cnr.map(function (c) { return add(add(add(P, f, -L), axis, c[0] * a), u, c[1] * a); });
+        // Like xLights' default moving head: a dark base, two flat yoke arms (rectangles with the top corners cut off)
+        // with a round hub where the head pivots, and an eight-sided head that tapers from the lens to the back.
+        svgEl('rect', { x: 52, y: 178, width: 96, height: 24, rx: 3, 'class': 'base' }, svg);
+        var items = [], W = 42;
+        function ring(c, a1, a2, r, n, rot) {
+            var pts = [];
+            for (var k = 0; k < n; k++) { var t = (k + (rot || 0)) / n * 2 * Math.PI; pts.push(add(add(c, a1, Math.cos(t) * r), a2, Math.sin(t) * r)); }
+            return pts;
+        }
+        function centre(pts) { return pts.reduce(function (s, v) { return add(s, v, 1 / pts.length); }, [0, 0, 0]); }
+        // Yoke arms: flat plates across the facing direction, from the base up past the pivot.
+        [-1, 1].forEach(function (side) {
+            var c = add(P, axis, side * W), up = [0, 1, 0];
+            var plate = [[-18, -72], [18, -72], [18, 6], [8, 18], [-8, 18], [-18, 6]].map(function (q) { return add(add(c, facing, q[0]), up, q[1]); });
+            var nz = axis[2] * side;   // plate faces outwards: drawn in front of the head when on your side
+            items.push({ z: c[2], draw: function () {
+                poly(plate, 'arm');
+                if (nz > 0.05) { poly(ring(add(c, axis, side * 2), facing, up, 7, 16), 'hub'); }
+            } });
+        });
+        // The head: eight sides, wide at the lens end (front), narrow at the back.
+        var L = 28, A = 30, a = 18;
+        var front = ring(add(P, f, L), axis, u, A, 8, 0.5), back = ring(add(P, f, -L), axis, u, a, 8, 0.5);
         var faces = [{ pts: front, n: f, lens: true }, { pts: back.slice().reverse(), n: [-f[0], -f[1], -f[2]] }];
-        for (var i = 0; i < 4; i++) {
-            var j = (i + 1) % 4, side = [front[i], front[j], back[j], back[i]];
-            var c = side.reduce(function (s, v) { return add(s, v, 0.25); }, [0, 0, 0]);
-            faces.push({ pts: side, n: [c[0] - P[0], c[1] - P[1], c[2] - P[2]] });
+        for (var i = 0; i < 8; i++) {
+            var j = (i + 1) % 8, sd = [front[i], front[j], back[j], back[i]], c2 = centre(sd);
+            faces.push({ pts: sd, n: [c2[0] - P[0], c2[1] - P[1], c2[2] - P[2]] });
         }
         faces.forEach(function (fc) {
             if (fc.n[2] <= 0) { return; }   // facing away: hidden behind the rest of the head
-            var z = fc.pts.reduce(function (s, v) { return s + v[2]; }, 0) / fc.pts.length;
+            var z = centre(fc.pts)[2];
             items.push({ z: z, draw: function () {
                 poly(fc.pts, 'body');
                 var len = Math.sqrt(fc.n[0] * fc.n[0] + fc.n[1] * fc.n[1] + fc.n[2] * fc.n[2]) || 1;
-                poly(fc.pts, 'shade', { 'fill-opacity': (0.35 * (1 - fc.n[2] / len)).toFixed(2) });   // turned away from you: darker
+                poly(fc.pts, 'shade', { 'fill-opacity': (0.45 * (1 - fc.n[2] / len)).toFixed(2) });   // turned away from you: darker
                 if (fc.lens) {
-                    var ring = [];
-                    for (var k = 0; k < 24; k++) { var t = k / 24 * 2 * Math.PI; ring.push(add(add(add(P, f, L + 0.5), axis, Math.cos(t) * 20), u, Math.sin(t) * 20)); }
-                    poly(ring, 'lens');
+                    poly(ring(add(P, f, L + 0.3), axis, u, A * 0.86, 8, 0.5), 'bezel');
+                    poly(ring(add(P, f, L + 0.6), axis, u, A * 0.7, 8, 0.5), 'lens');
                 }
             } });
         });
         // The beam, from the lens.
-        var tip = add(P, f, L), end = add(P, f, 140);
+        var tip = add(P, f, L), end = add(P, f, 150);
         items.push({ z: f[2] < 0 ? -500 : 500, draw: function () {
             var s0 = scr(tip), s1 = scr(end);
             var e = svgEl('line', { x1: s0[0], y1: s0[1], x2: s1[0], y2: s1[1], 'class': aim.beam ? 'beam-on' : 'beam-off' }, svg);
-            if (aim.beam) { e.setAttribute('stroke-width', 3 + aim.level / 255 * 7); e.setAttribute('stroke-opacity', (0.35 + aim.level / 255 * 0.65).toFixed(2)); }
+            if (aim.beam) { e.setAttribute('stroke-width', 3 + aim.level / 255 * 7); e.setAttribute('stroke-opacity', (0.4 + aim.level / 255 * 0.6).toFixed(2)); }
         } });
         items.sort(function (x, y) { return x.z - y.z; }).forEach(function (it) { it.draw(); });
     }
