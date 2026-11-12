@@ -36,8 +36,9 @@ whether you look or not.</p>
 </ul>
 <p>The line at the top shows the version, whether this FPP is the Player or a Remote, and which <b>Check for aircraft
 during</b> choice is in use.</p>
-<p><b>Start tracking</b> (Player): tracks aircraft for 30 minutes to 4 hours even with no show on, for example
-while testing a sequence, then stops by itself. The banner shows the time left and a <b>Stop tracking</b> button.
+<p><b>Manual tracking</b> (Player, on the <b>Test</b> tab): Air Defender turns itself on for your shows; manual tracking
+checks for aircraft at other times, for 30 minutes to 4 hours, for example while testing a sequence, then stops by itself.
+While it runs the banner says <b>Manual tracking active</b> with the time left and a <b>Stop</b> button.
 (The FPP command for it is still called Air Defender: Check Now, so playlists that use it keep working.)</p>
 
 <h3>Sky (Detailed)</h3>
