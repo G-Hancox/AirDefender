@@ -247,7 +247,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             </div>
             <div class="mb-3" id="adDzStatus" role="status"></div>
             <div id="adDzSetup" class="d-none">
-                <h2>Pan and tilt</h2>
+                <!-- DeadZones' own pages, so the tab doesn't become one long page. -->
+                <ul class="nav nav-tabs mb-3" role="tablist" aria-label="DeadZones pages">
+                    <li class="nav-item" role="presentation"><button type="button" class="nav-link active" role="tab" aria-selected="true" data-dz-tab="heads">Heads</button></li>
+                    <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="aim"><i class="fas fa-crosshairs"></i> Aim</button></li>
+                    <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="live">Live</button></li>
+                </ul>
+                <div data-dz-pane="heads" role="tabpanel">
+                <h2 class="visually-hidden">Pan and tilt</h2>
                 <p class="text-body-secondary">
                     For each head on the <b>Moving heads</b> tab, enter where pan and tilt are in the fixture's DMX chart, as you did for the shutter.
                     <b>Range</b> is how far it can turn
@@ -302,8 +309,10 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     </table>
                 </div>
                 <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
+                </div>
 
-                <h2 class="mt-4">Aim a head</h2>
+                <div class="d-none" data-dz-pane="aim" role="tabpanel">
+                <h2 class="visually-hidden">Aim a head</h2>
                 <p class="text-body-secondary">
                     Steer one head from here to find the edges of its zones. Only while no show is playing; every other head is left alone.
                     The shutter opens by itself; the beam starts off and comes on dim. Aiming ends when you leave this page or don't press
@@ -347,13 +356,18 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         </div>
                     </div>
                 </div>
-                <div class="table-responsive d-none mt-3" id="adDzLiveWrap">
-                    <h2>Right now</h2>
+                </div>
+
+                <div class="d-none" data-dz-pane="live" role="tabpanel">
+                <div class="form-text" id="adDzLiveNone">Nothing to show yet: DeadZones needs at least one head with pan and tilt set on the Heads page, and fppd running.</div>
+                <div class="table-responsive d-none" id="adDzLiveWrap">
+                    <h2 class="visually-hidden">Right now</h2>
                     <table class="table table-sm align-middle" id="adDzLive">
                         <thead><tr><th scope="col">Head</th><th scope="col">Pan</th><th scope="col">Tilt</th><th scope="col">Zones</th><th scope="col">Shutter</th></tr></thead>
                         <tbody></tbody>
                     </table>
                     <div class="form-text">Pan and tilt are the channel values (0-255) where the head really is, allowing for how fast it turns.</div>
+                </div>
                 </div>
             </div>
         </div>
@@ -731,6 +745,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             body.appendChild(tr);
         });
         wrap.classList.toggle('d-none', !d.enabled || !(d.heads || []).length);
+        $id('adDzLiveNone').classList.toggle('d-none', !wrap.classList.contains('d-none'));
     }
     function pollDz() {
         fetch('api/plugin-apis/AirDefender/deadzones', { credentials: 'same-origin', cache: 'no-store' })
@@ -855,6 +870,21 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         aimLastPress = Date.now(); aim.level = parseInt(this.value, 10);
         aimSend({ action: 'aim_set', level: aim.level, beam: aim.beam ? 1 : 0 });
     });
+    // DeadZones' pages (Heads, Aim, Live); the last one used is remembered in this browser.
+    function dzTab(name, remember) {
+        document.querySelectorAll('[data-dz-tab]').forEach(function (b) {
+            var on = b.getAttribute('data-dz-tab') === name;
+            b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        document.querySelectorAll('[data-dz-pane]').forEach(function (p) { p.classList.toggle('d-none', p.getAttribute('data-dz-pane') !== name); });
+        if (name !== 'aim') { aimLeave(); }   // aiming only while its page is showing
+        if (name === 'aim') { aimHeads(); }
+        if (remember) { try { localStorage.setItem('airdefenderDzTab', name); } catch (e) {} }
+    }
+    document.querySelectorAll('[data-dz-tab]').forEach(function (b) {
+        b.addEventListener('click', function () { dzTab(b.getAttribute('data-dz-tab'), true); });
+    });
+
     // Leaving the page (or the tab) gives the head back to the show.
     function aimLeave() {
         if (!aim) { return; }
@@ -871,5 +901,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     refresh();
     updateDeadZones();
     aimHeads();
+    try { var dzt = localStorage.getItem('airdefenderDzTab'); if (dzt && document.querySelector('[data-dz-tab="' + dzt + '"]')) { dzTab(dzt, false); } } catch (e) {}
 })();
 </script>
