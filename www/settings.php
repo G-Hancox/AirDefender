@@ -426,6 +426,16 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <input type="range" class="form-range" id="adAimLevel" min="5" max="255" step="5" value="64" style="max-width: 14rem">
                             <div class="form-text">Hold an arrow to keep moving; the keyboard's arrow keys work too.</div>
                         </div>
+                        <div class="airdefender-headview">
+                            <div class="form-text mb-1">At rest, the head faces</div>
+                            <div class="btn-group mb-2" role="group" aria-label="Which way the head faces at rest, seen from the front of the house">
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-rest="-90">Left</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-rest="0">Front</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-rest="90">Right</button>
+                            </div>
+                            <svg class="airdefender-headpic" id="adHeadPic" viewBox="0 0 200 210" role="img" aria-label="The head, seen from the front of the house"></svg>
+                            <div class="form-text">Seen from the front of the house. A picture only: check the real head.</div>
+                        </div>
                     </div>
                     <div class="mt-3">
                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2" role="group" aria-label="Mark a zone">
@@ -538,6 +548,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-heads { min-width: 46rem; }
     .airdefender-grip { cursor: grab; touch-action: none; }
     .airdefender-checklist { max-height: 30rem; overflow-y: auto; }
+    .airdefender-headpic { width: 12rem; max-width: 100%; height: auto; display: block; }
+    .airdefender-headpic .body { fill: var(--bs-secondary-bg); stroke: var(--bs-body-color); stroke-width: 1.2; stroke-linejoin: round; }
+    .airdefender-headpic .shade { fill: var(--bs-body-color); stroke: none; }
+    .airdefender-headpic .lens { fill: var(--bs-info); stroke: var(--bs-body-color); stroke-width: 1; }
+    .airdefender-headpic .yoke { stroke: var(--bs-secondary-color); stroke-width: 5; stroke-linecap: round; }
+    .airdefender-headpic .base { fill: var(--bs-tertiary-bg); stroke: var(--bs-body-color); stroke-width: 1.2; }
+    .airdefender-headpic .beam-on { stroke: var(--bs-warning); stroke-linecap: round; }
+    .airdefender-headpic .beam-off { stroke: var(--bs-secondary-color); stroke-width: 1.5; stroke-dasharray: 4 4; }
     .modal-dialog.airdefender-popup { max-width: 26rem; width: calc(100% - 2rem); margin-left: auto; margin-right: auto; }
     .airdefender-dragging { opacity: .6; }
     .airdefender-dragging td { background: var(--bs-tertiary-bg); }
@@ -1017,6 +1035,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         beam.title = aim.beam ? 'Beam is on: press to turn it off' : 'Beam is off: press to turn it on';
         beam.innerHTML = '<i class="' + (aim.beam ? 'fas' : 'far') + ' fa-lightbulb"></i> Beam';
         $id('adAimLevel').value = aim.level;
+        headDraw();
         zonesDraw();
     }
     function aimSend(fields) {
@@ -1092,6 +1111,87 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         aimLastPress = Date.now(); aim.level = parseInt(this.value, 10);
         aimSend({ action: 'aim_set', level: aim.level, beam: aim.beam ? 1 : 0 });
     });
+    /* ---------- DeadZones: a picture of the head being aimed, seen from the front of the house ---------- */
+    // Which way it faces at rest (DMX pan 0), remembered in this browser for each head; only turns the picture.
+    function restOf(head) { try { var v = localStorage.getItem('airdefenderRest' + head); return v === null ? 0 : parseInt(v, 10) || 0; } catch (e) { return 0; } }
+    document.querySelectorAll('[data-rest]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            try { localStorage.setItem('airdefenderRest' + zoneHead(), b.getAttribute('data-rest')); } catch (e) {}
+            headDraw();
+        });
+    });
+    function headRange(head, f, fallback) {
+        var i = document.querySelector('#adDzHeads tr[data-dz-head="' + head + '"] [data-dz-field="' + f + '"]');
+        var v = i ? parseInt(i.value, 10) : NaN;
+        return v > 0 ? v : fallback;
+    }
+    function headDraw() {
+        var svg = $id('adHeadPic'); if (!svg || !aim) { return; }
+        var head = String(aim.head), rest = restOf(head);
+        document.querySelectorAll('[data-rest]').forEach(function (b) {
+            var on = parseInt(b.getAttribute('data-rest'), 10) === rest;
+            b.classList.toggle('active', on); b.classList.toggle('text-body', !on);
+        });
+        // DMX to angles: pan turns from its rest direction across its range; tilt's middle is straight up.
+        var pan = (rest + aim.pan / 255 * headRange(head, 'PanRange', 540)) * Math.PI / 180;
+        var tilt = (aim.tilt / 255 - 0.5) * headRange(head, 'TiltRange', 270) * Math.PI / 180;
+        // x right, y up, z toward you (you stand in front of the house).
+        function add(a, b, k) { return [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]; }
+        var facing = [Math.sin(pan), 0, Math.cos(pan)], axis = [Math.cos(pan), 0, -Math.sin(pan)];
+        var f = [facing[0] * Math.sin(tilt), Math.cos(tilt), facing[2] * Math.sin(tilt)];       // the beam's direction
+        var u = [axis[1] * f[2] - axis[2] * f[1], axis[2] * f[0] - axis[0] * f[2], axis[0] * f[1] - axis[1] * f[0]];
+        var P = [0, 0, 0];
+        function scr(v) { var k = 1 + v[2] * 0.0012; return [100 + v[0] * k, 105 - v[1] * k, v[2]]; }   // a touch of perspective
+        function poly(pts, cls, extra) {
+            var e = svgEl('polygon', { points: pts.map(function (v) { var q = scr(v); return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '), 'class': cls }, svg);
+            Object.keys(extra || {}).forEach(function (k) { e.setAttribute(k, extra[k]); });
+            return e;
+        }
+        svg.textContent = '';
+        // Base and yoke (the yoke turns with pan; the base doesn't).
+        svgEl('rect', { x: 62, y: 178, width: 76, height: 22, rx: 4, 'class': 'base' }, svg);
+        var arms = [-1, 1].map(function (side) { return { top: add(P, axis, side * 40), z: axis[2] * side * 40 }; });
+        var bottomArm = function (a) { return add(a.top, [0, -1, 0], 70); };
+        var items = [];
+        arms.forEach(function (a) { items.push({ z: a.z, draw: function () { var t = scr(a.top), b = scr(bottomArm(a)); svgEl('line', { x1: t[0], y1: t[1], x2: b[0], y2: b[1], 'class': 'yoke' }, svg); } }); });
+        items.push({ z: -1000, draw: function () {
+            var l = scr(bottomArm(arms[0])), r = scr(bottomArm(arms[1]));
+            svgEl('line', { x1: l[0], y1: l[1], x2: r[0], y2: r[1], 'class': 'yoke' }, svg);
+        } });
+        // The head: tapered, wide at the lens end (front), narrow at the back.
+        var L = 28, A = 30, a = 16, cnr = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+        var front = cnr.map(function (c) { return add(add(add(P, f, L), axis, c[0] * A), u, c[1] * A); });
+        var back = cnr.map(function (c) { return add(add(add(P, f, -L), axis, c[0] * a), u, c[1] * a); });
+        var faces = [{ pts: front, n: f, lens: true }, { pts: back.slice().reverse(), n: [-f[0], -f[1], -f[2]] }];
+        for (var i = 0; i < 4; i++) {
+            var j = (i + 1) % 4, side = [front[i], front[j], back[j], back[i]];
+            var c = side.reduce(function (s, v) { return add(s, v, 0.25); }, [0, 0, 0]);
+            faces.push({ pts: side, n: [c[0] - P[0], c[1] - P[1], c[2] - P[2]] });
+        }
+        faces.forEach(function (fc) {
+            if (fc.n[2] <= 0) { return; }   // facing away: hidden behind the rest of the head
+            var z = fc.pts.reduce(function (s, v) { return s + v[2]; }, 0) / fc.pts.length;
+            items.push({ z: z, draw: function () {
+                poly(fc.pts, 'body');
+                var len = Math.sqrt(fc.n[0] * fc.n[0] + fc.n[1] * fc.n[1] + fc.n[2] * fc.n[2]) || 1;
+                poly(fc.pts, 'shade', { 'fill-opacity': (0.35 * (1 - fc.n[2] / len)).toFixed(2) });   // turned away from you: darker
+                if (fc.lens) {
+                    var ring = [];
+                    for (var k = 0; k < 24; k++) { var t = k / 24 * 2 * Math.PI; ring.push(add(add(add(P, f, L + 0.5), axis, Math.cos(t) * 20), u, Math.sin(t) * 20)); }
+                    poly(ring, 'lens');
+                }
+            } });
+        });
+        // The beam, from the lens.
+        var tip = add(P, f, L), end = add(P, f, 140);
+        items.push({ z: f[2] < 0 ? -500 : 500, draw: function () {
+            var s0 = scr(tip), s1 = scr(end);
+            var e = svgEl('line', { x1: s0[0], y1: s0[1], x2: s1[0], y2: s1[1], 'class': aim.beam ? 'beam-on' : 'beam-off' }, svg);
+            if (aim.beam) { e.setAttribute('stroke-width', 3 + aim.level / 255 * 7); e.setAttribute('stroke-opacity', (0.35 + aim.level / 255 * 0.65).toFixed(2)); }
+        } });
+        items.sort(function (x, y) { return x.z - y.z; }).forEach(function (it) { it.draw(); });
+    }
+
     /* ---------- DeadZones: marking and listing zones ---------- */
     var zonesData = null, draft = [];
     var SVGNS = 'http://www.w3.org/2000/svg';
