@@ -223,13 +223,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 <button type="button" class="buttons" id="adAddHead"><i class="fas fa-plus"></i> Add head</button>
                 <button type="button" class="buttons" id="adReorder" aria-pressed="false"><i class="fas fa-lock"></i> Reorder</button>
                 <button type="button" class="buttons" id="adMhXlImport"><i class="fas fa-file-import"></i> Import models from xLights</button>
-                <input type="file" class="d-none" id="adMhXlFile" accept=".xml,text/xml">
+                <input type="file" class="d-none" id="adMhXlFile" accept=".xml,text/xml" multiple>
             </div>
+            <div class="form-text">For <b>Import models from xLights</b>, pick <b>xlights_rgbeffects.xml</b> and <b>xlights_networks.xml</b> together from your
+                show folder (hold Ctrl, or &#8984; on a Mac, to pick both), so each head's start channel can be worked out.</div>
             <div class="d-none mt-2 p-2 border rounded" id="adMhXlPick">
                 <div class="form-text mt-0 mb-2">Moving heads in your xLights show. Tick the ones to protect and press <b>Add heads</b>: each gets its name,
-                    its shutter channel and its DeadZones pan and tilt. xLights' file doesn't say which controller or FPP channel a head is on, so the
-                    channel comes from FPP's model with the same name (upload from xLights with FPP Connect's <b>Models</b> column set to <b>All</b>), or you enter
-                    the <b>Start ch.</b> by hand. A head already here with the same name is updated instead of added twice.</div>
+                    its shutter channel and its DeadZones pan and tilt. Its channel comes from FPP's model with the same name when FPP has one; otherwise from
+                    its xLights start channel, worked out using <b>xlights_networks.xml</b> if you picked it too. A head already here with the same name is updated instead of added twice.</div>
                 <div class="d-flex flex-column gap-1 mb-2" id="adMhXlRows"></div>
                 <button type="button" class="btn btn-sm btn-primary" id="adMhXlApply">Add heads</button>
                 <button type="button" class="btn btn-sm btn-link" id="adMhXlCancel">Cancel</button>
@@ -1285,23 +1286,80 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         if (done.length) { toast('Filled in from xLights: ' + done.join(', ') + '. Check the numbers.'); }
         if (empty.length) { toast('No pan or tilt found in the xLights model for: ' + empty.join(', ') + '.', false); }
     }
-    /* Read xLights' show file: its moving head models by name (sorted names in .names). */
-    function xlParse(file) {
-        return file.text().then(function (text) {
-            var doc = new DOMParser().parseFromString(text, 'text/xml');
-            if (doc.getElementsByTagName('parsererror').length) { throw new Error('That file isn\u2019t xLights\u2019 show file (xlights_rgbeffects.xml).'); }
-            var models = {};
-            Array.prototype.forEach.call(doc.getElementsByTagName('model'), function (m) {
-                if (/^DmxMovingHead/.test(m.getAttribute('DisplayAs') || '')) { models[m.getAttribute('name')] = m; }
+    /*
+     * Read xLights' show file (and, if picked too, its controllers file): its moving head models by name
+     * (sorted names in .names), every model (.all), and the controllers' first channels, so a head's start
+     * channel can be worked out the way xLights does.
+     */
+    function xlParse(files) {
+        files = Array.prototype.slice.call(files);
+        return Promise.all(files.map(function (f) { return f.text(); })).then(function (texts) {
+            var xl = { models: {}, names: [], all: {}, ctrl: {}, univ: {}, hasNetworks: false }, gotModels = false;
+            texts.forEach(function (text) {
+                var doc = new DOMParser().parseFromString(text, 'text/xml');
+                if (doc.getElementsByTagName('parsererror').length) { return; }
+                if (doc.documentElement.nodeName === 'Networks') { xlNetworks(doc, xl); return; }
+                Array.prototype.forEach.call(doc.getElementsByTagName('model'), function (m) {
+                    gotModels = true;
+                    xl.all[m.getAttribute('name')] = m;
+                    if (/^DmxMovingHead/.test(m.getAttribute('DisplayAs') || '')) { xl.models[m.getAttribute('name')] = m; }
+                });
             });
-            var names = Object.keys(models).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
-            if (!names.length) { throw new Error('No moving head models found in ' + file.name + '.'); }
-            return { models: models, names: names };
+            if (!gotModels) { throw new Error('Pick xLights\u2019 show file, xlights_rgbeffects.xml (and xlights_networks.xml with it for start channels).'); }
+            xl.names = Object.keys(xl.models).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
+            if (!xl.names.length) { throw new Error('No moving head models found in xLights\u2019 show file.'); }
+            return xl;
         });
     }
+    /* Controllers in xlights_networks.xml, in order: each starts where the one before ends (as in xLights' Controllers tab). */
+    function xlNetworks(doc, xl) {
+        xl.hasNetworks = true;
+        var next = 1, root = doc.documentElement;
+        var ctrls = Array.prototype.filter.call(root.children, function (c) { return c.nodeName === 'Controller'; });
+        // Older files have no controllers, just outputs: each is its own block.
+        var blocks = ctrls.length ? ctrls : Array.prototype.filter.call(root.children, function (c) { return c.nodeName === 'network'; });
+        blocks.forEach(function (c) {
+            var outs = c.nodeName === 'Controller' ? Array.prototype.filter.call(c.children, function (o) { return o.nodeName === 'network'; }) : [c];
+            if (c.getAttribute('Name')) { xl.ctrl[xlName(c.getAttribute('Name'))] = next; }
+            outs.forEach(function (o) {
+                var u = o.getAttribute('ComPort') || o.getAttribute('Universe'), ip = o.getAttribute('ComPort') && (c.getAttribute('IP') || o.getAttribute('IP'));
+                if (u && /^\d+$/.test(u)) {
+                    if (!xl.univ[u]) { xl.univ[u] = next; }
+                    if (ip) { xl.univ[ip + ':' + u] = next; }
+                }
+                next += Math.max(0, parseInt(o.getAttribute('MaxChannels'), 10) || 0);
+            });
+        });
+    }
+    /* A model's first channel, as xLights works it out from its Start Channel; null if it can't be. */
+    function xlStart(xl, name, depth) {
+        var m = xl.all[name];
+        if (!m || depth > 20) { return null; }
+        var sc = (m.getAttribute('StartChannel') || '').trim(), r;
+        if (/^\d+$/.test(sc)) { return parseInt(sc, 10); }
+        if ((r = sc.match(/^!(.+):(\d+)$/))) { var c = xl.ctrl[xlName(r[1])]; return c ? c + parseInt(r[2], 10) - 1 : null; }
+        if ((r = sc.match(/^#(?:([^:]+):)?(\d+):(\d+)$/))) {
+            var u = xl.univ[r[1] ? r[1] + ':' + r[2] : r[2]] || xl.univ[r[2]];
+            return u ? u + parseInt(r[3], 10) - 1 : null;
+        }
+        if ((r = sc.match(/^([@>])(.+):(\d+)$/))) {
+            var base = xlStart(xl, r[2], depth + 1);
+            if (base === null) { return null; }
+            if (r[1] === '@') { return base + parseInt(r[3], 10) - 1; }
+            var size = xlSize(xl.all[r[2]]);   // ">": after the end of that model
+            return size ? base + size + parseInt(r[3], 10) - 1 : null;
+        }
+        return null;
+    }
+    /* How many channels a model uses: known for DMX models (their channel count); null for others. */
+    function xlSize(m) {
+        if (!m || !/^Dmx/.test(m.getAttribute('DisplayAs') || '')) { return null; }
+        var n = parseInt(m.getAttribute('parm1'), 10);
+        return n > 0 ? n : null;
+    }
     $id('adXlFile').addEventListener('change', function () {
-        var file = this.files && this.files[0]; if (!file) { return; }
-        xlParse(file).then(function (xl) {
+        if (!this.files || !this.files.length) { return; }
+        xlParse(this.files).then(function (xl) {
             xlModels = xl.models;
             var names = xl.names;
             var byName = {}; names.forEach(function (k) { byName[xlName(k)] = xlModels[k]; });
@@ -1339,8 +1397,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     var mhXl = null;
     $id('adMhXlImport').addEventListener('click', function () { $id('adMhXlFile').value = ''; $id('adMhXlFile').click(); });
     $id('adMhXlFile').addEventListener('change', function () {
-        var file = this.files && this.files[0]; if (!file) { return; }
-        xlParse(file).then(function (xl) {
+        if (!this.files || !this.files.length) { return; }
+        xlParse(this.files).then(function (xl) {
             mhXl = xl;
             var list = $id('adMhXlRows'); list.textContent = '';
             xl.names.forEach(function (name) {
@@ -1349,7 +1407,11 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'form-check-input m-0'; cb.checked = true; cb.value = name;
                 var t = document.createElement('span'); t.textContent = name;
                 var note = document.createElement('span'); note.className = 'form-text m-0';
-                note.textContent = here ? '(already here: will be updated)' : '';
+                var opt = Array.prototype.slice.call(field(rows[0], 'Model').options).some(function (o) { return o.value && xlName(o.value) === xlName(name); });
+                var start = xlStart(xl, name, 0);
+                note.textContent = [here ? 'already here: will be updated' : '',
+                    opt ? 'FPP model' : start ? 'starts at channel ' + start : xl.hasNetworks ? 'start channel: enter by hand' : 'start channel: pick xlights_networks.xml too, or enter by hand']
+                    .filter(Boolean).join(', ');
                 line.appendChild(cb); line.appendChild(t); line.appendChild(note); list.appendChild(line);
             });
             $id('adMhXlPick').classList.remove('d-none');
@@ -1381,8 +1443,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 // Already set up on an FPP model by another name: leave it on that model.
             } else {
                 put('Model', '');
-                var start = parseInt(m.getAttribute('StartChannel'), 10);
-                if (/^\d+$/.test((m.getAttribute('StartChannel') || '').trim()) && start > 0) { put('Start', start); } else { noChannel.push(name); }
+                var start = xlStart(mhXl, name, 0);
+                if (start > 0 && start <= <?php echo AIRDEFENDER_MAX_CHANNEL; ?>) { put('Start', start); } else { noChannel.push(name); }
             }
             var shutter = parseInt(m.getAttribute('DmxShutterChannel'), 10);
             if (shutter > 0 && shutter <= 512) { put('Offset', shutter); } else { noShutter.push(name); }
@@ -1395,8 +1457,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         if (updated.length) { msg.push('Updated ' + updated.join(', ')); }
         var later = [];
         if (noShutter.length) { later.push('No shutter channel in xLights for ' + noShutter.join(', ') + ': enter it by hand.'); }
-        if (noChannel.length) { later.push('No FPP model named ' + noChannel.join(', ') + ', so enter the Start ch. by hand (or upload models from xLights with FPP Connect, Models: All, and pick the model).'); }
-        try { sessionStorage.setItem('airdefenderXlMsg', JSON.stringify({ ok: msg.join('. ') + (msg.length ? '. Check the closed value for each.' : ''), warn: later.join(' ') })); } catch (e) {}
+        if (noChannel.length) { later.push('Couldn\u2019t work out the start channel for ' + noChannel.join(', ') + (mhXl.hasNetworks ? '' : ' (pick xlights_networks.xml along with the show file)') + ': enter the Start ch. by hand.'); }
+        try { sessionStorage.setItem('airdefenderXlMsg', JSON.stringify({ ok: msg.join('. ') + (msg.length ? '. Check each head\u2019s FPP channel and closed value.' : ''), warn: later.join(' ') })); } catch (e) {}
         // Reload once everything is saved, so every head shows exactly what was saved.
         $.when.apply($, saves).always(function () { location.reload(); });
     });
