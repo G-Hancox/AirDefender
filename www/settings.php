@@ -223,12 +223,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <button type="button" class="buttons" id="adAddHead"><i class="fas fa-plus"></i> Add head</button>
-                <button type="button" class="buttons" id="adMhXlImport"><i class="fas fa-file-import"></i> Import from xLights</button>
+                <button type="button" class="buttons" id="adMhXlImport"><i class="fas fa-file-import"></i> Import models from xLights</button>
                 <input type="file" class="d-none" id="adMhXlFile" accept=".xml,text/xml">
             </div>
             <div class="d-none mt-2 p-2 border rounded" id="adMhXlPick">
                 <div class="form-text mt-0 mb-2">Moving heads in your xLights show. Tick the ones to protect and press <b>Add heads</b>: each gets its name,
-                    model and shutter channel (and its DeadZones pan and tilt), and a head already here with the same name is updated instead of added twice.</div>
+                    its shutter channel and its DeadZones pan and tilt. xLights' file doesn't say which controller or FPP channel a head is on, so the
+                    channel comes from FPP's model with the same name (upload from xLights with FPP Connect's <b>Models</b> column set to <b>All</b>), or you enter
+                    the <b>Start ch.</b> by hand. A head already here with the same name is updated instead of added twice.</div>
                 <div class="d-flex flex-column gap-1 mb-2" id="adMhXlRows"></div>
                 <button type="button" class="btn btn-sm btn-primary" id="adMhXlApply">Add heads</button>
                 <button type="button" class="btn btn-sm btn-link" id="adMhXlCancel">Cancel</button>
@@ -324,7 +326,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 </div>
                 <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
                 <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
-                    <button type="button" class="btn btn-outline-secondary text-body" id="adXlImport"><i class="fas fa-file-import"></i> Import from xLights</button>
+                    <button type="button" class="btn btn-outline-secondary text-body" id="adXlImport"><i class="fas fa-file-import"></i> Import models from xLights</button>
                     <input type="file" class="d-none" id="adXlFile" accept=".xml,text/xml">
                     <span class="form-text">Pick <b>xlights_rgbeffects.xml</b> from your show folder: pan, tilt, range, slew and dimmer are filled in for
                         each head whose name (or FPP model) matches an xLights moving head model; for the rest, you pick which model it is. Check them after.</span>
@@ -1361,7 +1363,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         if (updated.length) { msg.push('Updated ' + updated.join(', ')); }
         var later = [];
         if (noShutter.length) { later.push('No shutter channel in xLights for ' + noShutter.join(', ') + ': enter it by hand.'); }
-        if (noChannel.length) { later.push('No FPP model found for ' + noChannel.join(', ') + ': upload models from xLights (FPP Connect, Models: All) or enter the start channel by hand.'); }
+        if (noChannel.length) { later.push('No FPP model named ' + noChannel.join(', ') + ', so enter the Start ch. by hand (or upload models from xLights with FPP Connect, Models: All, and pick the model).'); }
         try { sessionStorage.setItem('airdefenderXlMsg', JSON.stringify({ ok: msg.join('. ') + (msg.length ? '. Check the closed value for each.' : ''), warn: later.join(' ') })); } catch (e) {}
         // Reload once everything is saved, so every head shows exactly what was saved.
         $.when.apply($, saves).always(function () { location.reload(); });

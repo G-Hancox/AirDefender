@@ -26,7 +26,7 @@ as you change it (a note pops up to say so) and takes effect within a second; FP
 
 <h3>Moving heads</h3>
 <p>One row per head (up to 8). <b>Add head</b> adds a row; the bin button removes one (after asking). The arrows move a head up or down the list, taking its DeadZones values and zones with it.</p>
-<p><b>Import from xLights</b>: pick <b>xlights_rgbeffects.xml</b> from your show folder and tick the moving heads to protect. Each gets its name, its FPP model (when FPP has one with the same name) or xLights start channel, and its shutter channel, plus its DeadZones pan and tilt. A head already here with the same name is updated, not added twice. xLights has no "closed" value, so check that one.</p>
+<p><b>Import models from xLights</b>: pick <b>xlights_rgbeffects.xml</b> from your show folder and tick the moving heads to protect. Each gets its name, its shutter channel and the FPP model with the same name, if FPP has one. xLights' file does not say which controller or channel a head is on, so without a matching FPP model you enter the Start ch. by hand, plus its DeadZones pan and tilt. A head already here with the same name is updated, not added twice. xLights has no "closed" value, so check that one.</p>
 <ul>
     <li><b>On</b>: whether Air Defender protects this head.</li>
     <li><b>Name</b> (optional): what to call the head in the log and on the dashboard. Picking a model fills it in.</li>
