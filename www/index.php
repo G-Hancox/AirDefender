@@ -45,6 +45,8 @@ $airdefenderPage = array(
 );
 ?>
 <style>
+    .airdefender-banners > #adBanner { flex: 2 1 22rem; min-width: 0; }
+    .airdefender-banners > .airdefender-dzbanner { flex: 1 1 14rem; min-width: 0; }
     /* The radar: a scope with range rings, a sweep and the aircraft, drawn in
        the theme's own colours (Bootstrap's variables, light and dark). */
     .airdefender-radar { width: 100%; max-width: 16rem; display: block; margin: 0 auto; }
@@ -90,6 +92,7 @@ $airdefenderPage = array(
         </div>
     </div>
 
+    <div class="d-flex flex-wrap gap-3 airdefender-banners">
     <div class="alert d-flex flex-wrap align-items-center justify-content-between gap-3" id="adBanner" role="status">
         <div>
             <h3 class="alert-heading h4 mb-1" id="adBannerTitle">&nbsp;</h3>
@@ -100,6 +103,14 @@ $airdefenderPage = array(
             <span class="badge text-bg-secondary fs-6" id="adOverrideLeft"></span>
             <button type="button" class="btn btn-outline-secondary text-body" data-override-end>Stop</button>
         </div>
+    </div>
+    <?php if ($airdefenderPage['deadZones']): ?>
+    <!-- DeadZones' own half of the banner (only when it's turned on): calm colours, so yellow always means aircraft. -->
+    <div class="alert alert-secondary d-none airdefender-dzbanner" id="adDzBanner" role="status">
+        <h3 class="alert-heading h4 mb-1" id="adDzTitle">DeadZones</h3>
+        <div class="small" id="adDzSub">&nbsp;</div>
+    </div>
+    <?php endif; ?>
     </div>
 
 
@@ -435,6 +446,34 @@ $airdefenderPage = array(
         if (!d || !d.closed) { return ''; }
         return d.reason === 'zone' ? (d.zone || 'a zone') : d.reason === 'tilt' ? 'tilt limit' : 'with another head';
     }
+    // The banner's DeadZones half: what it's closing now, or the last close for 10 s after (sweeps are quick), and how
+    // many times since FPP started. Never yellow (that's aircraft); red only if DeadZones itself isn't working.
+    var dzLast = null;
+    function dzBanner(d) {
+        var el = $id('adDzBanner'); if (!el) { return; }
+        var cls = 'secondary', title = 'DeadZones on', sub = 'Nothing closed';
+        if (d === null) {
+            cls = 'danger'; title = 'DeadZones not running'; sub = 'Its compiled part isn\u2019t loaded. Restart FPPD; if that doesn\u2019t help, reinstall Air Defender.';
+        } else if (d.failed) {
+            cls = 'danger'; title = 'DeadZones off'; sub = d.error || 'It hit an error; see fppd.log.';
+        } else if (!d.enabled) {
+            title = 'DeadZones off'; sub = 'No heads set up for it yet.';
+        } else {
+            var now = (d.heads || []).filter(function (h) { return h.closed; }), total = 0;
+            (d.heads || []).forEach(function (h) { total += h.closes || 0; });
+            var why = function (h) { return h.name + ' \u00b7 ' + (h.reason === 'zone' ? (h.zone || 'a zone') : h.reason === 'tilt' ? 'tilt limit' : 'another head'); };
+            if (now.length) {
+                dzLast = { text: now.map(why).join(', '), at: Date.now() };
+                cls = 'info'; title = 'DeadZones closing'; sub = dzLast.text;
+            } else if (dzLast && Date.now() - dzLast.at < 10000) {
+                cls = 'info'; title = 'DeadZones'; sub = 'Last closed ' + Math.max(1, Math.round((Date.now() - dzLast.at) / 1000)) + ' s ago: ' + dzLast.text;
+            }
+            if (total) { sub += ' \u00b7 ' + total + ' close' + (total === 1 ? '' : 's') + ' since FPP started'; }
+        }
+        el.className = 'alert alert-' + cls + ' airdefender-dzbanner';
+        $id('adDzTitle').textContent = title;
+        $id('adDzSub').textContent = sub;
+    }
     function dzPoll() {
         if (!cfg.deadZones) { return Promise.resolve(); }
         return fetch('api/plugin-apis/AirDefender/deadzones', { credentials: 'same-origin', cache: 'no-store' })
@@ -442,7 +481,8 @@ $airdefenderPage = array(
             .then(function (d) {
                 dzStatus = {};
                 if (d && d.enabled) { (d.heads || []).forEach(function (h) { dzStatus[h.id] = h; }); }
-            }).catch(function () { dzStatus = {}; });
+                dzBanner(d);
+            }).catch(function () { dzStatus = {}; dzBanner(null); });
     }
     function renderHeads() {
         var heads = (live && live.heads) || [];
@@ -954,5 +994,6 @@ $airdefenderPage = array(
     savedView = saved;
     markPresets();
     applyRole();
+    dzPoll().then(renderHeads);   // DeadZones' half of the banner straight away, not at the first refresh
 })();
 </script>

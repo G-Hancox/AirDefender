@@ -34,6 +34,10 @@ whether you look or not.</p>
     <li><b>Not running</b> (red): the detection loop has stopped (or has not reported in for 2 minutes). Restart FPPD
         (or reboot). A slow flight-data service does not cause this: it shows as a feed problem.</li>
 </ul>
+<p><b>With DeadZones on</b>, the banner splits: Air Defender on the left, as above, and DeadZones on the right, in calm
+colours so yellow always means aircraft. It says <b>DeadZones closing</b> and which head and zone while it holds a shutter
+closed, keeps the last one up for 10 seconds (sweeps are quick), and counts the closes since FPP started. It turns red
+only if DeadZones itself isn't working. With DeadZones off, the banner is Air Defender's alone.</p>
 <p>The line at the top shows the version, whether this FPP is the Player or a Remote, and which <b>Check for aircraft
 during</b> choice is in use.</p>
 <p><b>Manual tracking</b> (Player, on the <b>Test</b> tab): Air Defender turns itself on for your shows; manual tracking
