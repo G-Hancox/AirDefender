@@ -217,7 +217,18 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     </tbody>
                 </table>
             </div>
-            <button type="button" class="buttons" id="adAddHead"><i class="fas fa-plus"></i> Add head</button>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <button type="button" class="buttons" id="adAddHead"><i class="fas fa-plus"></i> Add head</button>
+                <button type="button" class="buttons" id="adMhXlImport"><i class="fas fa-file-import"></i> Import from xLights</button>
+                <input type="file" class="d-none" id="adMhXlFile" accept=".xml,text/xml">
+            </div>
+            <div class="d-none mt-2 p-2 border rounded" id="adMhXlPick">
+                <div class="form-text mt-0 mb-2">Moving heads in your xLights show. Tick the ones to protect and press <b>Add heads</b>: each gets its name,
+                    model and shutter channel (and its DeadZones pan and tilt), and a head already here with the same name is updated instead of added twice.</div>
+                <div class="d-flex flex-column gap-1 mb-2" id="adMhXlRows"></div>
+                <button type="button" class="btn btn-sm btn-primary" id="adMhXlApply">Add heads</button>
+                <button type="button" class="btn btn-sm btn-link" id="adMhXlCancel">Cancel</button>
+            </div>
             <div class="form-text mt-2">
                 Head not in the model list? In FPP Connect, set the <b>Models</b> column to <b>All</b> (Local leaves out heads on other controllers) and upload again.
             </div>
@@ -1175,7 +1186,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     $id('adXlImport').addEventListener('click', function () { $id('adXlFile').value = ''; $id('adXlFile').click(); });
     var xlModels = {};
     // Fill one head's row from an xLights moving head model; returns how many values it found.
-    function xlApply(dz, m) {
+    function xlApply(dz, m, saves) {
         var n = dz.getAttribute('data-dz-head');
         function num(el, attr) { var v = el ? parseFloat(el.getAttribute(attr)) : NaN; return isNaN(v) || v <= 0 ? null : Math.round(v); }
         var pan = m.getElementsByTagName('PanMotor')[0], tilt = m.getElementsByTagName('TiltMotor')[0];
@@ -1195,7 +1206,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             var v = vals[f], input = dz.querySelector('[data-dz-field="' + f + '"]');
             if (v === null || !input || v < parseInt(input.min, 10) || v > parseInt(input.max, 10)) { return; }
             got++;
-            if (String(v) !== input.value) { input.value = v; save('head' + n + f, v); }
+            if (String(v) !== input.value) { input.value = v; var r = save('head' + n + f, v); if (saves) { saves.push(r); } }
         });
         return got;
     }
@@ -1204,17 +1215,25 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         if (done.length) { toast('Filled in from xLights: ' + done.join(', ') + '. Check the numbers.'); }
         if (empty.length) { toast('No pan or tilt found in the xLights model for: ' + empty.join(', ') + '.', false); }
     }
-    $id('adXlFile').addEventListener('change', function () {
-        var file = this.files && this.files[0]; if (!file) { return; }
-        file.text().then(function (text) {
+    /* Read xLights' show file: its moving head models by name (sorted names in .names). */
+    function xlParse(file) {
+        return file.text().then(function (text) {
             var doc = new DOMParser().parseFromString(text, 'text/xml');
             if (doc.getElementsByTagName('parsererror').length) { throw new Error('That file isn\u2019t xLights\u2019 show file (xlights_rgbeffects.xml).'); }
-            xlModels = {};
+            var models = {};
             Array.prototype.forEach.call(doc.getElementsByTagName('model'), function (m) {
-                if (/^DmxMovingHead/.test(m.getAttribute('DisplayAs') || '')) { xlModels[m.getAttribute('name')] = m; }
+                if (/^DmxMovingHead/.test(m.getAttribute('DisplayAs') || '')) { models[m.getAttribute('name')] = m; }
             });
-            var names = Object.keys(xlModels).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
+            var names = Object.keys(models).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
             if (!names.length) { throw new Error('No moving head models found in ' + file.name + '.'); }
+            return { models: models, names: names };
+        });
+    }
+    $id('adXlFile').addEventListener('change', function () {
+        var file = this.files && this.files[0]; if (!file) { return; }
+        xlParse(file).then(function (xl) {
+            xlModels = xl.models;
+            var names = xl.names;
             var byName = {}; names.forEach(function (k) { byName[xlName(k)] = xlModels[k]; });
             var done = [], empty = [], rowsEl = $id('adXlPickRows');
             rowsEl.textContent = '';
@@ -1245,6 +1264,77 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         xlDone(done, empty);
     });
     $id('adXlPickCancel').addEventListener('click', function () { $id('adXlPick').classList.add('d-none'); });
+
+    /* ---------- Moving heads: add them from xLights' show file ---------- */
+    var mhXl = null;
+    $id('adMhXlImport').addEventListener('click', function () { $id('adMhXlFile').value = ''; $id('adMhXlFile').click(); });
+    $id('adMhXlFile').addEventListener('change', function () {
+        var file = this.files && this.files[0]; if (!file) { return; }
+        xlParse(file).then(function (xl) {
+            mhXl = xl;
+            var list = $id('adMhXlRows'); list.textContent = '';
+            xl.names.forEach(function (name) {
+                var here = rows.filter(function (r) { return !r.classList.contains('d-none') && xlName(label(r)) === xlName(name); })[0];
+                var line = document.createElement('label'); line.className = 'd-flex align-items-center gap-2';
+                var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'form-check-input m-0'; cb.checked = true; cb.value = name;
+                var t = document.createElement('span'); t.textContent = name;
+                var note = document.createElement('span'); note.className = 'form-text m-0';
+                note.textContent = here ? '(already here: will be updated)' : '';
+                line.appendChild(cb); line.appendChild(t); line.appendChild(note); list.appendChild(line);
+            });
+            $id('adMhXlPick').classList.remove('d-none');
+        }).catch(function (e) { toast(e.message, false); });
+    });
+    $id('adMhXlCancel').addEventListener('click', function () { $id('adMhXlPick').classList.add('d-none'); });
+    $id('adMhXlApply').addEventListener('click', function () {
+        if (!mhXl) { return; }
+        var picked = Array.prototype.slice.call(document.querySelectorAll('#adMhXlRows input:checked')).map(function (c) { return c.value; });
+        if (!picked.length) { toast('Tick at least one head.', false); return; }
+        var saves = [], added = [], updated = [], noShutter = [], noChannel = [], full = [];
+        var used = rows.filter(function (r) { return !r.classList.contains('d-none') && (label(r) !== 'MH' + r.getAttribute('data-head') || field(r, 'Model').value || field(r, 'Start').value); });
+        picked.forEach(function (name) {
+            var m = mhXl.models[name];
+            var row = rows.filter(function (r) { return xlName(label(r)) === xlName(name); })[0];
+            if (!row) {
+                // The first slot not in use (an empty, untouched head 1 counts as free).
+                row = rows.filter(function (r) { return used.indexOf(r) < 0; })[0];
+                if (!row) { full.push(name); return; }
+                added.push(name);
+            } else { updated.push(name); }
+            used.push(row);
+            var n = row.getAttribute('data-head');
+            function put(f, v) { saves.push(save('head' + n + f, v)); }
+            put('Enabled', 1); put('Name', name);
+            // By FPP model when FPP has one with the same name (xLights' upload names them the same); else xLights' start channel.
+            var opt = Array.prototype.slice.call(field(row, 'Model').options).filter(function (o) { return o.value && xlName(o.value) === xlName(name); })[0];
+            if (opt) { put('Model', opt.value); } else if (field(row, 'Model').value && updated.indexOf(name) >= 0) {
+                // Already set up on an FPP model by another name: leave it on that model.
+            } else {
+                put('Model', '');
+                var start = parseInt(m.getAttribute('StartChannel'), 10);
+                if (/^\d+$/.test((m.getAttribute('StartChannel') || '').trim()) && start > 0) { put('Start', start); } else { noChannel.push(name); }
+            }
+            var shutter = parseInt(m.getAttribute('DmxShutterChannel'), 10);
+            if (shutter > 0 && shutter <= 512) { put('Offset', shutter); } else { noShutter.push(name); }
+            var dz = document.querySelector('#adDzHeads tr[data-dz-head="' + n + '"]');
+            if (dz) { xlApply(dz, m, saves); }
+        });
+        if (full.length) { toast('No room for: ' + full.join(', ') + ' (Air Defender protects up to ' + rows.length + ' heads).', false); }
+        var msg = [];
+        if (added.length) { msg.push('Added ' + added.join(', ')); }
+        if (updated.length) { msg.push('Updated ' + updated.join(', ')); }
+        var later = [];
+        if (noShutter.length) { later.push('No shutter channel in xLights for ' + noShutter.join(', ') + ': enter it by hand.'); }
+        if (noChannel.length) { later.push('No FPP model found for ' + noChannel.join(', ') + ': upload models from xLights (FPP Connect, Models: All) or enter the start channel by hand.'); }
+        try { sessionStorage.setItem('airdefenderXlMsg', JSON.stringify({ ok: msg.join('. ') + (msg.length ? '. Check the closed value for each.' : ''), warn: later.join(' ') })); } catch (e) {}
+        // Reload once everything is saved, so every head shows exactly what was saved.
+        $.when.apply($, saves).always(function () { location.reload(); });
+    });
+    try {
+        var xlMsg = JSON.parse(sessionStorage.getItem('airdefenderXlMsg') || 'null');
+        sessionStorage.removeItem('airdefenderXlMsg');
+        if (xlMsg) { if (xlMsg.ok) { toast(xlMsg.ok); } if (xlMsg.warn) { toast(xlMsg.warn, false); } }
+    } catch (e) {}
 
     // DeadZones' pages (Heads, Zones); the last one used is remembered in this browser.
     function dzTab(name, remember) {
