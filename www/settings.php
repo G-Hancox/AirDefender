@@ -232,8 +232,17 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             </div>
             <div class="form-text" id="adMhXlHelp">For <b>Import models from xLights</b>, pick your xLights <b>show folder</b> (in xLights, <b>File &rarr; Show Folder</b>
                 shows where it is). Your browser may ask to "upload" it: nothing leaves this computer, the page only reads xLights' two setup files from it.</div>
-            <div class="d-none mt-2 form-text" id="adMhXlBusy" role="status"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-                Reading your show folder&hellip; a big one (lots of sequences, music and backups) can take your browser up to a minute.</div>
+            <div class="modal fade" id="adMhXlBusy" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="adMhXlBusyTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-body text-center py-4" role="status">
+                            <div class="spinner-border text-primary mb-3" aria-hidden="true"></div>
+                            <h5 class="mb-2" id="adMhXlBusyTitle">Reading your show folder&hellip;</h5>
+                            <div class="form-text">Your browser is going through the folder. A big one (lots of sequences, music and backups) can take up to a minute.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="d-none mt-2 p-2 border rounded" id="adMhXlProblem">
                 <div class="alert alert-warning mb-2" id="adMhXlProblemText" role="status"></div>
                 <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlAgain"><i class="fas fa-folder-open"></i> Pick folder again</button>
@@ -1438,9 +1447,13 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     }
     // The browser lists the whole folder before the page gets it, which can take a while: show that it's working
     // from when the picker closes (the page gets focus back) until the files arrive or the picker was cancelled.
+    var mhXlModal = null;
     function mhXlBusy(on) {
-        $id('adMhXlBusy').classList.toggle('d-none', !on);
         $id('adMhXlImport').disabled = on;
+        try {
+            if (!mhXlModal) { mhXlModal = bootstrap.Modal.getOrCreateInstance($id('adMhXlBusy')); }
+            if (on) { mhXlModal.show(); } else { mhXlModal.hide(); }
+        } catch (e) {}
     }
     function mhXlPickFolder() {
         $id('adMhXlDir').value = '';
