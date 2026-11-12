@@ -228,13 +228,24 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 <button type="button" class="buttons" id="adReorder" aria-pressed="false"><i class="fas fa-lock"></i> Reorder</button>
                 <button type="button" class="buttons" id="adMhXlImport"><i class="fas fa-file-import"></i> Import models from xLights</button>
                 <input type="file" class="d-none" id="adMhXlFile" accept=".xml,text/xml" multiple>
+                <input type="file" class="d-none" id="adMhXlDir" webkitdirectory>
             </div>
-            <div class="form-text">For <b>Import models from xLights</b>, pick <b>xlights_rgbeffects.xml</b> and <b>xlights_networks.xml</b> together from your
-                show folder (hold Ctrl, or &#8984; on a Mac, to pick both), so each head's start channel can be worked out.</div>
+            <div class="form-text" id="adMhXlHelp">For <b>Import models from xLights</b>, pick your xLights <b>show folder</b> (in xLights, <b>File &rarr; Show Folder</b>
+                shows where it is). Your browser may ask to "upload" it: nothing leaves this computer, the page only reads xLights' two setup files from it.</div>
+            <div class="d-none mt-2 p-2 border rounded" id="adMhXlProblem">
+                <div class="alert alert-warning mb-2" id="adMhXlProblemText" role="status"></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlAgain"><i class="fas fa-folder-open"></i> Pick folder again</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlFilesInstead"><i class="fas fa-file"></i> Pick the files instead</button>
+                <button type="button" class="btn btn-sm btn-link" id="adMhXlProblemClose">Cancel</button>
+            </div>
             <div class="d-none mt-2 p-2 border rounded" id="adMhXlPick">
                 <div class="form-text mt-0 mb-2">Moving heads in your xLights show. Tick the ones to protect and press <b>Add heads</b>: each gets its name,
                     its shutter channel and its DeadZones pan and tilt. Its channel comes from FPP's model with the same name when FPP has one; otherwise from
-                    its xLights start channel, worked out using <b>xlights_networks.xml</b> if you picked it too. A head already here with the same name is updated instead of added twice.</div>
+                    its xLights start channel. A head already here with the same name is updated instead of added twice.</div>
+                <div class="alert alert-warning d-none py-2 mb-2" id="adMhXlNoNet">Couldn't find <b>xlights_networks.xml</b> (xLights' controller list), so heads whose
+                    start channel is on a controller can't be worked out.
+                    <button type="button" class="btn btn-sm btn-outline-secondary text-body ms-1" id="adMhXlNetPick">Pick xlights_networks.xml</button>
+                    <input type="file" class="d-none" id="adMhXlNetFile" accept=".xml,text/xml"></div>
                 <div class="d-flex flex-column gap-1 mb-2" id="adMhXlRows"></div>
                 <button type="button" class="btn btn-sm btn-primary" id="adMhXlApply">Add heads</button>
                 <button type="button" class="btn btn-sm btn-link" id="adMhXlCancel">Cancel</button>
@@ -1417,13 +1428,52 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     $id('adXlPickCancel').addEventListener('click', function () { $id('adXlPick').classList.add('d-none'); });
 
     /* ---------- Moving heads: add them from xLights' show file ---------- */
-    var mhXl = null;
-    $id('adMhXlImport').addEventListener('click', function () { $id('adMhXlFile').value = ''; $id('adMhXlFile').click(); });
-    $id('adMhXlFile').addEventListener('change', function () {
-        if (!this.files || !this.files.length) { return; }
-        xlParse(this.files).then(function (xl) {
+    var mhXl = null, mhXlFiles = [];
+    var canPickFolder = 'webkitdirectory' in document.createElement('input') && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!canPickFolder) {
+        $id('adMhXlHelp').innerHTML = 'For <b>Import models from xLights</b>, pick <b>xlights_rgbeffects.xml</b> and <b>xlights_networks.xml</b> from your xLights show folder.';
+        $id('adMhXlAgain').classList.add('d-none');
+    }
+    function mhXlPickFolder() { $id('adMhXlDir').value = ''; $id('adMhXlDir').click(); }
+    function mhXlPickFiles() { $id('adMhXlFile').value = ''; $id('adMhXlFile').click(); }
+    function mhXlProblem(html) {
+        $id('adMhXlPick').classList.add('d-none');
+        $id('adMhXlProblemText').innerHTML = html;
+        $id('adMhXlProblem').classList.remove('d-none');
+    }
+    $id('adMhXlImport').addEventListener('click', function () { if (canPickFolder) { mhXlPickFolder(); } else { mhXlPickFiles(); } });
+    $id('adMhXlAgain').addEventListener('click', mhXlPickFolder);
+    $id('adMhXlFilesInstead').addEventListener('click', mhXlPickFiles);
+    $id('adMhXlProblemClose').addEventListener('click', function () { $id('adMhXlProblem').classList.add('d-none'); });
+    // A folder: just its two setup files (the one nearest the top, if a backup folder has copies too). Nothing else is read.
+    $id('adMhXlDir').addEventListener('change', function () {
+        var all = Array.prototype.slice.call(this.files || []);
+        if (!all.length) { return; }
+        function find(n) {
+            return all.filter(function (f) { return f.name.toLowerCase() === n; })
+                .sort(function (a, b) { return (a.webkitRelativePath || '').split('/').length - (b.webkitRelativePath || '').split('/').length; })[0];
+        }
+        var rgb = find('xlights_rgbeffects.xml'), net = find('xlights_networks.xml');
+        var folder = ((all[0].webkitRelativePath || '').split('/')[0]) || 'that folder';
+        if (!rgb) {
+            var div = document.createElement('div'); div.textContent = folder;
+            mhXlProblem('Couldn\u2019t find xLights\u2019 show file (<b>xlights_rgbeffects.xml</b>) in <b>' + div.innerHTML + '</b>. Pick the folder xLights uses as its show folder: in xLights, <b>File &rarr; Show Folder</b> shows where it is.');
+            return;
+        }
+        mhXlLoad(net ? [rgb, net] : [rgb]);
+    });
+    $id('adMhXlFile').addEventListener('change', function () { if (this.files && this.files.length) { mhXlLoad(Array.prototype.slice.call(this.files)); } });
+    $id('adMhXlNetPick').addEventListener('click', function () { $id('adMhXlNetFile').value = ''; $id('adMhXlNetFile').click(); });
+    $id('adMhXlNetFile').addEventListener('change', function () {
+        if (this.files && this.files[0]) { mhXlLoad(mhXlFiles.filter(function (f) { return !/networks/i.test(f.name); }).concat([this.files[0]])); }
+    });
+    function mhXlLoad(files) {
+        mhXlFiles = files;
+        xlParse(files).then(function (xl) {
             mhXl = xl;
+            $id('adMhXlProblem').classList.add('d-none');
             var list = $id('adMhXlRows'); list.textContent = '';
+            var needNet = false;
             xl.names.forEach(function (name) {
                 var here = rows.filter(function (r) { return !r.classList.contains('d-none') && xlName(label(r)) === xlName(name); })[0];
                 var line = document.createElement('label'); line.className = 'd-flex align-items-center gap-2';
@@ -1432,14 +1482,15 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 var note = document.createElement('span'); note.className = 'form-text m-0';
                 var opt = Array.prototype.slice.call(field(rows[0], 'Model').options).some(function (o) { return o.value && o.value !== '@xlights' && xlName(o.value) === xlName(name); });
                 var start = xlStart(xl, name, 0);
+                if (!opt && !start && !xl.hasNetworks) { needNet = true; }
                 note.textContent = [here ? 'already here: will be updated' : '',
-                    opt ? 'FPP model' : start ? 'starts at channel ' + start : xl.hasNetworks ? 'start channel: enter by hand' : 'start channel: pick xlights_networks.xml too, or enter by hand']
-                    .filter(Boolean).join(', ');
+                    opt ? 'FPP model' : start ? 'starts at channel ' + start : 'start channel: enter by hand'].filter(Boolean).join(', ');
                 line.appendChild(cb); line.appendChild(t); line.appendChild(note); list.appendChild(line);
             });
+            $id('adMhXlNoNet').classList.toggle('d-none', !needNet);
             $id('adMhXlPick').classList.remove('d-none');
-        }).catch(function (e) { toast(e.message, false); });
-    });
+        }).catch(function (e) { mhXlProblem(e.message); });
+    }
     $id('adMhXlCancel').addEventListener('click', function () { $id('adMhXlPick').classList.add('d-none'); });
     $id('adMhXlApply').addEventListener('click', function () {
         if (!mhXl) { return; }
