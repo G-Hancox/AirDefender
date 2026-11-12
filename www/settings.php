@@ -301,7 +301,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             <?php airdefender_print_group('DeadZones', array('deadZonesEnabled')); ?>
             <div class="alert alert-info">
                 <b>Still being built.</b> DeadZones closes a head's shutter while it points into an area you've masked out.
-                Marking, re-aligning, testing and backing up zones all work; checking your sequences against them, and DeadZones on the dashboard, are still to come.
+                Everything is here: heads, zones (with landmarks, testing and backups) and checking your sequences. It still needs testing on real heads before it's released.
             </div>
             <div class="mb-3" id="adDzStatus" role="status"></div>
             <div id="adDzSetup" class="d-none">
@@ -309,6 +309,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 <ul class="nav nav-tabs mb-3" role="tablist" aria-label="DeadZones pages">
                     <li class="nav-item" role="presentation"><button type="button" class="nav-link active" role="tab" aria-selected="true" data-dz-tab="heads">Heads</button></li>
                     <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="zones"><i class="fas fa-draw-polygon"></i> Zones</button></li>
+                    <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="check"><i class="fas fa-list-check"></i> Check</button></li>
                 </ul>
                 <div data-dz-pane="heads" role="tabpanel">
                 <h2 class="visually-hidden">Pan and tilt</h2>
@@ -489,6 +490,22 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 </div>
                 </div>
 
+                <div class="d-none" data-dz-pane="check" role="tabpanel">
+                <h2 class="visually-hidden">Check my sequences</h2>
+                <p class="text-body-secondary">
+                    Plays your sequences through the DeadZones check, without the lights, and lists each moment a head's beam is on while it points into
+                    one of its zones, so you can fix it in xLights. Until then DeadZones just closes the shutter there during the show.
+                    It only runs while nothing is playing, at low priority, and stops if a show starts. It only reads the sequence files.
+                </p>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <button type="button" class="btn btn-outline-primary" id="adCheckAll"><i class="fas fa-list-check"></i> Check all sequences</button>
+                    <button type="button" class="btn btn-outline-danger d-none" id="adCheckStop">Stop</button>
+                    <span class="form-text" id="adCheckMsg" role="status"></span>
+                </div>
+                <div class="progress mb-3 d-none" id="adCheckBar" role="progressbar" aria-label="Checking sequences" style="height: .5rem"><div class="progress-bar" style="width: 0%"></div></div>
+                <div class="list-group airdefender-checklist" id="adCheckList"></div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -518,6 +535,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     /* Keep the head table's inputs usable on a phone: the table scrolls sideways in its own box. */
     .airdefender-heads { min-width: 46rem; }
     .airdefender-grip { cursor: grab; touch-action: none; }
+    .airdefender-checklist { max-height: 30rem; overflow-y: auto; }
     .modal-dialog.airdefender-popup { max-width: 26rem; width: calc(100% - 2rem); margin-left: auto; margin-right: auto; }
     .airdefender-dragging { opacity: .6; }
     .airdefender-dragging td { background: var(--bs-tertiary-bg); }
@@ -1631,7 +1649,103 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         if (xlMsg) { if (xlMsg.ok) { toast(xlMsg.ok); } if (xlMsg.warn) { toast(xlMsg.warn, false); } }
     } catch (e) {}
 
-    // DeadZones' pages (Heads, Zones); the last one used is remembered in this browser.
+    /* ---------- DeadZones: Check my sequences ---------- */
+    var CHECK = 'api/plugin-apis/AirDefender/deadzones/check', checkQueue = [], checkSeqs = [], checking = false;
+    function fmtTime(ms) { var s = ms / 1000, m = Math.floor(s / 60); return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0'); }
+    function checkGet(q) {
+        return fetch(CHECK + (q || ''), { credentials: 'same-origin', cache: 'no-store' })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || (r.status === 404 ? 'The DeadZones part of Air Defender isn\u2019t running (see the status above).' : 'HTTP ' + r.status)); } return d; }); });
+    }
+    function checkRow(seq) {
+        var id = 'adCheck-' + seq.replace(/[^A-Za-z0-9]/g, '_'), item = $id(id);
+        if (!item) {
+            item = document.createElement('div'); item.className = 'list-group-item'; item.id = id;
+            var top = document.createElement('div'); top.className = 'd-flex align-items-center gap-2';
+            var name = document.createElement('span'); name.className = 'fw-semibold me-auto text-break'; name.textContent = seq.replace(/\.fseq$/i, '');
+            var st = document.createElement('span'); st.className = 'form-text m-0 text-nowrap'; st.setAttribute('data-check-state', '');
+            var one = document.createElement('button'); one.type = 'button'; one.className = 'btn btn-sm btn-outline-secondary text-body'; one.textContent = 'Check';
+            one.setAttribute('data-check-one', '');
+            one.addEventListener('click', function () { checkStart([seq]); });
+            top.appendChild(name); top.appendChild(st); top.appendChild(one); item.appendChild(top);
+            var det = document.createElement('div'); det.className = 'small mt-1'; det.setAttribute('data-check-detail', ''); item.appendChild(det);
+            $id('adCheckList').appendChild(item);
+        }
+        return item;
+    }
+    function checkShow(seq, state, cls, detail) {
+        var item = checkRow(seq), st = item.querySelector('[data-check-state]');
+        st.textContent = state; st.className = 'form-text m-0 text-nowrap ' + (cls || '');
+        var det = item.querySelector('[data-check-detail]'); det.textContent = '';
+        (detail || []).forEach(function (line) {
+            var d = document.createElement('div'); d.textContent = line; det.appendChild(d);
+        });
+    }
+    function checkLoad() {
+        if (checking) { return; }
+        fetch('api/sequence', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (list) {
+            checkSeqs = (Array.isArray(list) ? list : []).map(function (n) { return String(n); })
+                .map(function (n) { return /\.fseq$/i.test(n) ? n : n + '.fseq'; });
+            // Keeps results already shown; adds new sequences and drops deleted ones.
+            Array.prototype.slice.call($id('adCheckList').children).forEach(function (item) {
+                if (!checkSeqs.some(function (n) { return 'adCheck-' + n.replace(/[^A-Za-z0-9]/g, '_') === item.id; })) { item.remove(); }
+            });
+            checkSeqs.forEach(function (n) { checkRow(n); });
+            $id('adCheckAll').disabled = !checkSeqs.length;
+            $id('adCheckMsg').textContent = checkSeqs.length ? checkSeqs.length + ' sequence' + (checkSeqs.length === 1 ? '' : 's') + '.' : 'No sequences on this FPP yet.';
+        }).catch(function () { $id('adCheckMsg').textContent = 'Couldn\u2019t get the sequence list from FPP.'; });
+    }
+    function checkButtons() {
+        $id('adCheckAll').classList.toggle('d-none', checking);
+        $id('adCheckStop').classList.toggle('d-none', !checking);
+        $id('adCheckBar').classList.toggle('d-none', !checking);
+        document.querySelectorAll('[data-check-one]').forEach(function (b) { b.disabled = checking; });
+    }
+    function checkStart(list) {
+        checkQueue = list.slice(); checking = true; checkButtons();
+        list.forEach(function (n) { checkShow(n, 'Waiting\u2026'); });
+        checkNext();
+    }
+    function checkDone(msg) {
+        checking = false; checkQueue = []; checkButtons(); $id('adCheckMsg').textContent = msg || '';
+        // Ones it didn't get to go back to blank.
+        document.querySelectorAll('#adCheckList [data-check-state]').forEach(function (st) { if (/Waiting/.test(st.textContent)) { st.textContent = ''; } });
+    }
+    function checkNext() {
+        if (!checking) { return; }
+        var seq = checkQueue.shift();
+        if (!seq) {
+            var bad = document.querySelectorAll('#adCheckList .text-danger').length;
+            checkDone(bad ? bad + ' sequence' + (bad === 1 ? ' points' : 's point') + ' a lit beam into a zone: see below.' : 'All checked: no lit beams into zones.');
+            return;
+        }
+        checkShow(seq, 'Checking\u2026');
+        $id('adCheckMsg').textContent = 'Checking ' + seq.replace(/\.fseq$/i, '') + '\u2026';
+        checkGet('?seq=' + encodeURIComponent(seq)).then(function () { checkPoll(seq); })
+            .catch(function (e) { checkShow(seq, 'Not checked', 'text-warning-emphasis', [e.message]); if (/playing|zones yet|isn.t running/.test(e.message)) { checkDone(e.message); } else { checkNext(); } });
+    }
+    function checkPoll(seq) {
+        if (!checking) { return; }
+        checkGet('').then(function (d) {
+            $id('adCheckBar').firstElementChild.style.width = (d.progress || 0) + '%';
+            if (d.busy) { checkShow(seq, 'Checking\u2026 ' + (d.progress || 0) + '%'); setTimeout(function () { checkPoll(seq); }, 700); return; }
+            if (d.error) { checkShow(seq, 'Not checked', 'text-warning-emphasis', [d.error]); if (/started playing/.test(d.error)) { checkDone(d.error); return; } checkNext(); return; }
+            var r = d.result || {}, lines = [];
+            (r.heads || []).forEach(function (h) {
+                (h.events || []).forEach(function (e) { lines.push(h.name + ': ' + fmtTime(e.start) + ' to ' + fmtTime(e.end) + ', ' + e.why); });
+                if (h.more) { lines.push(h.name + ': and more (only the first 100 are listed)'); }
+            });
+            if (lines.length) { checkShow(seq, lines.length + ' to fix', 'text-danger', lines); } else { checkShow(seq, 'OK', 'text-success-emphasis'); }
+            checkNext();
+        }).catch(function (e) { checkShow(seq, 'Not checked', 'text-warning-emphasis', [e.message]); checkNext(); });
+    }
+    $id('adCheckAll').addEventListener('click', function () { checkStart(checkSeqs); });
+    $id('adCheckStop').addEventListener('click', function () {
+        checkGet('?stop=1').catch(function () {});
+        document.querySelectorAll('#adCheckList [data-check-state]').forEach(function (st) { if (/Checking|Waiting/.test(st.textContent)) { st.textContent = 'Stopped'; st.className = 'form-text m-0 text-nowrap'; } });
+        checkDone('Stopped.');
+    });
+
+    // DeadZones' pages (Heads, Zones, Check); the last one used is remembered in this browser.
     function dzTab(name, remember) {
         document.querySelectorAll('[data-dz-tab]').forEach(function (b) {
             var on = b.getAttribute('data-dz-tab') === name;
@@ -1640,6 +1754,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         document.querySelectorAll('[data-dz-pane]').forEach(function (p) { p.classList.toggle('d-none', p.getAttribute('data-dz-pane') !== name); });
         if (name !== 'zones') { traceStop(); aimLeave(); }   // aiming only while its page is showing
         if (name === 'zones') { aimHeads(); zonesLoad(); }
+        if (name === 'check') { checkLoad(); }
         if (remember) { try { localStorage.setItem('airdefenderDzTab', name); } catch (e) {} }
     }
     document.querySelectorAll('[data-dz-tab]').forEach(function (b) {

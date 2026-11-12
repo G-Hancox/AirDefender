@@ -62,7 +62,8 @@ closed</b>, and taps on other aircraft wait until the all clear, so it's always 
 
 <h3>Moving heads</h3>
 <p>Each enabled head, its FPP channel, and whether Air Defender is holding its shutter <b>Closed</b> or the
-<b>Show</b> controls it. A head with a problem (for example a model that was renamed) says so in red; in Lite
+<b>Show</b> controls it. With DeadZones on, a head whose beam points into one of its zones shows <b>DeadZone</b> and the
+zone's name while its shutter is held closed for that. A head with a problem (for example a model that was renamed) says so in red; in Lite
 the summary line counts them.</p>
 
 <h3>When Safety Mode turns on</h3>

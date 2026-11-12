@@ -103,7 +103,8 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
   the head's pan/tilt space with its zones and limit, and a list with delete and "Also close" other heads.
   Zones are saved in zones.json (only when you change them); the loop passes them to the compiled part.
 - [x] Step 4c: landmarks and Re-align, Test zones, export/import, import from xLights.
-- [ ] Step 5: Check my sequences.
+- [x] Step 5: Check my sequences (Check page; reads sequences with FPP's own reader on a low-priority thread, only while idle; results in memory only).
+- [x] Dashboard: the Moving heads card shows a DeadZone badge and the zone while DeadZones holds a head closed.
 - [ ] Step 6: real-head testing on a Pi before it goes near dev.
 
 ## Decision (Nov 11): built into Air Defender

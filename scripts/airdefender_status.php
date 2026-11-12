@@ -65,6 +65,7 @@ function airdefender_live_status(bool $detailed = false): array
     foreach ((is_array($state['heads'] ?? null) ? $state['heads'] : []) as $n => $h) {
         $channel = isset($h['channel']) ? (int) $h['channel'] : null;
         $heads[] = [
+            'id' => (int) $n,
             'name' => (string) ($h['name'] ?? "MH{$n}"),
             'channel' => $channel,
             'closed' => $channel !== null && in_array($channel, $closedChannels, true),

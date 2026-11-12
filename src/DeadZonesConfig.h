@@ -52,6 +52,7 @@ inline DzConfig dzParseConfig(const Json::Value& root, long maxChannels) {
         h.shutterCh = dzChannel(jh, "shutter", maxChannels);
         h.panCh = dzChannel(jh, "pan", maxChannels);
         h.tiltCh = dzChannel(jh, "tilt", maxChannels);
+        h.dimmerCh = dzChannel(jh, "dimmer", maxChannels);
         h.closedValue = (uint8_t)std::max(0.0f, std::min(255.0f, dzNumber(jh, "closed", 0)));
         h.panPerMs = dzPerMs(dzNumber(jh, "panSlew", 0), dzNumber(jh, "panRange", 0));
         h.tiltPerMs = dzPerMs(dzNumber(jh, "tiltSlew", 0), dzNumber(jh, "tiltRange", 0));

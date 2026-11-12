@@ -20,10 +20,17 @@
  * library: if it isn't built or FPP won't load it, only DeadZones is missing.
  *
  * Status, for the settings page: GET /api/plugin-apis/AirDefender/deadzones
+ *
+ * "Check my sequences" (DeadZones tab): GET .../deadzones/check?seq=<file>
+ * starts reading one sequence with FPP's own reader, on its own low-priority
+ * thread and only while nothing is playing; GET .../deadzones/check gives its
+ * progress and results. Reads only; nothing is written anywhere.
  */
 #include <fpp-pch.h>
 
+#include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
 #include <csignal>
 #include <fcntl.h>
@@ -32,8 +39,11 @@
 #include <cstring>
 #include <ctime>
 
+#include <atomic>
 #include <cstdlib>
 #include <exception>
+#include <memory>
+#include <thread>
 #include <functional>
 #include <mutex>
 #include <string>
@@ -45,6 +55,9 @@
 #include "log.h"
 #include "settings.h"
 
+#include "fseq/FSEQFile.h"
+
+#include "DeadZonesCheck.h"
 #include "DeadZonesConfig.h"
 #include "DeadZonesCore.h"
 
@@ -69,6 +82,7 @@ public:
 
     /* fppd stopping, or unloading the plugin to update or uninstall it: stop the loop, as callbacks.sh would. */
     virtual std::function<bool()> shutdown() override {
+        stopCheck();
         runScript("airdefender_stop.sh", false);
         return nullptr;
     }
@@ -105,8 +119,17 @@ public:
                 callback(makeStringResponse(status(), 200, "application/json"));
             },
             { drogon::Get }, false);
+        FPPPlugins::registerPluginApi(
+            "/AirDefender/deadzones/check",
+            [this](const HttpRequestPtr& req, HttpCallback&& callback) {
+                int code = 200;
+                std::string body = checkRequest(req->getParameter("seq"), req->getParameter("stop") == "1", code);
+                callback(makeStringResponse(body, code, "application/json"));
+            },
+            { drogon::Get }, false);
     }
     virtual void unregisterApis() override {
+        FPPPlugins::unregisterPluginApi("/AirDefender/deadzones/check");
         FPPPlugins::unregisterPluginApi("/AirDefender/deadzones");
     }
 
@@ -122,6 +145,159 @@ private:
     long long fileSize = -1;
     unsigned long long frames = 0;
     volatile bool failed = false;
+
+    // "Check my sequences": one sequence at a time, on its own thread.
+    std::thread checkThread;
+    std::mutex checkMutex;               // guards checkSeq, checkResult, checkError
+    std::atomic<bool> checkBusy{ false }, checkCancel{ false };
+    std::atomic<int> checkProgress{ 0 };
+    std::string checkSeq, checkError;
+    Json::Value checkResult;
+
+    void stopCheck() {
+        checkCancel = true;
+        if (checkThread.joinable()) {
+            checkThread.join();
+        }
+        checkCancel = false;
+    }
+
+    std::string checkStatus() {
+        Json::Value out;
+        std::lock_guard<std::mutex> lock(checkMutex);
+        out["busy"] = (bool)checkBusy;
+        out["seq"] = checkSeq;
+        out["progress"] = (int)checkProgress;
+        out["error"] = checkError;
+        out["result"] = checkResult;
+        return SaveJsonToString(out);
+    }
+
+    std::string checkRequest(const std::string& seqParam, bool stop, int& code) {
+        if (stop) {
+            stopCheck();
+            return checkStatus();
+        }
+        if (seqParam.empty()) {
+            return checkStatus();
+        }
+        if (checkBusy) {
+            code = 409;
+            return "{\"error\":\"Already checking a sequence.\"}";
+        }
+        std::string seq = seqParam;
+        if (seq.find('/') != std::string::npos || seq.find("..") != std::string::npos) {
+            code = 400;
+            return "{\"error\":\"Unknown sequence.\"}";
+        }
+        if (seq.size() < 5 || seq.compare(seq.size() - 5, 5, ".fseq") != 0) {
+            seq += ".fseq";
+        }
+        if (sequence && sequence->IsSequenceRunning()) {
+            code = 409;
+            return "{\"error\":\"A sequence is playing. Check when nothing is playing, so the show isn't slowed down.\"}";
+        }
+        DzConfig cfg;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            cfg = engine.getConfig();
+        }
+        bool anyZones = false;
+        for (const DzHead& h : cfg.heads) {
+            anyZones = anyZones || !h.zones.empty() || h.tiltMin > 0 || h.tiltMax < 255;
+        }
+        if (!anyZones) {
+            code = 400;
+            return "{\"error\":\"No zones yet: mark some on the Zones page first.\"}";
+        }
+        std::string path = FPP_DIR_MEDIA("/sequences/" + seq);
+        if (!FileExists(path)) {
+            code = 404;
+            return "{\"error\":\"Sequence not found.\"}";
+        }
+        stopCheck();   // the last one has finished; collect its thread
+        {
+            std::lock_guard<std::mutex> lock(checkMutex);
+            checkSeq = seq; checkError = ""; checkResult = Json::Value();
+        }
+        checkProgress = 0;
+        checkBusy = true;
+        checkThread = std::thread([this, path, cfg]() { runCheck(path, cfg); });
+        return checkStatus();
+    }
+
+    /* On the check's own thread: read the sequence frame by frame and run it through the DeadZones check. */
+    void runCheck(const std::string& path, const DzConfig& cfg) {
+        // Gentle on the Pi: lowest priority, so anything else fppd does comes first.
+        setpriority(PRIO_PROCESS, (id_t)syscall(SYS_gettid), 19);
+        std::string error;
+        Json::Value result;
+        try {
+            std::unique_ptr<FSEQFile> file(FSEQFile::openFSEQFile(path));
+            if (!file) {
+                throw std::runtime_error("FPP couldn't open the sequence file.");
+            }
+            uint32_t numFrames = file->getNumFrames(), channels = file->getChannelCount();
+            int step = file->getStepTime() > 0 ? file->getStepTime() : 25;
+            // Only the heads' own channels are needed.
+            std::vector<std::pair<uint32_t, uint32_t>> ranges;
+            long top = 0;
+            for (const DzHead& h : cfg.heads) {
+                for (long ch : { h.panCh, h.tiltCh, h.shutterCh, h.dimmerCh }) {
+                    if (ch >= 0) { ranges.push_back({ (uint32_t)ch, 1 }); top = std::max(top, ch); }
+                }
+            }
+            file->prepareRead(ranges, 0);
+            std::vector<uint8_t> data(std::max<size_t>((size_t)channels, (size_t)top + 1) + 16, 0);
+            DzScan scan(cfg, step);
+            for (uint32_t f = 0; f < numFrames; f++) {
+                if (checkCancel) {
+                    throw std::runtime_error("Stopped.");
+                }
+                if ((f & 63) == 0 && sequence && sequence->IsSequenceRunning()) {
+                    throw std::runtime_error("A sequence started playing, so the check stopped to keep out of its way.");
+                }
+                FSEQFile::FrameData* fd = file->getFrame(f);
+                if (fd) {
+                    std::fill(data.begin(), data.end(), 0);
+                    fd->readFrame(data.data(), (uint32_t)data.size());
+                    delete fd;
+                }
+                scan.frame(f, data.data(), data.size());
+                checkProgress = numFrames ? (int)((f + 1) * 100ULL / numFrames) : 100;
+            }
+            result["frames"] = (Json::UInt)numFrames;
+            result["stepMs"] = step;
+            result["lengthMs"] = (Json::UInt64)((unsigned long long)numFrames * step);
+            Json::Value heads(Json::arrayValue);
+            int total = 0;
+            for (const DzCheckHead& h : scan.results()) {
+                Json::Value jh;
+                jh["id"] = h.id; jh["name"] = h.name; jh["more"] = h.more;
+                Json::Value ev(Json::arrayValue);
+                for (const DzCheckEvent& e : h.events) {
+                    Json::Value je;
+                    je["start"] = (Json::UInt64)e.startMs; je["end"] = (Json::UInt64)e.endMs; je["why"] = e.why;
+                    ev.append(je);
+                    total++;
+                }
+                jh["events"] = ev;
+                heads.append(jh);
+            }
+            result["heads"] = heads;
+            result["total"] = total;
+        } catch (const std::exception& e) {
+            error = e.what();
+        } catch (...) {
+            error = "The check failed.";
+        }
+        {
+            std::lock_guard<std::mutex> lock(checkMutex);
+            checkError = error;
+            checkResult = result;
+        }
+        checkBusy = false;
+    }
 
     /*
      * Run one of the plugin's scripts the way fppd runs a plugin's lifecycle callback (fork and exec,
@@ -280,8 +456,9 @@ private:
     }
 };
 
-// Safe to unload: no threads, timers, commands or outbound requests of its own, and its one
-// route goes through registerPluginApi() and is given back in unregisterApis().
+// Safe to unload: no timers, commands or outbound requests of its own; the sequence check's
+// thread is stopped and joined in shutdown(), and its routes go through registerPluginApi()
+// and are given back in unregisterApis().
 FPP_PLUGIN_SUPPORTS_UNLOAD()
 
 extern "C" {

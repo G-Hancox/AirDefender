@@ -40,6 +40,8 @@ $airdefenderPage = array(
     // The compass direction shown at the top of the radar (0 = north up).
     'radarRotation' => ((int) airdefender_dash_setting('radarRotation', '0') % 360 + 360) % 360,
     'feedLabel' => airdefender_feed_label($airdefenderFeed),
+    // DeadZones on: the heads card also says when one is closed because it points into a zone.
+    'deadZones' => airdefender_dash_setting('deadZonesEnabled', '0') === '1',
 );
 ?>
 <style>
@@ -393,6 +395,22 @@ $airdefenderPage = array(
     }
 
     /* ---------- heads ---------- */
+    // DeadZones (when on): which heads its check is holding closed right now, from the compiled part's status.
+    var dzStatus = {};
+    function dzClosed(h) {
+        var d = dzStatus[h.id];
+        if (!d || !d.closed) { return ''; }
+        return d.reason === 'zone' ? (d.zone || 'a zone') : d.reason === 'tilt' ? 'tilt limit' : 'with another head';
+    }
+    function dzPoll() {
+        if (!cfg.deadZones) { return Promise.resolve(); }
+        return fetch('api/plugin-apis/AirDefender/deadzones', { credentials: 'same-origin', cache: 'no-store' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                dzStatus = {};
+                if (d && d.enabled) { (d.heads || []).forEach(function (h) { dzStatus[h.id] = h; }); }
+            }).catch(function () { dzStatus = {}; });
+    }
     function renderHeads() {
         var heads = (live && live.heads) || [];
         var list = $id('adHeadsList');
@@ -414,12 +432,18 @@ $airdefenderPage = array(
             ch.className = 'text-body-secondary';
             ch.textContent = h.channel ? 'ch ' + h.channel : 'no channel';
             name.appendChild(ch);
-            var badge = document.createElement('span');
-            badge.className = 'badge ' + (h.closed ? 'text-bg-warning' : 'text-bg-secondary');
-            badge.textContent = h.closed ? 'Closed' : 'Show';
+            var badge = document.createElement('span'), dz = dzClosed(h);
+            badge.className = 'badge ' + (h.closed ? 'text-bg-warning' : dz ? 'text-bg-info' : 'text-bg-secondary');
+            badge.textContent = h.closed ? 'Closed' : dz ? 'DeadZone' : 'Show';
             line.appendChild(name);
             line.appendChild(badge);
             item.appendChild(line);
+            if (dz) {
+                var why = document.createElement('div');
+                why.className = 'small text-body-secondary';
+                why.textContent = 'Closed: DeadZones \u00b7 ' + dz;
+                item.appendChild(why);
+            }
             if (h.problem) {
                 var p = document.createElement('div');
                 p.className = 'small text-danger';
@@ -430,11 +454,14 @@ $airdefenderPage = array(
         });
 
         var closed = heads.filter(function (h) { return h.closed; }).length;
+        var inZones = heads.filter(function (h) { return !h.closed && dzClosed(h); }).length;
         var problems = heads.filter(function (h) { return h.problem; }).length;
         var summary = !heads.length ? 'No heads enabled. Add them in Settings.'
             : heads.length + (heads.length === 1 ? ' head' : ' heads') + ' · '
-              + (closed === heads.length ? 'all closed' : closed === 0 ? 'the show controls them' : closed + ' closed');
-        $id('adHeadsSummary').textContent = summary + (problems ? ' · ' + problems + ' need attention (see Detailed)' : '');
+              + (closed === heads.length ? 'all closed' : closed === 0 && !inZones ? 'the show controls them' : closed === 0 ? 'the show controls the rest' : closed + ' closed');
+        $id('adHeadsSummary').textContent = summary.replace('the show controls the rest', inZones + ' in a DeadZone, the show controls the rest')
+            + (inZones && closed > 0 && closed < heads.length ? ' · ' + inZones + ' in a DeadZone' : '')
+            + (problems ? ' · ' + problems + ' need attention (see Detailed)' : '');
         $id('adHeadsSummary').classList.toggle('text-danger', !!problems);
     }
 
@@ -730,7 +757,7 @@ $airdefenderPage = array(
             });
         });
     }
-    function poll() { return call('GET').catch(function () {}); }
+    function poll() { return dzPoll().then(function () { return call('GET'); }).catch(function () {}); }
     function schedule() {
         if (pollTimer) { clearInterval(pollTimer); }
         pollTimer = setInterval(poll, view === 'detailed' ? 2000 : 5000);

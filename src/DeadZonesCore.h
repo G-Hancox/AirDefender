@@ -44,6 +44,7 @@ struct DzHead {
     long shutterCh = -1;            // 0-based positions in the frame; -1 when not set
     long panCh = -1;
     long tiltCh = -1;
+    long dimmerCh = -1;             // only for "Check my sequences" (is the beam on?); the live check never touches it
     uint8_t closedValue = 0;
     float panPerMs = 0;             // how fast the head really turns, in channel values per millisecond;
     float tiltPerMs = 0;            // 0 means "keeps up with the data"
