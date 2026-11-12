@@ -251,7 +251,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 <ul class="nav nav-tabs mb-3" role="tablist" aria-label="DeadZones pages">
                     <li class="nav-item" role="presentation"><button type="button" class="nav-link active" role="tab" aria-selected="true" data-dz-tab="heads">Heads</button></li>
                     <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="aim"><i class="fas fa-crosshairs"></i> Aim</button></li>
-                    <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-dz-tab="live">Live</button></li>
                 </ul>
                 <div data-dz-pane="heads" role="tabpanel">
                 <h2 class="visually-hidden">Pan and tilt</h2>
@@ -358,17 +357,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 </div>
                 </div>
 
-                <div class="d-none" data-dz-pane="live" role="tabpanel">
-                <div class="form-text" id="adDzLiveNone">Nothing to show yet: DeadZones needs at least one head with pan and tilt set on the Heads page, and fppd running.</div>
-                <div class="table-responsive d-none" id="adDzLiveWrap">
-                    <h2 class="visually-hidden">Right now</h2>
-                    <table class="table table-sm align-middle" id="adDzLive">
-                        <thead><tr><th scope="col">Head</th><th scope="col">Pan</th><th scope="col">Tilt</th><th scope="col">Zones</th><th scope="col">Shutter</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                    <div class="form-text">Pan and tilt are the channel values (0-255) where the head really is, allowing for how fast it turns.</div>
-                </div>
-                </div>
             </div>
         </div>
     </div>
@@ -715,16 +703,15 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     if ($id('deadZonesEnabled')) { $id('deadZonesEnabled').addEventListener('change', updateDeadZones); }
     if ($id('ad-dz-tab')) { $id('ad-dz-tab').addEventListener('shown.bs.tab', updateDeadZones); }
 
-    // What the compiled part in fppd says, asked every 2 seconds only while this tab is showing.
+    // Whether the compiled part in fppd is loaded and running, asked every 5 seconds only while this tab is showing.
+    // (What each head is doing right now belongs on the dashboard.)
     var dzTimer = null;
-    function dzCell(tr, text, cls) { var td = document.createElement('td'); td.textContent = text; if (cls) { td.className = cls; } tr.appendChild(td); }
     function showDzStatus(d) {
-        var box = $id('adDzStatus'), wrap = $id('adDzLiveWrap');
+        var box = $id('adDzStatus');
         if (!d) {
             box.className = 'mb-3 text-warning-emphasis';
             box.textContent = "DeadZones isn't available on this FPP right now: its compiled part isn't loaded in fppd. "
                 + 'Restart FPPD; if this stays, it could not be built when Air Defender was installed. Everything else in Air Defender works without it.';
-            wrap.classList.add('d-none');
             return;
         }
         var setUp = (d.heads || []).filter(function (h) { return h.setUp; }).length;
@@ -732,20 +719,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         box.textContent = d.failed || d.error ? d.error
             : d.enabled ? 'DeadZones is running: ' + setUp + ' head' + (setUp === 1 ? '' : 's') + ' set up.'
             : 'DeadZones is ready and switched off.';
-        var body = $id('adDzLive').querySelector('tbody');
-        body.textContent = '';
-        (d.heads || []).forEach(function (h) {
-            var tr = document.createElement('tr');
-            dzCell(tr, h.name || 'MH' + h.id);
-            dzCell(tr, h.pan === null || h.pan === undefined ? '-' : h.pan);
-            dzCell(tr, h.tilt === null || h.tilt === undefined ? '-' : h.tilt);
-            dzCell(tr, h.zones);
-            var why = { zone: 'Closed: in ' + (h.zone || 'a zone'), tilt: 'Closed: past its tilt limit', 'other-head': "Closed: another head's zone" }[h.reason];
-            dzCell(tr, h.closed ? (why || 'Closed') : 'Show', h.closed ? 'text-warning-emphasis fw-semibold' : '');
-            body.appendChild(tr);
-        });
-        wrap.classList.toggle('d-none', !d.enabled || !(d.heads || []).length);
-        $id('adDzLiveNone').classList.toggle('d-none', !wrap.classList.contains('d-none'));
     }
     function pollDz() {
         fetch('api/plugin-apis/AirDefender/deadzones', { credentials: 'same-origin', cache: 'no-store' })
@@ -754,7 +727,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     }
     function watchDz() {
         var showing = $id('ad-dz') && $id('ad-dz').classList.contains('active') && !document.hidden;
-        if (showing && !dzTimer) { pollDz(); dzTimer = setInterval(pollDz, 2000); }
+        if (showing && !dzTimer) { pollDz(); dzTimer = setInterval(pollDz, 5000); }
         if (!showing && dzTimer) { clearInterval(dzTimer); dzTimer = null; }
     }
     document.querySelectorAll('#adTabs a').forEach(function (a) { a.addEventListener('shown.bs.tab', watchDz); });
@@ -870,7 +843,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         aimLastPress = Date.now(); aim.level = parseInt(this.value, 10);
         aimSend({ action: 'aim_set', level: aim.level, beam: aim.beam ? 1 : 0 });
     });
-    // DeadZones' pages (Heads, Aim, Live); the last one used is remembered in this browser.
+    // DeadZones' pages (Heads, Aim); the last one used is remembered in this browser.
     function dzTab(name, remember) {
         document.querySelectorAll('[data-dz-tab]').forEach(function (b) {
             var on = b.getAttribute('data-dz-tab') === name;
