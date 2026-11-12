@@ -24,6 +24,11 @@
 #include <fpp-pch.h>
 
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <cerrno>
+#include <cstring>
 #include <ctime>
 
 #include <cstdlib>
@@ -117,18 +122,52 @@ private:
     unsigned long long frames = 0;
     volatile bool failed = false;
 
-    /* One of the plugin's scripts; the start one in the background, detached from fppd. */
+    /*
+     * Run one of the plugin's scripts the way fppd runs a plugin's lifecycle callback (fork and exec,
+     * not system(), which failed with -1 inside fppd and ran nothing). The start one is detached from
+     * fppd (its own session, so it outlives this process's wait) and not waited for; the stop one is
+     * waited for up to 5 s, like fppd's own callbacks.
+     */
     void runScript(const char* script, bool background) {
         std::string path = pluginDir + "/scripts/" + script;
         if (!FileExists(path)) {
             LogErr(VB_PLUGIN, "Air Defender: %s is missing\n", path.c_str());
             return;
         }
-        std::string cmd = (background ? "setsid bash '" : "bash '") + path + "' </dev/null >/dev/null 2>&1" + (background ? " &" : "");
-        int rc = std::system(cmd.c_str());
-        if (rc != 0) {
-            LogWarn(VB_PLUGIN, "Air Defender: %s returned %d\n", script, rc);
+        pid_t pid = fork();
+        if (pid < 0) {
+            LogErr(VB_PLUGIN, "Air Defender: could not start %s: %s\n", script, strerror(errno));
+            return;
         }
+        if (pid == 0) {
+            // Child: quiet, and (to start the loop) a second fork so the script belongs to no one in fppd.
+            int devnull = open("/dev/null", O_RDWR);
+            if (devnull >= 0) {
+                dup2(devnull, 0); dup2(devnull, 1); dup2(devnull, 2);
+            }
+            if (background) {
+                setsid();
+                if (fork() != 0) {
+                    _exit(0);
+                }
+            }
+            execl("/bin/bash", "bash", path.c_str(), (char*)nullptr);
+            _exit(127);
+        }
+        // Parent: the start one's first child exits at once; the stop one runs its course (up to 5 s).
+        long long deadline = GetTimeMS() + (background ? 1000 : 5000);
+        while (true) {
+            int r = waitpid(pid, nullptr, WNOHANG);
+            if (r == pid || (r < 0 && errno != EINTR)) {
+                break;
+            }
+            if (GetTimeMS() >= deadline) {
+                LogWarn(VB_PLUGIN, "Air Defender: %s still running; carrying on without waiting\n", script);
+                break;
+            }
+            usleep(10000);
+        }
+        LogInfo(VB_PLUGIN, "Air Defender: ran %s\n", script);
     }
 
     /* Something went wrong inside the frame check: stop for good (until fppd restarts) and say so once. */
