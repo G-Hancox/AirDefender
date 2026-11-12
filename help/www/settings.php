@@ -50,7 +50,7 @@ until you pick the model again.</p>
         minutes before each one. <b>Only selected playlists</b> checks only while a playlist selected in the list beside it
         plays, scheduled or started by hand, and from 2 minutes before a scheduled one; with nothing ticked, it works like
         <b>All scheduled shows</b>. Outside those times the dashboard shows <b>Standby</b>, nothing is sent to the flight-data
-        service, and the shutters are left to the show. To test a sequence at another time, use <b>Start tracking</b> on the
+        service, and the shutters are left to the show. To test a sequence at another time, use <b>Manual tracking</b> on the Test tab of the
         dashboard (or the Air Defender: Check Now command): it tracks for the time you pick, then stops by itself.</li>
     <li><b>Playlists to check during</b> (shown with Only selected playlists; your ticks are kept while it is
         hidden): tick the playlists that use your moving heads, so the rest (a late-night static show, say) leave Air

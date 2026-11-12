@@ -93,19 +93,10 @@ $airdefenderPage = array(
             <h3 class="alert-heading h4 mb-1" id="adBannerTitle">&nbsp;</h3>
             <div id="adBannerSub">&nbsp;</div>
         </div>
-        <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOff" title="Track aircraft now, even with no show on; stops by itself when the time runs out">
-            <select class="form-select w-auto" id="adOverrideMin" aria-label="How long to track">
-                <option value="30">30 min</option>
-                <option value="60" selected>1 hour</option>
-                <option value="120">2 hours</option>
-                <option value="240">4 hours</option>
-            </select>
-            <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideStart">Start tracking</button>
-        </div>
         <button type="button" class="btn btn-danger d-none" id="adBannerTestStop">Stop test</button>
         <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOn">
             <span class="badge text-bg-secondary fs-6" id="adOverrideLeft"></span>
-            <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideEnd">Stop tracking</button>
+            <button type="button" class="btn btn-outline-secondary text-body" data-override-end>Stop</button>
         </div>
     </div>
 
@@ -239,6 +230,41 @@ $airdefenderPage = array(
             </div>
         </div>
     </div>
+
+    <div class="row g-3 mt-0">
+        <div class="col-lg-8 col-xl-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
+                    <span class="fw-bold">Manual tracking</span><small class="text-body-secondary">checks for aircraft with no show on</small>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOff">
+                        <select class="form-select w-auto" id="adOverrideMin" aria-label="How long to track">
+                            <option value="30">30 min</option>
+                            <option value="60" selected>1 hour</option>
+                            <option value="120">2 hours</option>
+                            <option value="240">4 hours</option>
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary text-body" id="adOverrideStart">Start manual tracking</button>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOnCard">
+                        <span class="fw-semibold" id="adOverrideLeftCard"></span>
+                        <button type="button" class="btn btn-outline-secondary text-body" data-override-end>Stop</button>
+                    </div>
+                    <div class="form-text d-none" id="adOverrideNo"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-xl-6">
+            <div class="small text-body-secondary">
+                <p>Air Defender turns itself on for your shows (see <b>Check for aircraft during</b> in Settings). Manual tracking is
+                    for other times, like testing a sequence: it checks for aircraft and closes the heads as usual, then stops by
+                    itself when the time runs out.</p>
+                <p class="mb-0">While it runs, the banner at the top says <b>Manual tracking active</b> with a <b>Stop</b> button on
+                    every tab. Playlists can start it with the <b>Air Defender: Check Now</b> command.</p>
+            </div>
+        </div>
+    </div>
     </div>
 
     <div class="alert alert-secondary mt-3 mb-0 small">
@@ -345,14 +371,20 @@ $airdefenderPage = array(
         if (live && live.outputError) {
             sub += ' · FPP refused the shutter channels: ' + live.outputError;
         }
-        // Start tracking: offered when checks depend on show times; shows time left while on.
+        // Manual tracking (Test tab): checks with no show on for a while; the banner says so, with Stop, while it runs.
         var ovLeft = live && live.overrideUntil ? live.overrideUntil - (Date.now() / 1000 + clockOffset) : 0;
         var canOverride = live && live.loopRunning && live.enabled && live.role !== 'remote';
         hide($id('adOverrideOn'), !(ovLeft > 0));
+        hide($id('adOverrideOnCard'), !(ovLeft > 0));
         hide($id('adOverrideOff'), !(canOverride && !(ovLeft > 0)));
+        var noOverride = !live ? '' : live.role === 'remote' ? 'A Remote follows its Player: start manual tracking there.'
+            : !live.enabled ? 'Air Defender is turned off in Settings.' : !live.loopRunning ? 'The detection loop isn\u2019t running.' : '';
+        hide($id('adOverrideNo'), ovLeft > 0 || canOverride || !noOverride);
+        $id('adOverrideNo').textContent = noOverride;
         if (ovLeft > 0) {
-            $id('adOverrideLeft').textContent = 'Tracking · ' + (ovLeft >= 3600 ? Math.floor(ovLeft / 3600) + ' h ' : '')
-                + Math.ceil((ovLeft % 3600) / 60) + ' min left';
+            var leftText = (ovLeft >= 3600 ? Math.floor(ovLeft / 3600) + ' h ' : '') + Math.ceil((ovLeft % 3600) / 60) + ' min left';
+            $id('adOverrideLeft').textContent = 'Manual tracking active \u00b7 ' + leftText;
+            $id('adOverrideLeftCard').textContent = 'Manual tracking active \u00b7 ' + leftText;
         }
         hide($id('adBannerTestStop'), !(status.active && left > 0));
         $id('adBanner').className = 'alert alert-' + cls + ' d-flex flex-wrap align-items-center justify-content-between gap-3';
@@ -815,13 +847,15 @@ $airdefenderPage = array(
     });
     $id('adOverrideStart').addEventListener('click', function () {
         busy(this, call('POST', 'action=override&minutes=' + encodeURIComponent($id('adOverrideMin').value))
-            .then(function () { toast('Tracking started.'); setTimeout(poll, 2500); })   // the loop checks within a couple of seconds
-            .catch(function (e) { toast('Could not start tracking: ' + e.message, false); }));
+            .then(function () { toast('Manual tracking started.'); setTimeout(poll, 2500); })   // the loop checks within a couple of seconds
+            .catch(function (e) { toast('Could not start manual tracking: ' + e.message, false); }));
     });
-    $id('adOverrideEnd').addEventListener('click', function () {
-        busy(this, call('POST', 'action=override_off')
-            .then(function () { toast('Tracking stopped.'); setTimeout(poll, 2500); })
-            .catch(function (e) { toast('Could not stop tracking: ' + e.message, false); }));
+    root.querySelectorAll('[data-override-end]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            busy(this, call('POST', 'action=override_off')
+                .then(function () { toast('Manual tracking stopped.'); setTimeout(poll, 2500); })
+                .catch(function (e) { toast('Could not stop manual tracking: ' + e.message, false); }));
+        });
     });
     $id('adClearLog').addEventListener('click', function () {
         if (!window.confirm('Delete the Air Defender log? This cannot be undone.')) { return; }
