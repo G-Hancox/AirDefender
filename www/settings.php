@@ -268,7 +268,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         var v = (typeof pluginSettings !== 'undefined' && pluginSettings[key] !== undefined) ? String(pluginSettings[key]) : '';
         return v === '' ? fallback : v;
     }
-    function toast(text, ok) { $.jGrowl(text, { themeState: ok === false ? 'danger' : 'success' }); }
+    // jGrowl shows its text as HTML: names come from the user's own heads, so they go in as plain text.
+    function toast(text, ok) { var t = document.createElement('div'); t.textContent = text; $.jGrowl(t.innerHTML, { themeState: ok === false ? 'danger' : 'success' }); }
 
     /* Save one setting the way FPP's helpers do (config/plugin.AirDefender), with a readable message. */
     function save(key, value, label) {
