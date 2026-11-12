@@ -429,17 +429,17 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
-                                        <span class="form-text m-0">At rest (pan 0, tilt 0) faces</span>
+                                        <span class="form-text m-0" title="Pan 0, tilt 0">At rest faces</span>
                                         <div class="btn-group" role="group" aria-label="Which way the head faces at rest, seen from the front of the house">
                                 <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-rest="-90">Left</button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-rest="0">Front</button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-rest="90">Right</button>
                             </div>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adPanRev" aria-pressed="false" title="If the real head pans the other way from the picture, press this">&#8644; Reverse pan</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adPanRev" aria-pressed="false" title="If the real head pans the other way from the picture, press this">&#8644; Reverse</button>
                                     </div>
-                                    <div class="d-flex align-items-center gap-3 mt-2 airdefender-headview">
-                                        <svg class="airdefender-headpic" id="adHeadPic" viewBox="0 0 200 210" role="img" aria-label="The head, viewed from the front"></svg>
-                                        <div class="form-text m-0">View from the front.</div>
+                                    <div class="text-center mt-2 airdefender-headview">
+                                        <svg class="airdefender-headpic mx-auto" id="adHeadPic" viewBox="10 30 180 165" role="img" aria-label="The head, viewed from the front"></svg>
+                                        <div class="form-text mt-0">View from the front.</div>
                                     </div>
                                 </div>
                             </div>
@@ -569,7 +569,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-heads { min-width: 46rem; }
     .airdefender-grip { cursor: grab; touch-action: none; }
     .airdefender-aimctl { max-width: 15rem; }
-    .airdefender-headview .airdefender-headpic { width: 7.5rem; flex: none; }
+    .airdefender-headview .airdefender-headpic { width: 100%; max-width: 11rem; display: block; }
     .airdefender-zonemap { width: 100%; }
     .airdefender-zonemap .behind { fill: var(--bs-secondary-color); fill-opacity: .14; stroke: none; }
     .airdefender-zonemap .divider { stroke: var(--bs-secondary-color); stroke-width: 1; stroke-dasharray: 4 3; }
