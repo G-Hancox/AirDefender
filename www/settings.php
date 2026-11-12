@@ -382,7 +382,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     </div>
                     <div class="flex-grow-1" style="min-width: 16rem; max-width: 34rem">
                         <h3 class="h6">Zones</h3>
-                        <div class="list-group" id="adZoneList"></div>
+                        <div class="list-group airdefender-zonelist" id="adZoneList"></div>
                         <div class="form-text" id="adZoneNone">No zones for this head yet.</div>
                     </div>
                 </div>
@@ -394,6 +394,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 </div>
 
 <style>
+    /* A long list scrolls in its own box, about as tall as the picture beside it; a short one doesn't. */
+    .airdefender-zonelist { max-height: 20rem; overflow-y: auto; }
     .airdefender-zonemap { width: min(100%, 18rem); aspect-ratio: 1; display: block; background: var(--bs-body-bg); }
     .airdefender-zonemap .zone { fill: var(--bs-warning); fill-opacity: .35; stroke: var(--bs-warning); stroke-width: 1.5; }
     .airdefender-zonemap .limit { fill: var(--bs-danger); fill-opacity: .2; }
