@@ -115,8 +115,8 @@ if (!function_exists('airdefender_deadzones_file')) {
                     $list[] = [
                         'name' => substr(trim((string) ($z['name'] ?? '')), 0, 40),
                         'points' => $points,
-                        'alsoCloses' => array_values(array_filter(array_map('intval', is_array($z['alsoCloses'] ?? null) ? $z['alsoCloses'] : []),
-                            function ($id) use ($n) { return $id >= 1 && $id !== (int) $n; })),
+                        // Each head is mapped on its own: a zone closes only the head it was marked with.
+                        'alsoCloses' => [],
                     ];
                 }
             }

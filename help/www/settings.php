@@ -117,7 +117,7 @@ opens it again once it has left, allowing for how fast the head really turns. Of
 works the same either way.</p>
 <ul>
     <li><b>Heads</b>: each head's pan, tilt and dimmer channels, range and slew. Heads imported from xLights already have them.</li>
-    <li><b>Zones</b>: steer a head with <b>Aim</b> (only while nothing is playing), mark the corners of an area, and finish the zone.
+    <li><b>Zones</b>: three cards like the dashboard. <b>Aim</b> steers a head (only while nothing is playing; it starts at rest with the beam off). The <b>Map</b> shows that head's zones, with where the beam points behind the show shaded (set which way the head faces at rest, and <b>Reverse pan</b> if it turns the other way). The <b>Zones</b> card marks and lists zones; each head is mapped on its own.
         Also: tilt limits, two <b>landmarks</b> per head to <b>Re-align</b> the zones next season, <b>Test zones</b> to trace them with
         the head, and <b>Export</b> / <b>Import</b> to back them up.</li>
     <li><b>Check</b> (optional: DeadZones protects every sequence during the show whether or not you check it): plays your sequences through the DeadZones check, without the lights, and lists each moment a head's beam is on
