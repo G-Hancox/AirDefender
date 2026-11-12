@@ -245,11 +245,24 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     </div>
                 </div>
             </div>
-            <div class="d-none mt-2 p-2 border rounded" id="adMhXlProblem">
-                <div class="alert alert-warning mb-2" id="adMhXlProblemText" role="status"></div>
-                <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlAgain"><i class="fas fa-folder-open"></i> Pick folder again</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlFilesInstead"><i class="fas fa-file"></i> Pick the files instead</button>
-                <button type="button" class="btn btn-sm btn-link" id="adMhXlProblemClose">Cancel</button>
+            <div class="modal fade" id="adMhXlProblem" tabindex="-1" aria-labelledby="adMhXlProblemTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="adMhXlProblemTitle"><i class="fas fa-exclamation-triangle text-warning"></i> Import failed</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p id="adMhXlProblemText" role="alert"></p>
+                            <p class="form-text mb-0">Try again, or enter your heads by hand: <b>Add head</b>, then each head's name, start channel, shutter channel and closed value.</p>
+                        </div>
+                        <div class="modal-footer flex-wrap">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlAgain"><i class="fas fa-folder-open"></i> Pick folder again</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlFilesInstead"><i class="fas fa-file"></i> Pick the files instead</button>
+                            <button type="button" class="btn btn-sm btn-primary" id="adMhXlByHand"><i class="fas fa-keyboard"></i> Enter heads by hand</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="d-none mt-2 p-2 border rounded" id="adMhXlPick">
                 <div class="form-text mt-0 mb-2">Moving heads in your xLights show. Tick the ones to protect and press <b>Add heads</b>: each gets its name,
@@ -1449,13 +1462,32 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     }
     // The browser lists the whole folder before the page gets it, which can take a while: show that it's working
     // from when the picker closes (the page gets focus back) until the files arrive or the picker was cancelled.
-    var mhXlModal = null;
+    // Bootstrap ignores show/hide while a pop-up is still opening or closing, so each one is told what it
+    // should be and catches up when its animation ends (a quick folder can close it while it's still opening).
+    var mhXlWant = { adMhXlBusy: false, adMhXlProblem: false };
+    function mhXlModalSet(id, on) {
+        mhXlWant[id] = on;
+        try {
+            var m = bootstrap.Modal.getOrCreateInstance($id(id));
+            if (on) {
+                // One at a time: the failure pop-up waits until "Reading..." has closed.
+                if (id === 'adMhXlProblem' && $id('adMhXlBusy').classList.contains('show')) { return; }
+                m.show();
+            } else { m.hide(); }
+        } catch (e) {}
+    }
+    ['adMhXlBusy', 'adMhXlProblem'].forEach(function (id) {
+        $id(id).addEventListener('shown.bs.modal', function () { if (!mhXlWant[id]) { mhXlModalSet(id, false); } });
+        $id(id).addEventListener('hidden.bs.modal', function () {
+            if (mhXlWant[id]) { mhXlModalSet(id, true); }
+            if (id === 'adMhXlBusy' && mhXlWant.adMhXlProblem) { mhXlModalSet('adMhXlProblem', true); }
+        });
+    });
+    // Closed with its X (or a click outside): it's not wanted any more.
+    $id('adMhXlProblem').addEventListener('hide.bs.modal', function () { mhXlWant.adMhXlProblem = false; });
     function mhXlBusy(on) {
         $id('adMhXlImport').disabled = on;
-        try {
-            if (!mhXlModal) { mhXlModal = bootstrap.Modal.getOrCreateInstance($id('adMhXlBusy')); }
-            if (on) { mhXlModal.show(); } else { mhXlModal.hide(); }
-        } catch (e) {}
+        mhXlModalSet('adMhXlBusy', on);
     }
     var mhXlWait = null, mhXlTry = 0;
     function mhXlStop() { if (mhXlWait) { clearTimeout(mhXlWait); mhXlWait = null; } mhXlBusy(false); }
@@ -1463,7 +1495,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         var attempt = ++mhXlTry;   // a late answer from an abandoned pick is ignored
         $id('adMhXlDir').value = '';
         $id('adMhXlDir').setAttribute('data-try', attempt);
-        $id('adMhXlProblem').classList.add('d-none'); $id('adMhXlPick').classList.add('d-none');
+        $id('adMhXlPick').classList.add('d-none');
         window.addEventListener('focus', function back() {
             window.removeEventListener('focus', back);
             if (attempt !== mhXlTry) { return; }
@@ -1472,7 +1504,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             mhXlWait = setTimeout(function () {
                 if (attempt !== mhXlTry) { return; }
                 mhXlTry++; mhXlStop();
-                mhXlProblem('Nothing came back from your browser. If it asked whether to upload the folder, it needs a <b>yes</b> (nothing leaves this computer). Try again, or pick the two files instead.');
+                mhXlProblem('<b>Timed out.</b> Nothing came back from your browser after 90 seconds. If it asked whether to upload the folder, it needs a <b>yes</b> (nothing leaves this computer).');
             }, 90000);
         });
         $id('adMhXlDir').click();
@@ -1480,15 +1512,24 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     $id('adMhXlBusyCancel').addEventListener('click', function () { mhXlTry++; mhXlStop(); });
     $id('adMhXlDir').addEventListener('cancel', function () { mhXlStop(); });
     function mhXlPickFiles() { $id('adMhXlFile').value = ''; $id('adMhXlFile').click(); }
+    // Why the import failed, in a pop-up with the ways forward (again, files, or by hand).
     function mhXlProblem(html) {
         $id('adMhXlPick').classList.add('d-none');
         $id('adMhXlProblemText').innerHTML = html;
-        $id('adMhXlProblem').classList.remove('d-none');
+        if (typeof bootstrap === 'undefined') { toast($id('adMhXlProblemText').textContent, false); return; }
+        mhXlModalSet('adMhXlProblem', true);
     }
+    function mhXlProblemHide() { mhXlModalSet('adMhXlProblem', false); }
     $id('adMhXlImport').addEventListener('click', function () { if (canPickFolder) { mhXlPickFolder(); } else { mhXlPickFiles(); } });
-    $id('adMhXlAgain').addEventListener('click', mhXlPickFolder);
-    $id('adMhXlFilesInstead').addEventListener('click', mhXlPickFiles);
-    $id('adMhXlProblemClose').addEventListener('click', function () { $id('adMhXlProblem').classList.add('d-none'); });
+    $id('adMhXlAgain').addEventListener('click', function () { mhXlProblemHide(); mhXlPickFolder(); });
+    $id('adMhXlFilesInstead').addEventListener('click', function () { mhXlProblemHide(); mhXlPickFiles(); });
+    $id('adMhXlByHand').addEventListener('click', function () {
+        mhXlProblemHide();
+        // An empty head ready to fill in: the first one with nothing entered, else a new one.
+        var empty = rows.filter(function (r) { return !r.classList.contains('d-none') && !field(r, 'Name').value.trim() && !modelOf(r) && !field(r, 'Start').value; })[0];
+        if (!empty && !$id('adAddHead').classList.contains('d-none')) { $id('adAddHead').click(); return; }
+        if (empty) { empty.scrollIntoView({ block: 'center' }); field(empty, 'Name').focus(); }
+    });
     // A folder: just its two setup files (the one nearest the top, if a backup folder has copies too). Nothing else is read.
     $id('adMhXlDir').addEventListener('change', function () {
         var all = Array.prototype.slice.call(this.files || []);
@@ -1503,7 +1544,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         var folder = ((all[0].webkitRelativePath || '').split('/')[0]) || 'that folder';
         if (!rgb) {
             var div = document.createElement('div'); div.textContent = folder;
-            mhXlProblem('Couldn\u2019t find xLights\u2019 show file (<b>xlights_rgbeffects.xml</b>) in <b>' + div.innerHTML + '</b>. Pick the folder xLights uses as its show folder: in xLights, <b>File &rarr; Show Folder</b> shows where it is.');
+            mhXlProblem('<b>Wrong folder?</b> Couldn\u2019t find xLights\u2019 show file (<b>xlights_rgbeffects.xml</b>) in <b>' + div.innerHTML + '</b>. Pick the folder xLights uses as its show folder: in xLights, <b>File &rarr; Show Folder</b> shows where it is.');
             return;
         }
         mhXlLoad(net ? [rgb, net] : [rgb]);
@@ -1517,7 +1558,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         mhXlFiles = files;
         xlParse(files).then(function (xl) {
             mhXl = xl;
-            $id('adMhXlProblem').classList.add('d-none');
             var list = $id('adMhXlRows'); list.textContent = '';
             var needNet = false;
             xl.names.forEach(function (name) {
@@ -1535,7 +1575,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             });
             $id('adMhXlNoNet').classList.toggle('d-none', !needNet);
             $id('adMhXlPick').classList.remove('d-none');
-        }).catch(function (e) { mhXlProblem(e.message); });
+        }).catch(function (e) { var d = document.createElement('div'); d.textContent = e.message; mhXlProblem('<b>Couldn\u2019t read it.</b> ' + d.innerHTML); });
     }
     $id('adMhXlCancel').addEventListener('click', function () { $id('adMhXlPick').classList.add('d-none'); });
     $id('adMhXlApply').addEventListener('click', function () {
