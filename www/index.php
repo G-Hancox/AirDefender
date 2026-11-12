@@ -76,13 +76,13 @@ $airdefenderPage = array(
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div class="text-body-secondary" id="adMeta">&nbsp;</div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <div class="btn-group" role="group" aria-label="Air Defender pages">
-                <button type="button" class="btn btn-outline-secondary active" data-tab="status" aria-pressed="true"><i class="fas fa-fw fa-satellite-dish"></i> Status</button>
-                <button type="button" class="btn btn-outline-secondary text-body" data-tab="test" aria-pressed="false"><i class="fas fa-fw fa-stopwatch"></i> Test</button>
-            </div>
             <div class="btn-group" role="group" aria-label="Dashboard view" id="adViewSwitch">
                 <button type="button" class="btn btn-outline-secondary active" data-view="lite" aria-pressed="true" title="Refreshes every 5 seconds">Lite</button>
                 <button type="button" class="btn btn-outline-secondary text-body" data-view="detailed" aria-pressed="false" title="Adds the radar and every head; refreshes every 2 seconds">Detailed</button>
+            </div>
+            <div class="btn-group" role="group" aria-label="Air Defender pages">
+                <button type="button" class="btn btn-outline-secondary active" data-tab="status" aria-pressed="true"><i class="fas fa-fw fa-satellite-dish"></i> Status</button>
+                <button type="button" class="btn btn-outline-secondary text-body" data-tab="test" aria-pressed="false"><i class="fas fa-fw fa-stopwatch"></i> Test</button>
             </div>
             <a class="buttons" href="plugin.php?plugin=AirDefender&amp;page=www/settings.php"><i class="fas fa-fw fa-cog"></i> Settings</a>
         </div>
@@ -782,7 +782,8 @@ $airdefenderPage = array(
             var on = b.getAttribute('data-tab') === name;
             b.classList.toggle('active', on); b.classList.toggle('text-body', !on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
-        hide($id('adViewSwitch'), name !== 'status');   // Lite and Detailed only change the Status page
+        // Lite and Detailed only change the Status page: greyed out on Test (not hidden, so the buttons don't shift).
+        $id('adViewSwitch').querySelectorAll('button').forEach(function (b) { b.disabled = name !== 'status'; });
         root.querySelectorAll('[data-pane]').forEach(function (p) { hide(p, p.getAttribute('data-pane') !== name); });
         if (remember) { try { localStorage.setItem('airdefenderTab', name); } catch (e) { /* not kept */ } }
     }
