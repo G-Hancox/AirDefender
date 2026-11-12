@@ -160,7 +160,7 @@ $airdefenderPage = array(
             </div>
         </div>
 
-        <div class="col-md-6 col-xl-4 order-xl-3">
+        <div class="col-md-6 col-xl-4 order-xl-3" id="adHeadsCol">
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
                     <span class="fw-bold">Moving heads</span><small class="text-body-secondary text-end" id="adFeedLite" data-lite></small>
@@ -714,6 +714,7 @@ $airdefenderPage = array(
             clockOffset = data.serverTime - Date.now() / 1000;
             if (data.live) { live = data.live; }
         }
+        if (remoteShown !== isRemote()) { applyRole(); return; }   // applyRole draws everything again
         renderBanner(); renderTest(); renderHeads(); renderSky(); renderFooter(data ? data.lastEvent : cfg.lastEvent);
     }
 
@@ -736,10 +737,24 @@ $airdefenderPage = array(
     }
 
     /* ---------- view switch ---------- */
+    // A Remote has no radar of its own (its Player's dashboard has it), so it gets one view: the banner, every head
+    // with its channel, and the last event. Lite/Detailed come back if it's switched to Player.
+    function isRemote() { return !!(live && live.role === 'remote'); }
+    var savedView = 'lite', remoteShown = null;
+    function applyRole() {
+        var r = isRemote();
+        if (r === remoteShown) { return; }
+        remoteShown = r;
+        hide($id('adViewSwitch'), r);
+        $id('adHeadsCol').className = r ? 'col-12' : 'col-md-6 col-xl-4 order-xl-3';
+        setView(r ? 'lite' : savedView, false);
+    }
     function setView(v, save) {
-        view = v === 'detailed' ? 'detailed' : 'lite';
+        view = v === 'detailed' && !isRemote() ? 'detailed' : 'lite';
+        if (save) { savedView = view; }
         root.querySelectorAll('[data-detail]').forEach(function (el) { hide(el, view !== 'detailed'); });
         root.querySelectorAll('[data-lite]').forEach(function (el) { hide(el, view === 'detailed'); });
+        if (isRemote()) { hide($id('adHeadsList'), false); hide($id('adHeadsSummary'), true); }
         root.querySelectorAll('[data-view]').forEach(function (b) {
             var on = b.getAttribute('data-view') === view;
             b.classList.toggle('active', on);
@@ -874,7 +889,8 @@ $airdefenderPage = array(
 
     var saved = 'lite';
     try { saved = localStorage.getItem('airdefenderView') || 'lite'; } catch (e) {}
+    savedView = saved;
     markPresets();
-    setView(saved, false);
+    applyRole();
 })();
 </script>

@@ -6,6 +6,8 @@
   beam passing the top as each check comes in.
 - **Status and Test tabs**: tests have their own tab on the dashboard; while one runs, the banner has a **Stop test**
   button on every tab.
+- **A Remote's dashboard is simpler**: no Lite/Detailed switch and no radar (it's on the Player); just the banner,
+  every head with its channel, and the last event.
 - **Aircraft card** (Detailed view, where Test was): tap an aircraft on the radar for its full details. While an
   aircraft holds the heads closed, the card shows that one and other aircraft are locked until the all clear.
 - **Helicopters and drones look different on the radar**: an arrow inside a ring is a helicopter, a hollow arrow is a

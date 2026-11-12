@@ -16,6 +16,8 @@ does not replace your own obligations for sky-pointing beams and lasers.</div>
         Refreshes every 5 seconds.</li>
     <li><b>Detailed</b>: adds the <b>Sky</b> radar, the <b>Aircraft</b> card and every head with its channel. Refreshes every 2 seconds.</li>
 </ul>
+<p>On a <b>Remote</b> there is no Lite or Detailed: it shows the banner, every head with its channel, and the last
+event. The radar and aircraft are on the Player's dashboard.</p>
 <p>Either way, the dashboard only asks FPP for anything while it is open; the detection loop does the same work
 whether you look or not.</p>
 
