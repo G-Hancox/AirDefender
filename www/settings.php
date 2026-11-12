@@ -196,7 +196,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         $shown = $enabled || $name !== '' || $model !== '' || $start > 0 || $n === 1;
                     ?>
                         <tr data-head="<?php echo $n; ?>"<?php echo $shown ? '' : ' class="d-none"'; ?> data-channel="<?php echo $channel; ?>">
-                            <td><input class="form-check-input" type="checkbox" data-field="Enabled" aria-label="Protect head <?php echo $n; ?>"<?php echo $enabled ? ' checked' : ''; ?>></td>
+                            <td class="text-nowrap"><span class="btn btn-sm btn-outline-secondary text-body airdefender-grip d-none me-1" data-grip title="Drag to move" aria-hidden="true"><i class="fas fa-grip-lines"></i></span><input class="form-check-input" type="checkbox" data-field="Enabled" aria-label="Protect head <?php echo $n; ?>"<?php echo $enabled ? ' checked' : ''; ?>></td>
                             <td><input type="text" class="form-control form-control-sm" data-field="Name" value="<?php echo htmlspecialchars($name, ENT_QUOTES); ?>" maxlength="40" placeholder="MH<?php echo $n; ?>" aria-label="Head <?php echo $n; ?> name"></td>
                             <td>
                                 <select class="form-select form-select-sm" data-field="Model" aria-label="Head <?php echo $n; ?> model">
@@ -212,7 +212,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <td><input type="number" class="form-control form-control-sm" data-field="ClosedValue" value="<?php echo max(0, min(255, (int) airdefender_page_setting("head{$n}ClosedValue", '0'))); ?>" min="0" max="255" step="1" aria-label="Head <?php echo $n; ?> closed value"></td>
                             <td class="small" data-result></td>
                             <td class="text-nowrap">
-                                <span class="btn btn-sm btn-outline-secondary text-body airdefender-grip d-none" data-grip title="Drag to move" aria-hidden="true"><i class="fas fa-grip-lines"></i></span>
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-remove title="Remove this head" aria-label="Remove head <?php echo $n; ?>"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
