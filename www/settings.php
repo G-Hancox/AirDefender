@@ -233,7 +233,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             <div class="form-text" id="adMhXlHelp">For <b>Import models from xLights</b>, pick your xLights <b>show folder</b> (in xLights, <b>File &rarr; Show Folder</b>
                 shows where it is). Your browser may ask to "upload" it: nothing leaves this computer, the page only reads xLights' two setup files from it.</div>
             <div class="modal fade" id="adMhXlBusy" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="adMhXlBusyTitle" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-dialog modal-dialog-centered airdefender-popup">
                     <div class="modal-content">
                         <div class="modal-body text-center py-4" role="status">
                             <div class="spinner-border text-primary mb-3" aria-hidden="true"></div>
@@ -246,7 +246,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 </div>
             </div>
             <div class="modal fade" id="adMhXlProblem" tabindex="-1" aria-labelledby="adMhXlProblemTitle" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-dialog modal-dialog-centered airdefender-popup">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="adMhXlProblemTitle"><i class="fas fa-exclamation-triangle text-warning"></i> Import failed</h5>
@@ -254,12 +254,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         </div>
                         <div class="modal-body">
                             <p id="adMhXlProblemText" role="alert"></p>
-                            <p class="form-text mb-0">Try again, or enter your heads by hand: <b>Add head</b>, then each head's name, start channel, shutter channel and closed value.</p>
-                        </div>
-                        <div class="modal-footer flex-wrap">
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlAgain"><i class="fas fa-folder-open"></i> Pick folder again</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlFilesInstead"><i class="fas fa-file"></i> Pick the files instead</button>
-                            <button type="button" class="btn btn-sm btn-primary" id="adMhXlByHand"><i class="fas fa-keyboard"></i> Enter heads by hand</button>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-secondary text-body" id="adMhXlAgain"><i class="fas fa-folder-open"></i> Pick folder again</button>
+                                <button type="button" class="btn btn-outline-secondary text-body" id="adMhXlFilesInstead"><i class="fas fa-file"></i> Pick the files instead</button>
+                                <button type="button" class="btn btn-primary" id="adMhXlByHand"><i class="fas fa-keyboard"></i> Enter heads by hand</button>
+                            </div>
+                            <p class="form-text mt-2 mb-0">By hand: <b>Add head</b>, then its name, start channel, shutter channel and closed value.</p>
                         </div>
                     </div>
                 </div>
@@ -518,6 +518,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     /* Keep the head table's inputs usable on a phone: the table scrolls sideways in its own box. */
     .airdefender-heads { min-width: 46rem; }
     .airdefender-grip { cursor: grab; touch-action: none; }
+    .modal-dialog.airdefender-popup { max-width: 26rem; width: calc(100% - 2rem); margin-left: auto; margin-right: auto; }
     .airdefender-dragging { opacity: .6; }
     .airdefender-dragging td { background: var(--bs-tertiary-bg); }
     .airdefender-heads input[data-field="Name"], .airdefender-heads select { min-width: 8rem; }
