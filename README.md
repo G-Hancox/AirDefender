@@ -33,6 +33,31 @@ Version 1.7.0 (see [CHANGELOG.md](CHANGELOG.md)). For FPP 10 and later.
   stops), so after an fppd restart the heads are held again within seconds, and a watchdog restarts the loop if it
   ever stops on its own.
 
+## DeadZones (optional)
+
+Closes a moving head's shutter while it points into an area you've marked out, such as a neighbour's window, the
+road or a bedroom, and opens it again once the head has left. It is **off by default** and turned on in Settings, on
+the **DeadZones** tab. Plane safety works the same whether it's on or off.
+
+- **Heads**: each head's pan, tilt and dimmer channels, range and slew (how fast it really turns). **Import models
+  from xLights** on the Moving heads tab fills these in from your show folder.
+- **Zones**: steer a head from the page with **Aim** (only while nothing is playing; the beam stays off until you press
+  **Beam**), mark the corners of an area and finish the zone. A picture shows the head as seen from the front of the
+  house. Also: tilt limits, **landmarks** to **Re-align** the zones next season if a head goes back up a little
+  differently, **Test zones** (the head traces each outline), and **Export** / **Import** to back them up.
+- **Check** (optional): plays your sequences through the DeadZones check, without the lights, and lists each moment a
+  lit beam points into a zone, so you can tidy it up in xLights. DeadZones protects every sequence during the show
+  whether or not you check it.
+
+During the show, a small compiled part inside fppd looks at every frame just before it goes out and, while a head
+(allowing for its slew) points into one of its zones, sets that frame's shutter channel to its closed value. It
+changes nothing else, costs about a microsecond a frame, and writes nothing to the SD card. The dashboard's Moving
+heads card shows **DeadZone** and the zone while it holds a head closed. If it ever hits an error it switches itself
+off and says why; plane safety doesn't depend on it.
+
+The compiled part is built on your FPP when Air Defender is installed or updated (a few seconds), and FPP rebuilds it
+when FPP itself is upgraded. If it can't be built, everything except DeadZones works as before.
+
 ## Install
 
 **From FPP's Plugin Manager (recommended)**
@@ -299,6 +324,9 @@ uses.
 - Uninstalling removes the log and the saved Player password.
 - Air Defender runs a background process while FPP is running, and holds the shutter channels you list while
   aircraft are near or during a test.
+- With **DeadZones** on (off by default), a compiled part built at install runs inside fppd and closes a head's
+  shutter in each frame while it points into an area you marked. **Import models from xLights** reads your xLights
+  files in your browser only; nothing is sent anywhere.
 
 The full disclosure is in `pluginInfo.json` and is shown by Plugin Manager before you install or update.
 
@@ -340,7 +368,9 @@ on GitHub. **Air Defender - Help** in FPP's Help menu links there too.
 | Piece | File |
 |---|---|
 | Detection loop: reads settings every second, checks the feed, decides, holds or releases the overlays | `scripts/airdefender_loop.php` |
-| Watchdog that keeps the loop running; fppd starts and stops it through its lifecycle callbacks | `callbacks.sh`, `scripts/airdefender_supervise.sh`, `scripts/airdefender_start.sh`, `scripts/airdefender_stop.sh` |
+| Watchdog that keeps the loop running; fppd starts and stops it (through the compiled part when it's built, else through the lifecycle callbacks) | `callbacks.sh`, `scripts/airdefender_supervise.sh`, `scripts/airdefender_start.sh`, `scripts/airdefender_stop.sh` |
+| DeadZones, inside fppd: the per-frame check, its settings file, Check my sequences, and its routes (`/api/plugin-apis/AirDefender/deadzones`, `.../deadzones/check`) | `src/AirDefenderPlugin.cpp`, `src/DeadZonesCore.h`, `src/DeadZonesConfig.h`, `src/DeadZonesCheck.h`, `Makefile`, `scripts/build_deadzones.sh`; tests in `tests/` |
+| DeadZones zones and aiming (writes `deadzones.json` for the compiled part when settings change) | `scripts/airdefender_deadzones.php`, `scripts/airdefender_aim.php` |
 | Shutter overlays (`PUT /api/overlays/range/<ch>`, FPP's proxy to fppd) | `scripts/airdefender_controller.php` |
 | Heads by model or manual channel | `scripts/airdefender_models.php` |
 | Flight-data services, backup, fetching and parsing | `scripts/airdefender_feeds.php`, `scripts/airdefender_adsb.php` |
@@ -359,7 +389,9 @@ Runtime files written on the device (not in git): `heads.json`, `test.json`, `ov
 `loop.lock` in the plugin folder, `plugin-AirDefender.log` in FPP's logs folder, and the Player's password in
 `plugindata/AirDefender/`. The status the dashboard reads, `state.json`, is kept in memory (`/dev/shm/AirDefender/`,
 or the plugin folder where that can't be used), written when something in it changes and every 30 seconds.
-`heads.json` holds only what must survive a reboot and is written only when it changes, to spare the SD card. The pages use FPP's styles and Bootstrap, so they follow FPP's light and dark themes.
+`heads.json` holds only what must survive a reboot and is written only when it changes, to spare the SD card.
+DeadZones keeps `deadzones.json` and `zones.json` in `plugindata/AirDefender/` (or the plugin folder), written only
+when you change them; what's being aimed is in memory (`/dev/shm/AirDefender/aim.json`). The pages use FPP's styles and Bootstrap, so they follow FPP's light and dark themes.
 
 ## Credits
 

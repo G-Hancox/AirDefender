@@ -21,10 +21,10 @@
  *
  * Status, for the settings page: GET /api/plugin-apis/AirDefender/deadzones
  *
- * "Check my sequences" (DeadZones tab): GET .../deadzones/check?seq=<file>
- * starts reading one sequence with FPP's own reader, on its own low-priority
- * thread and only while nothing is playing; GET .../deadzones/check gives its
- * progress and results. Reads only; nothing is written anywhere.
+ * "Check my sequences" (DeadZones tab): POST .../deadzones/check with
+ * seq=<file> starts reading one sequence with FPP's own reader, on its own
+ * low-priority thread and only while nothing is playing (stop=1 stops it);
+ * GET .../deadzones/check gives its progress and results. Reads only.
  */
 #include <fpp-pch.h>
 
@@ -124,10 +124,12 @@ public:
             "/AirDefender/deadzones/check",
             [this](const HttpRequestPtr& req, HttpCallback&& callback) {
                 int code = 200;
-                std::string body = checkRequest(req->getParameter("seq"), req->getParameter("stop") == "1", code);
+                // Starting or stopping a check is a POST (FPP has no login, so a GET must never do work); GET only reads progress.
+                bool post = req->method() == drogon::Post;
+                std::string body = checkRequest(post ? req->getParameter("seq") : std::string(), post && req->getParameter("stop") == "1", code);
                 callback(makeStringResponse(body, code, "application/json"));
             },
-            { drogon::Get }, false);
+            { drogon::Get, drogon::Post }, false);
     }
     virtual void unregisterApis() override {
         FPPPlugins::unregisterPluginApi("/AirDefender/deadzones/check");

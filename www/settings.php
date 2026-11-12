@@ -1756,8 +1756,11 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     /* ---------- DeadZones: Check my sequences ---------- */
     var CHECK = 'api/plugin-apis/AirDefender/deadzones/check', checkQueue = [], checkSeqs = [], checking = false;
     function fmtTime(ms) { var s = ms / 1000, m = Math.floor(s / 60); return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0'); }
+    // GET reads progress; starting or stopping a check is a POST (form fields seq / stop).
     function checkGet(q) {
-        return fetch(CHECK + (q || ''), { credentials: 'same-origin', cache: 'no-store' })
+        var opts = { credentials: 'same-origin', cache: 'no-store' };
+        if (q) { opts.method = 'POST'; opts.headers = { 'Content-Type': 'application/x-www-form-urlencoded' }; opts.body = q.replace(/^\?/, ''); }
+        return fetch(CHECK, opts)
             .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || (r.status === 404 ? 'The DeadZones part of Air Defender isn\u2019t running (see the status above).' : 'HTTP ' + r.status)); } return d; }); });
     }
     function checkRow(seq) {

@@ -38,31 +38,69 @@
         },
         "/AirDefender/deadzones/check": {
             "get": {
-                "summary": "Check my sequences",
-                "description": "Starts checking one sequence against the DeadZones zones (seq=<file>), stops a check (stop=1), or with no parameters gives the check's progress and results: for each head, the moments its beam is on while it points into a zone. Reads the sequence with FPP's own reader on a low-priority thread, only while nothing is playing, and stops if a sequence starts. Nothing is written.",
-                "parameters": [
-                    {
-                        "name": "seq",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Sequence file to check, e.g. Carol of the Bells.fseq"
-                    },
-                    {
-                        "name": "stop",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "enum": [
-                                "1"
-                            ]
-                        },
-                        "description": "Stop the check"
+                "summary": "Check my sequences: progress and results",
+                "description": "The current or last check's progress and results: for each head, the moments its beam is on while it points into a zone.",
+                "responses": {
+                    "200": {
+                        "description": "Progress and results",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "busy": false,
+                                    "seq": "Bad Romance.fseq",
+                                    "progress": 100,
+                                    "error": "",
+                                    "result": {
+                                        "frames": 7200,
+                                        "stepMs": 25,
+                                        "lengthMs": 180000,
+                                        "total": 1,
+                                        "heads": [
+                                            {
+                                                "id": 1,
+                                                "name": "Left mover",
+                                                "more": false,
+                                                "events": [
+                                                    {
+                                                        "start": 12300,
+                                                        "end": 14100,
+                                                        "why": "Smith house"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
                     }
-                ],
+                }
+            },
+            "post": {
+                "summary": "Check my sequences: start or stop",
+                "description": "Starts checking one sequence against the DeadZones zones (form field seq=<file>), or stops a check (stop=1). Reads the sequence with FPP's own reader on a low-priority thread, only while nothing is playing, and stops if a sequence starts. Nothing is written.",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "seq": {
+                                        "type": "string",
+                                        "description": "Sequence file to check, e.g. Carol of the Bells.fseq"
+                                    },
+                                    "stop": {
+                                        "type": "string",
+                                        "enum": [
+                                            "1"
+                                        ],
+                                        "description": "Stop the check"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Progress and results",
