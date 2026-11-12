@@ -19,6 +19,7 @@
 #ifndef AIRDEFENDER_DEADZONES_CORE_H
 #define AIRDEFENDER_DEADZONES_CORE_H
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -36,6 +37,9 @@ struct DzZone {
     std::string name;
     std::vector<DzPoint> outline;   // three or more points, in pan/tilt channel values
     std::vector<int> alsoCloses;    // ids of other heads to close while this head is in the zone
+    // The box around the outline, worked out once in setConfig(): a point outside it (plus the margin) can't be in
+    // the zone, so most frames skip the outline altogether.
+    float minPan = 0, maxPan = -1, minTilt = 0, maxTilt = -1;
 };
 
 struct DzHead {
@@ -77,6 +81,16 @@ class DzEngine {
 public:
     void setConfig(const DzConfig& c) {
         config = c;
+        for (DzHead& h : config.heads) {
+            for (DzZone& z : h.zones) {
+                if (z.outline.empty()) { z.minPan = 0; z.maxPan = -1; continue; }
+                z.minPan = z.maxPan = z.outline[0].pan; z.minTilt = z.maxTilt = z.outline[0].tilt;
+                for (const DzPoint& p : z.outline) {
+                    z.minPan = std::min(z.minPan, p.pan); z.maxPan = std::max(z.maxPan, p.pan);
+                    z.minTilt = std::min(z.minTilt, p.tilt); z.maxTilt = std::max(z.maxTilt, p.tilt);
+                }
+            }
+        }
         states.assign(config.heads.size(), DzHeadState());
         lastMs = -1;
     }
@@ -202,8 +216,11 @@ private:
 
     DzReason check(const DzHead& h, float pan, float tilt, int& zone) const {
         if (tilt < h.tiltMin || tilt > h.tiltMax) { zone = -1; return DZ_TILT; }
+        float m = config.margin;
         for (size_t z = 0; z < h.zones.size(); z++) {
-            if (inZone(h.zones[z].outline, pan, tilt, config.margin)) { zone = (int)z; return DZ_ZONE; }
+            const DzZone& zn = h.zones[z];
+            if (pan < zn.minPan - m || pan > zn.maxPan + m || tilt < zn.minTilt - m || tilt > zn.maxTilt + m) { continue; }
+            if (inZone(zn.outline, pan, tilt, m)) { zone = (int)z; return DZ_ZONE; }
         }
         zone = -1;
         return DZ_OPEN;
