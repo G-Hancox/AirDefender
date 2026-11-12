@@ -73,10 +73,62 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
 - Runs on whichever FPP outputs the heads (Player sending to a Falcon over the network,
   or a Remote with its own heads), like plane safety.
 
+## Step 1 research (Nov 11) - what we found
+
+**The per-frame hook exists and is supported.** FPP's plugin interface (`src/Plugin.h`,
+`FPPPlugins::ChannelDataPlugin`) has
+`modifyChannelData(int ms, uint8_t* seqData)`, called "immediately before sending to
+outputs (after overlays)". That is exactly the point DeadZones needs: read pan/tilt from
+`seqData`, write the shutter's closed value into it. Because it runs after overlays, it also
+sits on top of plane safety's overlay (closed if either says closed, with no extra work).
+FPP's own example plugin, [fpp-brightness](https://github.com/FalconChristmas/fpp-brightness),
+changes channel data through this same hook.
+
+**Building it.** A root-level `Makefile` that includes FPP's
+`$(SRCDIR)/makefiles/common/setup.mk`, built by `make "SRCDIR=${SRCDIR}"` in
+`scripts/fpp_install.sh` (never in preStart/postStart). The library is
+`lib<repoName>.so`, so `libAirDefender.so`, exporting `createPlugin()`.
+- **FPP core upgrades rebuild it for us:** FPP runs `make -C <plugin>` on every plugin with a
+  root Makefile before restarting fppd. So "rebuild after a big FPP release" is automatic;
+  what's left to us is fixing the source if FPP changes the interface.
+- **The interface is versioned** (`FPP_PLUGIN_API_VERSION`, 6 on FPP 10.x). A plugin built
+  against the wrong version is refused at load instead of crashing the show. Good for safety.
+- **Unloading cleanly** (guideline 2.9): implement `shutdown()`, opt in with
+  `FPP_PLUGIN_SUPPORTS_UNLOAD()`, use FPP's makefiles (`-fno-gnu-unique`). Our part starts no
+  threads and registers no routes, so this is simple.
+- **Install risk to plan for:** today Air Defender is scripts only and installs in seconds.
+  With a compiled part, install compiles on the device (a minute or so on a Pi). If that
+  build ever fails, plane safety must still install and work: make the build non-fatal, and
+  show "DeadZones unavailable: the compiled part didn't build" on the DeadZones tab.
+
+**xLights does have everything we need, but it doesn't reach FPP.** A moving head's pan and
+tilt motors in xLights each store `ChannelCoarse`, `ChannelFine`, `MinLimit`, `MaxLimit`,
+`RangeOfMotion`, `OrientHome`, `SlewLimit` (degrees per second, default 180) and reverse /
+upside-down flags; the shutter has `DmxShutterChannel` and its open value. But when xLights
+uploads models to FPP it only sends name, start channel, channel count and layout
+(`CreateOverlayModelJSON` in xLights' `FPP.cpp`). So:
+- **Import from xLights:** let the user pick their `xlights_rgbeffects.xml` (from the show
+  folder) on the DeadZones tab; read each moving head's pan/tilt channels, 16-bit or not,
+  range and slew limits, matched to the heads by model name. Parsed in the browser or PHP,
+  once; nothing kept but the numbers.
+- **Or type them in** per head, with defaults (8-bit, 180 deg/s).
+- Range of motion lets zones be stored in degrees if we ever want; pan/tilt values are enough
+  to start.
+
+**Design consequences.**
+- The compiled part reads a small zones file at load and when settings change (FPP calls
+  `settingChanged()`), never per frame. Per frame it only does arithmetic in memory.
+- Slew model per head: keep a "where the head really is" pan/tilt, moved toward the data's
+  target by at most slew x frame time each frame; the shutter stays closed while either the
+  target or that real position is inside a zone (plus the edge margin).
+- Fail safe: any exception or bad zones file turns the zone check off and logs once.
+- Later, plane safety itself could move onto this hook (no overlay models needed). Not now.
+
 ## To work out
 
-- How FPP builds a plugin's C++ part on install, and what the plugin checker expects.
-- Which FPP hook to use for changing channel data per frame, on FPP 10.x.
+- (Done, see Step 1 research) How FPP builds a plugin's C++ part, and which hook to use.
+- What the plugin checker says about a Makefile and a `.so` built on install (run the linter
+  on a skeleton before writing the real thing).
 - Reading each head's pan/tilt channels (8- and 16-bit) from the models Air Defender
   already knows.
 - The setup page: per head, a pan/tilt picture with the zones drawn on it.
