@@ -61,7 +61,7 @@ $airdefenderPage = array(
     .airdefender-radar.turning .hit { cursor: inherit; }
     /* The Aircraft card never grows the row: its details scroll inside it. Beside the radar it takes the Sky card's
        height; stacked on a phone it keeps a fixed height. */
-    .airdefender-plane-body { position: relative; min-height: 17rem; }
+    .airdefender-plane-body { position: relative; min-height: 21rem; }
     .airdefender-plane-scroll { position: absolute; inset: 0; padding: inherit; overflow-y: auto; }
     .airdefender-radar .compass { fill: var(--bs-body-color); font-weight: 700; }
     .airdefender-radar.turning { cursor: grab; touch-action: none; }
@@ -76,7 +76,11 @@ $airdefenderPage = array(
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div class="text-body-secondary" id="adMeta">&nbsp;</div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <div class="btn-group" role="group" aria-label="Dashboard view">
+            <div class="btn-group" role="group" aria-label="Air Defender pages">
+                <button type="button" class="btn btn-outline-secondary active" data-tab="status" aria-pressed="true"><i class="fas fa-fw fa-satellite-dish"></i> Status</button>
+                <button type="button" class="btn btn-outline-secondary text-body" data-tab="test" aria-pressed="false"><i class="fas fa-fw fa-stopwatch"></i> Test</button>
+            </div>
+            <div class="btn-group" role="group" aria-label="Dashboard view" id="adViewSwitch">
                 <button type="button" class="btn btn-outline-secondary active" data-view="lite" aria-pressed="true" title="Refreshes every 5 seconds">Lite</button>
                 <button type="button" class="btn btn-outline-secondary text-body" data-view="detailed" aria-pressed="false" title="Adds the radar and every head; refreshes every 2 seconds">Detailed</button>
             </div>
@@ -105,10 +109,6 @@ $airdefenderPage = array(
         </div>
     </div>
 
-    <ul class="nav nav-tabs justify-content-end mb-3" role="tablist" aria-label="Air Defender pages">
-        <li class="nav-item" role="presentation"><button type="button" class="nav-link active" role="tab" aria-selected="true" data-tab="status"><i class="fas fa-fw fa-satellite-dish"></i> Status</button></li>
-        <li class="nav-item" role="presentation"><button type="button" class="nav-link" role="tab" aria-selected="false" data-tab="test"><i class="fas fa-fw fa-stopwatch"></i> Test</button></li>
-    </ul>
 
     <div data-pane="status" role="tabpanel">
     <div class="row g-3">
@@ -523,9 +523,8 @@ $airdefenderPage = array(
             ['Speed', p.gs === undefined ? null : p.gs + ' kn (' + Math.round(p.gs * 1.15078) + ' mph)'],
             ['Heading', p.trk === null || p.trk === undefined ? null : compass(p.trk)],
             ['Limits', p.in ? 'Inside' : 'Outside (too far or too high)'],
-            ['Built', p.year],
-            ['Squawk', p.sq],
-            ['ICAO code', p.hex ? p.hex.toUpperCase() : null]
+            ['Other', [p.year ? 'built ' + p.year : '', p.sq ? 'squawk ' + p.sq : '', p.hex ? 'ICAO ' + p.hex.toUpperCase() : '']
+                .filter(Boolean).join(' · ')]
         ];
         var dl = $id('adPlaneRows'); dl.textContent = '';
         rows.forEach(function (r) {
@@ -781,8 +780,9 @@ $airdefenderPage = array(
     function setTab(name, remember) {
         root.querySelectorAll('[data-tab]').forEach(function (b) {
             var on = b.getAttribute('data-tab') === name;
-            b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+            b.classList.toggle('active', on); b.classList.toggle('text-body', !on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
+        hide($id('adViewSwitch'), name !== 'status');   // Lite and Detailed only change the Status page
         root.querySelectorAll('[data-pane]').forEach(function (p) { hide(p, p.getAttribute('data-pane') !== name); });
         if (remember) { try { localStorage.setItem('airdefenderTab', name); } catch (e) { /* not kept */ } }
     }
