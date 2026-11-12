@@ -1,4 +1,4 @@
-# Safe Zones - plan (not built yet)
+# DeadZones - plan (not built yet)
 
 Status: planning only. Nothing on this branch changes how Air Defender works yet.
 
