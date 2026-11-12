@@ -232,6 +232,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             </div>
             <div class="form-text" id="adMhXlHelp">For <b>Import models from xLights</b>, pick your xLights <b>show folder</b> (in xLights, <b>File &rarr; Show Folder</b>
                 shows where it is). Your browser may ask to "upload" it: nothing leaves this computer, the page only reads xLights' two setup files from it.</div>
+            <div class="d-none mt-2 form-text" id="adMhXlBusy" role="status"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                Reading your show folder&hellip; a big one (lots of sequences, music and backups) can take your browser up to a minute.</div>
             <div class="d-none mt-2 p-2 border rounded" id="adMhXlProblem">
                 <div class="alert alert-warning mb-2" id="adMhXlProblemText" role="status"></div>
                 <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlAgain"><i class="fas fa-folder-open"></i> Pick folder again</button>
@@ -1434,7 +1436,24 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         $id('adMhXlHelp').innerHTML = 'For <b>Import models from xLights</b>, pick <b>xlights_rgbeffects.xml</b> and <b>xlights_networks.xml</b> from your xLights show folder.';
         $id('adMhXlAgain').classList.add('d-none');
     }
-    function mhXlPickFolder() { $id('adMhXlDir').value = ''; $id('adMhXlDir').click(); }
+    // The browser lists the whole folder before the page gets it, which can take a while: show that it's working
+    // from when the picker closes (the page gets focus back) until the files arrive or the picker was cancelled.
+    function mhXlBusy(on) {
+        $id('adMhXlBusy').classList.toggle('d-none', !on);
+        $id('adMhXlImport').disabled = on;
+    }
+    function mhXlPickFolder() {
+        $id('adMhXlDir').value = '';
+        $id('adMhXlProblem').classList.add('d-none'); $id('adMhXlPick').classList.add('d-none');
+        window.addEventListener('focus', function back() {
+            window.removeEventListener('focus', back);
+            mhXlBusy(true);
+            // No files after a long while (picker cancelled in a browser that doesn't say so): stop spinning.
+            setTimeout(function () { if (!$id('adMhXlDir').files.length) { mhXlBusy(false); } }, 120000);
+        });
+        $id('adMhXlDir').click();
+    }
+    $id('adMhXlDir').addEventListener('cancel', function () { mhXlBusy(false); });
     function mhXlPickFiles() { $id('adMhXlFile').value = ''; $id('adMhXlFile').click(); }
     function mhXlProblem(html) {
         $id('adMhXlPick').classList.add('d-none');
@@ -1448,6 +1467,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     // A folder: just its two setup files (the one nearest the top, if a backup folder has copies too). Nothing else is read.
     $id('adMhXlDir').addEventListener('change', function () {
         var all = Array.prototype.slice.call(this.files || []);
+        mhXlBusy(false);
         if (!all.length) { return; }
         function find(n) {
             return all.filter(function (f) { return f.name.toLowerCase() === n; })
