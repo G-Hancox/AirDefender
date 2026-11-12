@@ -49,9 +49,10 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
   head drifts or is swapped.
 - **Check my sequences** (manual): reads the sequence files and lists each moment a head
   would point into a DeadZone, to fix in xLights. Reads only; writes one small report.
-- **Shutter, or dimmer if there's no shutter.** Most shows hold the shutter open and sequence the dimmer;
-  forcing the shutter closed blacks the beam whatever the dimmer does (as plane safety already does). Only
-  fixtures with no separate shutter channel (dimmer and strobe combined) need the dimmer forced to 0 instead.
+- **Shutter, or dimmer if there's no shutter.** Most shows hold the shutter open and sequence the dimmer.
+  On most heads the shutter and strobe share one channel (closed / open / strobe ranges); forcing it to its
+  closed value blacks the beam whatever the dimmer does, as plane safety already does. Only fixtures with
+  no shutter at all (strobe on the dimmer channel) need the dimmer forced to 0 instead.
 
 ## Other things to plan for
 
