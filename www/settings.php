@@ -211,7 +211,11 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <td><input type="number" class="form-control form-control-sm" data-field="Offset" value="<?php echo $offset; ?>" min="1" max="512" step="1" aria-label="Head <?php echo $n; ?> shutter channel in the fixture"></td>
                             <td><input type="number" class="form-control form-control-sm" data-field="ClosedValue" value="<?php echo max(0, min(255, (int) airdefender_page_setting("head{$n}ClosedValue", '0'))); ?>" min="0" max="255" step="1" aria-label="Head <?php echo $n; ?> closed value"></td>
                             <td class="small" data-result></td>
-                            <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove title="Remove this head" aria-label="Remove head <?php echo $n; ?>"><i class="fas fa-trash"></i></button></td>
+                            <td class="text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-move="-1" title="Move up" aria-label="Move head <?php echo $n; ?> up"><i class="fas fa-arrow-up"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-move="1" title="Move down" aria-label="Move head <?php echo $n; ?> down"><i class="fas fa-arrow-down"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-remove title="Remove this head" aria-label="Remove head <?php echo $n; ?>"><i class="fas fa-trash"></i></button>
+                            </td>
                         </tr>
                     <?php endfor; ?>
                     </tbody>
@@ -468,7 +472,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-playlists .form-check { break-inside: avoid; display: flex; align-items: center; gap: .5rem; min-height: 2rem; padding-left: 0; margin-bottom: .25rem; }
     .airdefender-playlists .form-check .form-check-input { float: none; margin: 0; flex-shrink: 0; }
     /* Keep the head table's inputs usable on a phone: the table scrolls sideways in its own box. */
-    .airdefender-heads { min-width: 46rem; }
+    .airdefender-heads { min-width: 52rem; }
     .airdefender-heads input[data-field="Name"], .airdefender-heads select { min-width: 8rem; }
     .airdefender-heads input[type="number"] { min-width: 5.5rem; }
 </style>
@@ -627,17 +631,49 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             field(row, 'Start').disabled = false; field(row, 'Start').value = ''; field(row, 'Start').setAttribute('data-manual', '');
             field(row, 'Offset').value = 1; field(row, 'ClosedValue').value = 0; row.setAttribute('data-channel', 0);
             if (rows.filter(function (r) { return !r.classList.contains('d-none'); }).length > 1) { row.classList.add('d-none'); }
-            showRow(row); updateAdd();
+            showRow(row); updateAdd(); moveButtons();
             toast(name + ' removed.');
         });
     });
+    // Up and down: two heads swap places, with everything that belongs to each (settings, DeadZones values, zones).
+    function moveButtons() {
+        var shown = rows.filter(function (r) { return !r.classList.contains('d-none'); });
+        rows.forEach(function (r) {
+            var i = shown.indexOf(r);
+            r.querySelector('[data-move="-1"]').disabled = i <= 0;
+            r.querySelector('[data-move="1"]').disabled = i < 0 || i >= shown.length - 1;
+        });
+    }
+    rows.forEach(function (row) {
+        row.querySelectorAll('[data-move]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var shown = rows.filter(function (r) { return !r.classList.contains('d-none'); });
+                var other = shown[shown.indexOf(row) + parseInt(btn.getAttribute('data-move'), 10)];
+                if (!other) { return; }
+                var a = row.getAttribute('data-head'), b = other.getAttribute('data-head'), what = label(row);
+                document.querySelectorAll('#adHeads [data-move]').forEach(function (x) { x.disabled = true; });
+                post({ action: 'heads_swap', a: a, b: b }).then(function () {
+                    // Every setting either head has (head<n>Name, head<n>PanCh, ...), swapped.
+                    var re = new RegExp('^head(' + a + '|' + b + ')(\\D.*)$'), suffixes = {}, saves = [];
+                    Object.keys(typeof pluginSettings !== 'undefined' ? pluginSettings : {}).forEach(function (k) { var m = k.match(re); if (m) { suffixes[m[2]] = 1; } });
+                    Object.keys(suffixes).forEach(function (s) {
+                        var va = setting('head' + a + s, ''), vb = setting('head' + b + s, '');
+                        if (va !== vb) { saves.push(save('head' + a + s, vb)); saves.push(save('head' + b + s, va)); }
+                    });
+                    try { sessionStorage.setItem('airdefenderXlMsg', JSON.stringify({ ok: what + ' moved.', warn: '' })); } catch (e) {}
+                    $.when.apply($, saves).always(function () { location.reload(); });
+                }).catch(function (e) { toast(e.message, false); moveButtons(); });
+            });
+        });
+    });
+    moveButtons();
     $id('adAddHead').addEventListener('click', function () {
         var row = rows.filter(function (r) { return r.classList.contains('d-none'); })[0];
         if (!row) { return; }
         row.classList.remove('d-none');
         field(row, 'Enabled').checked = true;
         save(key(row, 'Enabled'), 1);
-        showRow(row); updateAdd();
+        showRow(row); updateAdd(); moveButtons();
         field(row, 'Name').focus();
     });
     updateAdd();

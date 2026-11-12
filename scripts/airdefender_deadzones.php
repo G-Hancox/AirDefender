@@ -314,6 +314,7 @@ if (!function_exists('airdefender_zones_request')) {
      *   realign     head, now1 / now2 (JSON [pan,tilt]: where landmark 1 / 2 is now)
      *   realign_undo head
      *   zones_import zones (JSON, a file from Export) -> replaces every head's zones
+     *   heads_swap  a, b (two heads swapped places on the Moving heads tab)
      * Returns [http status, answer].
      */
     function airdefender_zones_request(array $req): array
@@ -337,6 +338,30 @@ if (!function_exists('airdefender_zones_request')) {
             [$code, $answer] = airdefender_zones_request($req);
             $answer['imported'] = $count;
             return [$code, $answer];
+        }
+        if ($action === 'heads_swap') {
+            // Two heads swapped places on the Moving heads tab: their zones go with them, and "also close" follows.
+            $a = (int) ($req['a'] ?? 0); $b = (int) ($req['b'] ?? 0);
+            if ($a < 1 || $a > 8 || $b < 1 || $b > 8 || $a === $b) {
+                return [400, ['error' => 'Unknown heads.']];
+            }
+            $ha = $z['heads'][(string) $a] ?? null; $hb = $z['heads'][(string) $b] ?? null;
+            unset($z['heads'][(string) $a], $z['heads'][(string) $b]);
+            if ($hb !== null) { $z['heads'][(string) $a] = $hb; }
+            if ($ha !== null) { $z['heads'][(string) $b] = $ha; }
+            foreach ($z['heads'] as $k => $h) {
+                foreach ((is_array($h['zones'] ?? null) ? $h['zones'] : []) as $i => $zone) {
+                    if (is_array($zone['alsoCloses'] ?? null)) {
+                        $z['heads'][$k]['zones'][$i]['alsoCloses'] = array_map(function ($o) use ($a, $b) {
+                            $o = (int) $o; return $o === $a ? $b : ($o === $b ? $a : $o);
+                        }, $zone['alsoCloses']);
+                    }
+                }
+            }
+            if (($ha !== null || $hb !== null) && !airdefender_zones_write($z)) {
+                return [500, ['error' => 'Could not save the zones in ' . airdefender_deadzones_dir() . '. Check file permissions.']];
+            }
+            return [200, ['swapped' => [$a, $b]]];
         }
         if ($action === 'zones_get') {
             $out = [];
