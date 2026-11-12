@@ -250,7 +250,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 <p class="text-body-secondary">
                     For each head on the <b>Moving heads</b> tab, enter where pan and tilt are in the fixture's DMX chart, as you did for the shutter.
                     <b>Range</b> is how far it can turn
-                    (often 540&deg; pan, 270&deg; tilt) and <b>Speed</b> how fast (the slew limit in xLights, 180&deg; a second unless you changed it).
+                    (often 540&deg; pan, 270&deg; tilt) and <b>Slew</b> how fast it turns, in degrees a second (the <b>Slew Limit</b> in xLights, 180 unless you changed it).
                 </p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle airdefender-heads" id="adDzHeads">
@@ -260,7 +260,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                                 <?php foreach (array('Pan', 'Tilt') as $airdefenderAxis): ?>
                                     <th scope="col" class="border-start" title="<?php echo $airdefenderAxis; ?>'s channel in the fixture's DMX chart">Channel</th>
                                     <th scope="col" title="How many degrees it can turn">Range &deg;</th>
-                                    <th scope="col" title="How fast it turns, in degrees a second (xLights' slew limit)">Speed &deg;/s</th>
+                                    <th scope="col" title="How fast it turns, in degrees a second: the Slew Limit in xLights">Slew &deg;/s</th>
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
@@ -270,7 +270,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         $airdefenderDzFields = array(
                             // The main (coarse) channel is enough: about 2 degrees a step, plenty for a zone's edge.
                             'Ch' => array('', 1, 512, 'channel'),
-                            'Range' => array(null, 1, 3600, 'range in degrees'), 'Slew' => array('180', 1, 3600, 'speed in degrees a second'),
+                            'Range' => array(null, 1, 3600, 'range in degrees'), 'Slew' => array('180', 1, 3600, 'slew in degrees a second'),
                         );
                         for ($n = 1; $n <= AIRDEFENDER_HEADS; $n++): ?>
                             <tr data-dz-head="<?php echo $n; ?>" class="d-none">
