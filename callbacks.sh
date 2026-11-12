@@ -15,7 +15,15 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 case "$1" in
     --list)
-        echo "lifecycle"
+        # fppd treats a plugin as either scripts (lifecycle) or compiled (c++), never both. With
+        # DeadZones built, the compiled part is loaded and starts and stops the loop itself (it runs
+        # the same two scripts). If it is built but fppd won't load it, scripts/postStart.sh starts
+        # the loop anyway, so plane safety never depends on DeadZones.
+        if [ -f "${DIR}/libAirDefender.so" ]; then
+            echo "c++"
+        else
+            echo "lifecycle"
+        fi
         ;;
     --type)
         if [ "$2" = "lifecycle" ]; then

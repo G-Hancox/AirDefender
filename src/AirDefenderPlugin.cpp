@@ -25,7 +25,9 @@
 
 #include <sys/stat.h>
 
+#include <cstdlib>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <string>
 
@@ -46,9 +48,20 @@ public:
     AirDefenderPlugin() :
         FPPPlugins::Plugin("AirDefender"), FPPPlugins::ChannelDataPlugin(), FPPPlugins::APIProviderPlugin() {
         configFile = FPP_DIR_MEDIA("/plugindata/AirDefender/deadzones.json");
+        pluginDir = FPP_DIR_PLUGIN("/AirDefender");
         LogInfo(VB_PLUGIN, "Air Defender: DeadZones loaded (off until it is set up and turned on)\n");
+        // fppd loads a plugin as scripts or as compiled, never both, so with this library loaded the
+        // lifecycle callbacks don't run: start plane safety's detection loop here instead, in the
+        // background, exactly as callbacks.sh would (the script waits for an old loop to go first).
+        runScript("airdefender_start.sh", true);
     }
     virtual ~AirDefenderPlugin() {}
+
+    /* fppd stopping, or unloading the plugin to update or uninstall it: stop the loop, as callbacks.sh would. */
+    virtual std::function<bool()> shutdown() override {
+        runScript("airdefender_stop.sh", false);
+        return nullptr;
+    }
 
     /* Every frame, on FPP's output thread. Must be quick and must never throw. */
     virtual void modifyChannelData(int /* ms */, uint8_t* seqData) override {
@@ -90,12 +103,27 @@ private:
     DzEngine engine;
     std::mutex mutex;            // the frame check and the status request are on different threads
     std::string configFile;
+    std::string pluginDir;
     std::string error;           // why DeadZones turned itself off, or why its file couldn't be used
     long long lastLook = 0;
     long long fileTime = -1;
     long long fileSize = -1;
     unsigned long long frames = 0;
     volatile bool failed = false;
+
+    /* One of the plugin's scripts; the start one in the background, detached from fppd. */
+    void runScript(const char* script, bool background) {
+        std::string path = pluginDir + "/scripts/" + script;
+        if (!FileExists(path)) {
+            LogErr(VB_PLUGIN, "Air Defender: %s is missing\n", path.c_str());
+            return;
+        }
+        std::string cmd = (background ? "setsid bash '" : "bash '") + path + "' </dev/null >/dev/null 2>&1" + (background ? " &" : "");
+        int rc = std::system(cmd.c_str());
+        if (rc != 0) {
+            LogWarn(VB_PLUGIN, "Air Defender: %s returned %d\n", script, rc);
+        }
+    }
 
     /* Something went wrong inside the frame check: stop for good (until fppd restarts) and say so once. */
     void fail(const std::string& why) {
