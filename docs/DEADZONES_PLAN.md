@@ -35,7 +35,7 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
 ## Settings and pages (from planning, Nov 11)
 
 - **Enable DeadZones** switch in Air Defender's settings, off by default.
-- A **Masking** tab to draw and test zones.
+- A **DeadZones** tab to draw, test and re-align zones.
 - **Which heads a zone applies to:** all heads, or only the ones ticked. A zone can belong to
   one head (its own pan/tilt outline) or be shared by several.
 - **Lag per head:** heads physically trail the data, so the shutter stays closed after the
