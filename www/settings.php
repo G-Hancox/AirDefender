@@ -238,7 +238,9 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                         <div class="modal-body text-center py-4" role="status">
                             <div class="spinner-border text-primary mb-3" aria-hidden="true"></div>
                             <h5 class="mb-2" id="adMhXlBusyTitle">Reading your show folder&hellip;</h5>
-                            <div class="form-text">Your browser is going through the folder. A big one (lots of sequences, music and backups) can take up to a minute.</div>
+                            <div class="form-text mb-3">Your browser is going through the folder. A big one (lots of sequences, music and backups) can take up to a minute.
+                                If your browser asks whether to upload the folder, say yes: nothing leaves this computer.</div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adMhXlBusyCancel">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -1455,18 +1457,28 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             if (on) { mhXlModal.show(); } else { mhXlModal.hide(); }
         } catch (e) {}
     }
+    var mhXlWait = null, mhXlTry = 0;
+    function mhXlStop() { if (mhXlWait) { clearTimeout(mhXlWait); mhXlWait = null; } mhXlBusy(false); }
     function mhXlPickFolder() {
+        var attempt = ++mhXlTry;   // a late answer from an abandoned pick is ignored
         $id('adMhXlDir').value = '';
+        $id('adMhXlDir').setAttribute('data-try', attempt);
         $id('adMhXlProblem').classList.add('d-none'); $id('adMhXlPick').classList.add('d-none');
         window.addEventListener('focus', function back() {
             window.removeEventListener('focus', back);
+            if (attempt !== mhXlTry) { return; }
             mhXlBusy(true);
-            // No files after a long while (picker cancelled in a browser that doesn't say so): stop spinning.
-            setTimeout(function () { if (!$id('adMhXlDir').files.length) { mhXlBusy(false); } }, 120000);
+            // Nothing after 90 s (a browser question left unanswered, or a picker closed without saying so): stop, and say what to do.
+            mhXlWait = setTimeout(function () {
+                if (attempt !== mhXlTry) { return; }
+                mhXlTry++; mhXlStop();
+                mhXlProblem('Nothing came back from your browser. If it asked whether to upload the folder, it needs a <b>yes</b> (nothing leaves this computer). Try again, or pick the two files instead.');
+            }, 90000);
         });
         $id('adMhXlDir').click();
     }
-    $id('adMhXlDir').addEventListener('cancel', function () { mhXlBusy(false); });
+    $id('adMhXlBusyCancel').addEventListener('click', function () { mhXlTry++; mhXlStop(); });
+    $id('adMhXlDir').addEventListener('cancel', function () { mhXlStop(); });
     function mhXlPickFiles() { $id('adMhXlFile').value = ''; $id('adMhXlFile').click(); }
     function mhXlProblem(html) {
         $id('adMhXlPick').classList.add('d-none');
@@ -1480,7 +1492,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     // A folder: just its two setup files (the one nearest the top, if a backup folder has copies too). Nothing else is read.
     $id('adMhXlDir').addEventListener('change', function () {
         var all = Array.prototype.slice.call(this.files || []);
-        mhXlBusy(false);
+        if (String(mhXlTry) !== this.getAttribute('data-try')) { return; }   // cancelled or timed out meanwhile
+        mhXlStop();
         if (!all.length) { return; }
         function find(n) {
             return all.filter(function (f) { return f.name.toLowerCase() === n; })
