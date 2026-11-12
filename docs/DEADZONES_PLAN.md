@@ -54,6 +54,18 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
   closed value blacks the beam whatever the dimmer does, as plane safety already does. Only fixtures with
   no shutter at all (strobe on the dimmer channel) need the dimmer forced to 0 instead.
 
+## Head setup and next season
+
+- Reuse what Air Defender already has per head (model, shutter channel, closed value). Add pan and
+  tilt channels (8 or 16-bit) and slew limits as extra columns in the same head table, shown only
+  with DeadZones on.
+- **Heads won't sit in exactly the same spot every year.** Rather than re-drawing every zone:
+  - each head has one or two **landmarks** (say, a house corner and the chimney) marked with the
+    zones. Next season, point the head at the landmarks again and press **Re-align**: every zone
+    for that head shifts by the same amount (pan/tilt offset, and a twist if two landmarks).
+  - **Export / import zones** to a small file, so they survive a reinstall or a new SD card.
+  - Re-drawing only if a head moves a lot (different mount or side of the yard).
+
 ## Other things to plan for
 
 - The compiled part hooks into FPP itself: rebuild and retest after major FPP releases.
