@@ -137,6 +137,18 @@ int main() {
     CHECK("dented shape: in a leg", DzEngine::inZone(dent, 10, 60, 0));
     CHECK("dented shape: in the dent is outside", !DzEngine::inZone(dent, 50, 80, 0));
 
+    {
+        // Aiming: the aimed head is left alone even inside a zone; when aiming ends it's checked again.
+        DzEngine a; a.setConfig(oneHead()); a.setAiming(1);
+        frame(d, 125, 75); a.process(1000, d, 16);
+        CHECK("aiming: the aimed head's shutter stays open in a zone", d[2] == 255);
+        a.setAiming(0);
+        frame(d, 125, 75); a.process(1040, d, 16);
+        CHECK("aiming ended: closed again in the zone", d[2] == 0);
+        DzEngine o; o.setConfig(oneHead()); o.setAiming(2);
+        frame(d, 125, 75); o.process(1000, d, 16);
+        CHECK("aiming another head: this one still closes", d[2] == 0);
+    }
     std::printf("%s (%d failed)\n", failures ? "FAILED" : "All passed", failures);
     return failures ? 1 : 0;
 }

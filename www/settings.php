@@ -252,17 +252,21 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     For each head on the <b>Moving heads</b> tab, enter where pan and tilt are in the fixture's DMX chart, as you did for the shutter.
                     <b>Range</b> is how far it can turn
                     (often 540&deg; pan, 270&deg; tilt) and <b>Slew</b> how fast it turns, in degrees a second (the <b>Slew Limit</b> in xLights, 180 unless you changed it).
+                    For aiming a head to mark its zones: its <b>Dimmer</b> channel, and the shutter value that <b>opens</b> it (the shutter
+                    channel and its closed value are on the Moving heads tab).
                 </p>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle airdefender-heads" id="adDzHeads">
                         <thead>
-                            <tr><th scope="col" rowspan="2">Head</th><th scope="colgroup" colspan="3" class="text-center border-start">Pan</th><th scope="colgroup" colspan="3" class="text-center border-start">Tilt</th></tr>
+                            <tr><th scope="col" rowspan="2">Head</th><th scope="colgroup" colspan="3" class="text-center border-start">Pan</th><th scope="colgroup" colspan="3" class="text-center border-start">Tilt</th><th scope="colgroup" colspan="2" class="text-center border-start">For aiming</th></tr>
                             <tr>
                                 <?php foreach (array('Pan', 'Tilt') as $airdefenderAxis): ?>
                                     <th scope="col" class="border-start" title="<?php echo $airdefenderAxis; ?>'s channel in the fixture's DMX chart">Channel</th>
                                     <th scope="col" title="How many degrees it can turn">Range &deg;</th>
                                     <th scope="col" title="How fast it turns, in degrees a second: the Slew Limit in xLights">Slew &deg;/s</th>
                                 <?php endforeach; ?>
+                                <th scope="col" class="border-start" title="The dimmer's channel in the fixture's DMX chart">Dimmer ch.</th>
+                                <th scope="col" title="The shutter value that opens it (often 255)">Shutter open</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -285,13 +289,64 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                                         data-dz-field="<?php echo $airdefenderAxis . $f; ?>" data-dz-default="<?php echo $default; ?>" data-dz-what="<?php echo strtolower($airdefenderAxis) . ' ' . $info[3]; ?>"
                                         value="<?php echo $shown; ?>" min="<?php echo $info[1]; ?>" max="<?php echo $info[2]; ?>" step="1"
                                         aria-label="Head <?php echo $n; ?> <?php echo strtolower($airdefenderAxis) . ' ' . $info[3]; ?>"></td>
-                                <?php endforeach; endforeach; ?>
+                                <?php endforeach; endforeach;
+                                $dim = (int) airdefender_page_setting("head{$n}DimmerCh", '0');
+                                $open = airdefender_page_setting("head{$n}ShutterOpen", '255'); ?>
+                                <td class="border-start"><input type="number" class="form-control form-control-sm" data-dz-field="DimmerCh" data-dz-default="" data-dz-what="dimmer channel"
+                                    value="<?php echo $dim > 0 ? $dim : ''; ?>" min="1" max="512" step="1" aria-label="Head <?php echo $n; ?> dimmer channel"></td>
+                                <td><input type="number" class="form-control form-control-sm" data-dz-field="ShutterOpen" data-dz-default="255" data-dz-what="shutter open value"
+                                    value="<?php echo max(0, min(255, (int) $open)); ?>" min="0" max="255" step="1" aria-label="Head <?php echo $n; ?> shutter open value"></td>
                             </tr>
                         <?php endfor; ?>
                         </tbody>
                     </table>
                 </div>
                 <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
+
+                <h2 class="mt-4">Aim a head</h2>
+                <p class="text-body-secondary">
+                    Steer one head from here to find the edges of its zones. Only while no show is playing; every other head is left alone.
+                    The shutter opens by itself; the beam starts off and comes on dim. Aiming ends when you leave this page or don't press
+                    anything for two minutes, and plane safety still closes the shutter if an aircraft comes near.
+                </p>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <select class="form-select w-auto" id="adAimHead" aria-label="Head to aim"></select>
+                    <button type="button" class="btn btn-outline-secondary text-body" id="adAimStart"><i class="fas fa-crosshairs"></i> Aim</button>
+                    <button type="button" class="btn btn-outline-danger d-none" id="adAimStop">Stop aiming</button>
+                    <span class="form-text" id="adAimMsg" role="status"></span>
+                </div>
+                <div class="d-none" id="adAimPanel">
+                    <div class="d-flex flex-wrap gap-4 align-items-start">
+                        <div class="airdefender-pad" role="group" aria-label="Move the head">
+                            <span></span>
+                            <button type="button" class="btn btn-outline-secondary text-body" data-aim-move="0,1" aria-label="Tilt up"><i class="fas fa-chevron-up"></i></button>
+                            <span></span>
+                            <button type="button" class="btn btn-outline-secondary text-body" data-aim-move="-1,0" aria-label="Pan left"><i class="fas fa-chevron-left"></i></button>
+                            <div class="airdefender-pad-read small text-center" id="adAimRead"></div>
+                            <button type="button" class="btn btn-outline-secondary text-body" data-aim-move="1,0" aria-label="Pan right"><i class="fas fa-chevron-right"></i></button>
+                            <span></span>
+                            <button type="button" class="btn btn-outline-secondary text-body" data-aim-move="0,-1" aria-label="Tilt down"><i class="fas fa-chevron-down"></i></button>
+                            <span></span>
+                        </div>
+                        <div>
+                            <div class="mb-2">
+                                <div class="form-text mb-1">Step</div>
+                                <div class="btn-group" role="group" aria-label="Step size">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-aim-step="1">Fine</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary active" data-aim-step="5">Medium</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-aim-step="15">Coarse</button>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <button type="button" class="btn btn-sm btn-outline-warning" id="adAimBeam" aria-pressed="false"><i class="fas fa-lightbulb"></i> Beam on</button>
+                                <span class="form-text d-none" id="adAimNoDim">No dimmer channel set for this head: the beam is the show's.</span>
+                            </div>
+                            <label class="form-text d-block" for="adAimLevel">Brightness</label>
+                            <input type="range" class="form-range" id="adAimLevel" min="5" max="255" step="5" value="64" style="max-width: 14rem">
+                            <div class="form-text">Hold an arrow to keep moving; the keyboard's arrow keys work too.</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive d-none mt-3" id="adDzLiveWrap">
                     <h2>Right now</h2>
                     <table class="table table-sm align-middle" id="adDzLive">
@@ -306,6 +361,9 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 </div>
 
 <style>
+    .airdefender-pad { display: grid; grid-template-columns: repeat(3, 3.25rem); grid-auto-rows: 3.25rem; gap: .35rem; touch-action: none; }
+    .airdefender-pad .btn { width: 100%; height: 100%; }
+    .airdefender-pad-read { align-self: center; line-height: 1.2; }
     /* The playlist list scrolls inside its own box rather than stretching the page. */
     .airdefender-playlists { columns: 14rem auto; }
     .airdefender-playlists-long { max-height: 18rem; overflow-y: auto; }
@@ -463,9 +521,10 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             Object.keys(blank).forEach(function (f) { save(key(row, f), blank[f]); });
             // Its DeadZones pan and tilt details go too, so a new head in this slot starts clean.
             document.querySelectorAll('#adDzHeads tr[data-dz-head="' + row.getAttribute('data-head') + '"] [data-dz-field]').forEach(function (input) {
-                var k = key(row, input.getAttribute('data-dz-field'));
-                if (setting(k, '0') !== '0') { save(k, 0); }
-                input.value = input.getAttribute('data-dz-default');
+                var k = key(row, input.getAttribute('data-dz-field')), def = input.getAttribute('data-dz-default');
+                var blankValue = def === '' ? '0' : def;
+                if (setting(k, blankValue) !== blankValue) { save(k, blankValue); }
+                input.value = def;
             });
             field(row, 'Enabled').checked = false; field(row, 'Name').value = ''; field(row, 'Model').value = '';
             field(row, 'Start').disabled = false; field(row, 'Start').value = ''; field(row, 'Start').setAttribute('data-manual', '');
@@ -687,8 +746,127 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     document.addEventListener('visibilitychange', watchDz);
     setTimeout(watchDz, 500);   // if the page opens on this tab
 
+    /* ---------- DeadZones: aiming one head ---------- */
+    var aim = null, aimStep = 5, aimBusy = false, aimPending = null, aimLastPress = 0, aimKeep = null, aimRepeat = null;
+    function aimMsg(text, bad) { $id('adAimMsg').textContent = text || ''; $id('adAimMsg').className = 'form-text ' + (bad ? 'text-danger' : ''); }
+    function aimHeads() {
+        // Heads with pan and tilt entered can be aimed.
+        var sel = $id('adAimHead'), keep = sel.value;
+        sel.textContent = '';
+        document.querySelectorAll('#adDzHeads tr[data-dz-head]:not(.d-none)').forEach(function (dz) {
+            var pan = dz.querySelector('[data-dz-field="PanCh"]').value, tilt = dz.querySelector('[data-dz-field="TiltCh"]').value;
+            if (pan && tilt) {
+                var o = document.createElement('option');
+                o.value = dz.getAttribute('data-dz-head'); o.textContent = dz.querySelector('[data-dz-name]').textContent;
+                sel.appendChild(o);
+            }
+        });
+        if (keep) { sel.value = keep; }
+        $id('adAimStart').disabled = !sel.options.length || !!aim;
+        if (!sel.options.length && !aim) { aimMsg('Enter a head\u2019s pan and tilt channels above to aim it.'); }
+    }
+    function aimShow() {
+        var on = !!aim;
+        $id('adAimPanel').classList.toggle('d-none', !on);
+        $id('adAimStop').classList.toggle('d-none', !on);
+        $id('adAimStart').classList.toggle('d-none', on);
+        $id('adAimHead').disabled = on;
+        if (!on) { return; }
+        $id('adAimRead').innerHTML = '';
+        ['Pan ' + aim.pan, 'Tilt ' + aim.tilt].forEach(function (t) { var d = document.createElement('div'); d.textContent = t; $id('adAimRead').appendChild(d); });
+        var beam = $id('adAimBeam');
+        beam.classList.toggle('active', !!aim.beam); beam.setAttribute('aria-pressed', aim.beam ? 'true' : 'false');
+        beam.innerHTML = '<i class="fas fa-lightbulb"></i> ' + (aim.beam ? 'Beam off' : 'Beam on');
+        $id('adAimLevel').value = aim.level;
+    }
+    function aimSend(fields) {
+        // One request at a time; presses made meanwhile are sent together afterwards, so holding an arrow never queues up.
+        if (aimBusy) { aimPending = Object.assign(aimPending || {}, fields); return; }
+        aimBusy = true;
+        post(fields).then(function (d) {
+            if (fields.action === 'aim_end') { aim = null; } else if (d.aiming) { aim = d.aiming; }
+            if (aim) {
+                aimMsg(d.safety ? 'Plane safety is holding the shutter closed right now.' : 'Aiming ' + aim.name + '.');
+                $id('adAimNoDim').classList.toggle('d-none', !!d.hasDimmer);
+                $id('adAimBeam').classList.toggle('d-none', !d.hasDimmer);
+            }
+        }).catch(function (e) {
+            if (fields.action !== 'aim_end') { aim = null; aimMsg(e.message, true); }
+        }).then(function () {
+            aimBusy = false; aimShow(); aimHeads(); aimTimers();
+            if (aimPending && aim) { var p = aimPending; aimPending = null; p.action = 'aim_set'; aimSend(p); } else { aimPending = null; }
+        });
+    }
+    function aimTimers() {
+        // Check in every 5 s while aiming (the loop ends aiming if the page goes quiet); end it after two minutes without a press.
+        if (aim && !aimKeep) {
+            aimKeep = setInterval(function () {
+                if (Date.now() - aimLastPress > 120000) { aimSend({ action: 'aim_end' }); aimMsg('Aiming ended after two minutes without a press.'); return; }
+                if (!aimBusy) { aimSend({ action: 'aim_keep' }); }
+            }, 5000);
+        } else if (!aim && aimKeep) { clearInterval(aimKeep); aimKeep = null; }
+    }
+    function aimMove(dx, dy) {
+        if (!aim) { return; }
+        aimLastPress = Date.now();
+        aim.pan = Math.max(0, Math.min(255, aim.pan + dx * aimStep));
+        aim.tilt = Math.max(0, Math.min(255, aim.tilt + dy * aimStep));
+        aimShow();
+        aimSend({ action: 'aim_set', pan: aim.pan, tilt: aim.tilt });
+    }
+    $id('adAimStart').addEventListener('click', function () {
+        aimLastPress = Date.now();
+        aimMsg('Starting\u2026');
+        aimSend({ action: 'aim_start', head: $id('adAimHead').value });
+    });
+    $id('adAimStop').addEventListener('click', function () { aimSend({ action: 'aim_end' }); aimMsg('Aiming ended; the head is back to the show.'); });
+    document.querySelectorAll('[data-aim-step]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            aimStep = parseInt(b.getAttribute('data-aim-step'), 10);
+            document.querySelectorAll('[data-aim-step]').forEach(function (o) { o.classList.toggle('active', o === b); o.classList.toggle('text-body', o !== b); });
+        });
+    });
+    document.querySelectorAll('[data-aim-move]').forEach(function (b) {
+        var xy = b.getAttribute('data-aim-move').split(',').map(Number);
+        function stop() { if (aimRepeat) { clearInterval(aimRepeat); aimRepeat = null; } }
+        b.addEventListener('pointerdown', function (e) {
+            e.preventDefault(); stop(); aimMove(xy[0], xy[1]);
+            aimRepeat = setInterval(function () { aimMove(xy[0], xy[1]); }, 180);   // held: keeps moving
+        });
+        ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, stop); });
+        b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aimMove(xy[0], xy[1]); } });
+    });
+    document.addEventListener('keydown', function (e) {
+        var move = { ArrowUp: [0, 1], ArrowDown: [0, -1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
+        var typing = e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName) && e.target.type !== 'range';
+        if (!move || !aim || typing || !$id('ad-dz').classList.contains('active')) { return; }
+        e.preventDefault(); aimMove(move[0], move[1]);
+    });
+    $id('adAimBeam').addEventListener('click', function () {
+        if (!aim) { return; }
+        aimLastPress = Date.now(); aim.beam = !aim.beam; aimShow();
+        aimSend({ action: 'aim_set', beam: aim.beam ? 1 : 0, level: aim.level });
+    });
+    $id('adAimLevel').addEventListener('change', function () {
+        if (!aim) { return; }
+        aimLastPress = Date.now(); aim.level = parseInt(this.value, 10);
+        aimSend({ action: 'aim_set', level: aim.level, beam: aim.beam ? 1 : 0 });
+    });
+    // Leaving the page (or the tab) gives the head back to the show.
+    function aimLeave() {
+        if (!aim) { return; }
+        try { navigator.sendBeacon(API, new URLSearchParams({ action: 'aim_end' })); } catch (e) {}
+        aim = null; aimShow(); aimHeads(); aimTimers();
+    }
+    window.addEventListener('pagehide', aimLeave);
+    document.querySelectorAll('#adTabs a').forEach(function (a) { a.addEventListener('shown.bs.tab', function () { if (a.id !== 'ad-dz-tab') { aimLeave(); } }); });
+    if ($id('deadZonesEnabled')) { $id('deadZonesEnabled').addEventListener('change', function () { if (!this.checked) { aimLeave(); } aimHeads(); }); }
+    document.querySelectorAll('#adDzHeads [data-dz-field]').forEach(function (i) { i.addEventListener('change', aimHeads); });
+    if ($id('ad-dz-tab')) { $id('ad-dz-tab').addEventListener('shown.bs.tab', aimHeads); }
+
     updatePlaylists();
     refresh();
     updateDeadZones();
+    aimHeads();
 })();
 </script>

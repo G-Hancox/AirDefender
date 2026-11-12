@@ -80,6 +80,9 @@ public:
         lastMs = -1;
     }
     const DzConfig& getConfig() const { return config; }
+    /* The head being aimed from the DeadZones tab (0 for none): left alone, so its beam stays on while a zone is traced. */
+    void setAiming(int headId) { aiming = headId; }
+    int getAiming() const { return aiming; }
     const std::vector<DzHeadState>& getStates() const { return states; }
 
     /*
@@ -102,6 +105,10 @@ public:
             const DzHead& h = config.heads[i];
             DzHeadState& s = states[i];
             s.hit = false;
+            if (h.id == aiming && aiming != 0) {
+                s.closedUntil = -1; s.reason = DZ_OPEN; s.zone = -1; s.started = false;
+                continue;
+            }
             if (!valid(h.panCh, len) || !valid(h.tiltCh, len)) {
                 continue;   // not set up: left alone (another head's zone can still close it)
             }
@@ -130,6 +137,9 @@ public:
         for (size_t i = 0; i < config.heads.size(); i++) {
             const DzHead& h = config.heads[i];
             DzHeadState& s = states[i];
+            if (h.id == aiming && aiming != 0) {
+                continue;
+            }
             for (int id : closeToo) {
                 if (id == h.id && !s.hit) {   // its own zone, if it's in one, is the better reason to show
                     if (s.closedUntil < 0) { s.closes++; }
@@ -168,6 +178,7 @@ private:
     DzConfig config;
     std::vector<DzHeadState> states;
     long long lastMs = -1;
+    int aiming = 0;
 
     static bool valid(long ch, size_t len) { return ch >= 0 && (size_t)ch < len; }
 

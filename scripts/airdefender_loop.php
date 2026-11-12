@@ -40,6 +40,7 @@ require_once(__DIR__ . "/airdefender_playlists.php");
 require_once(__DIR__ . "/airdefender_receiver.php");
 require_once(__DIR__ . "/airdefender_statefile.php");
 require_once(__DIR__ . "/airdefender_deadzones.php");
+require_once(__DIR__ . "/airdefender_aim.php");
 
 const AIRDEFENDER_PLUGIN = "AirDefender";
 const AIRDEFENDER_DEFAULT_CLEAR_DELAY = 30;
@@ -534,6 +535,8 @@ while (true) {
             $tickedSlot = $show['slot'];
         }
     }
+    // DeadZones aiming: ends if a show starts or the page stops checking in.
+    airdefender_aim_tick($show, $now);
     $overrideUntil = airdefender_override_until();
     $checking = $role === 'remote' || airdefender_should_check($checkWhen, $show, $overrideUntil, $now, $onlyPlaylists, $tickedSlot, $anyPlaying);
     // Playing, but a playlist that is not on the list (a late-night static one, say).

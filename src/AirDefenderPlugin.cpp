@@ -24,6 +24,7 @@
 #include <fpp-pch.h>
 
 #include <sys/stat.h>
+#include <ctime>
 
 #include <cstdlib>
 #include <exception>
@@ -75,6 +76,7 @@ public:
             if (now - lastLook >= 1000 || now < lastLook) {
                 lastLook = now;
                 reloadIfChanged();
+                engine.setAiming(aimedHead());
             }
             if (engine.getConfig().enabled) {
                 engine.process(now, seqData, FPPD_MAX_CHANNELS);
@@ -131,6 +133,29 @@ private:
         std::lock_guard<std::mutex> lock(mutex);   // released by the time an exception gets here
         error = "DeadZones turned itself off: " + why;
         LogErr(VB_PLUGIN, "Air Defender: %s. The show and plane safety are not affected.\n", error.c_str());
+    }
+
+    /*
+     * The head being aimed from the DeadZones tab, from the small file in memory the page's requests keep
+     * (scripts/airdefender_aim.php); 0 if none, or if it hasn't been touched for 30 s (the page has gone).
+     */
+    int aimedHead() {
+        const std::string paths[] = { "/dev/shm/AirDefender/aim.json", FPP_DIR_MEDIA("/plugindata/AirDefender/aim.json") };
+        for (const std::string& path : paths) {
+            struct stat st;
+            if (stat(path.c_str(), &st) != 0) {
+                continue;
+            }
+            if (time(nullptr) - st.st_mtime > 30) {
+                return 0;
+            }
+            Json::Value a;
+            if (LoadJsonFromFile(path, a) && a.isObject() && a.isMember("head") && a["head"].isNumeric()) {
+                return a["head"].asInt();
+            }
+            return 0;
+        }
+        return 0;
     }
 
     /* Called with the mutex held. Reads the file again only when its time or size has changed. */

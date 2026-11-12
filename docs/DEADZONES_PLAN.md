@@ -90,6 +90,14 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
   (dashboard in Standby). Found and fixed on the way: the build looking in the wrong folder, and
   fppd loading a plugin as scripts or compiled, never both (callbacks.sh now says c++ when built,
   the library starts/stops the loop, postStart.sh is the safety net).
+- [x] Step 4a: **Aim a head** on the DeadZones tab: pick one head, a direction pad (Fine/Medium/
+  Coarse steps, hold to repeat, arrow keys), shutter opened automatically, Beam on/off at 25% with a
+  brightness slider. Uses FPP overlays on that head's pan, tilt, dimmer and shutter channels (like
+  plane safety), only while nothing is playing; ends when you leave the tab or page, after two
+  minutes without a press, if the page stops checking in for 30 s (the loop), or if a show starts.
+  Plane safety still closes the shutter. The DeadZones check leaves the aimed head alone. Ending sets
+  each overlay before deleting it, so FPP 10.0-10.2 can't be left holding a shutter open.
+  New per-head settings: Dimmer ch. and Shutter open value.
 - [ ] Step 4: drawing zones (mark points, landmarks and re-align, test zones, export/import), import from xLights.
 - [ ] Step 5: Check my sequences.
 - [ ] Step 6: real-head testing on a Pi before it goes near dev.

@@ -111,6 +111,9 @@ if (!function_exists('airdefender_deadzones_file')) {
                 'panSlew' => $int("head{$n}PanSlew", 180, 1, 3600),
                 'tiltRange' => $int("head{$n}TiltRange", 270, 1, 3600),
                 'tiltSlew' => $int("head{$n}TiltSlew", 180, 1, 3600),
+                // For aiming (scripts/airdefender_aim.php): dimmer FPP channel (0 if not set) and the shutter's open value.
+                'dimmer' => ($dim = $int("head{$n}DimmerCh", 0, 1, 512)) ? $start + $dim - 1 : 0,
+                'open' => max(0, min(255, (int) ($settings["head{$n}ShutterOpen"] ?? 255))),
                 'tiltMin' => max(0, min(255, (float) ($mine['tiltMin'] ?? 0))),
                 'tiltMax' => max(0, min(255, (float) ($mine['tiltMax'] ?? 255))),
                 'zones' => $list,

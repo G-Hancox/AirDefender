@@ -23,6 +23,8 @@
  *   POST action=set_password&password=   -> save (or with '' remove) a Remote's copy
  *                                           of the Player's UI password
  *
+ *   POST action=aim_start&head=<n> | aim_set&pan=&tilt=&beam=&level= | aim_keep | aim_end
+ *                                        -> DeadZones aiming (scripts/airdefender_aim.php)
  *   GET ...&log=today|yesterday|week&what=events|all -> log lines for View log
  *
  * Anything that changes state is POST only.
@@ -56,6 +58,14 @@ if ($method === 'GET' && isset($_GET['log'])) {
         'closedCount' => count(array_filter($lines, function ($l) { return strpos($l['text'], 'SAFETY ON') === 0; })),
         'truncated' => count($lines) >= 1500,
     ]);
+    exit;
+}
+
+if (strpos($action, 'aim_') === 0) {
+    require_once(dirname(__DIR__) . "/scripts/airdefender_aim.php");
+    [$code, $answer] = airdefender_aim_request($_POST);
+    http_response_code($code);
+    echo json_encode($answer);
     exit;
 }
 
