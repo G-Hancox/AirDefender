@@ -1,0 +1,40 @@
+{
+    "paths": {
+        "/AirDefender/deadzones": {
+            "get": {
+                "summary": "DeadZones status",
+                "description": "Whether Air Defender's DeadZones check is loaded and on, any error that turned it off, and for each head set up for DeadZones: where it really is (pan and tilt channel values, allowing for how fast it turns), how many zones it has, and whether its shutter is closed right now and why. Read only.",
+                "responses": {
+                    "200": {
+                        "description": "DeadZones status",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "loaded": true,
+                                    "enabled": true,
+                                    "failed": false,
+                                    "error": "",
+                                    "frames": 120345,
+                                    "heads": [
+                                        {
+                                            "id": 1,
+                                            "name": "Left mover",
+                                            "setUp": true,
+                                            "closed": true,
+                                            "reason": "zone",
+                                            "zone": "House",
+                                            "pan": 128,
+                                            "tilt": 70,
+                                            "closes": 3,
+                                            "zones": 1
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

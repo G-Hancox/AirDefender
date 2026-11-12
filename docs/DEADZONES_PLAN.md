@@ -79,7 +79,15 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
 - [x] Step 2: **Enable DeadZones** setting and a **DeadZones** tab in Settings with each head's pan and
   tilt details (channel, range, speed), saved as `head<N>PanCh`, `PanRange`, `PanSlew` and the same for
   `Tilt`. No fine channel: the main channel gives about 2 degrees a step, plenty for a zone's edge. Stored only; nothing reads them yet.
-- [ ] Step 3: the compiled per-frame check, with the fail-safe; time the build.
+- [x] Step 3 (code): the compiled per-frame check (`src/`), the PHP side that feeds it
+  (`scripts/airdefender_deadzones.php`, writing `plugindata/AirDefender/deadzones.json` only when it
+  changes), the build on install/update that never fails the install (`scripts/build_deadzones.sh`), a
+  live status on the DeadZones tab, and API docs. Tested: the check's tests (zones, margin, hold, slew,
+  tilt limit, a zone closing other heads; about 2 microseconds a frame for 8 heads), the config reader
+  against a file written by the PHP side, and a syntax check against FPP's real headers.
+- [ ] Step 3 (on a real FPP): build it with FPP's makefiles (Docker or a Pi), time the build, see it
+  load in fppd and the status show on the DeadZones tab. Couldn't be done here: FPP's Docker image
+  can't be downloaded from this workspace.
 - [ ] Step 4: drawing zones (mark points, landmarks and re-align, test zones, export/import), import from xLights.
 - [ ] Step 5: Check my sequences.
 - [ ] Step 6: real-head testing on a Pi before it goes near dev.

@@ -13,6 +13,10 @@
 # the web server. The version comes from fppd's API (/api/fppd/version).
 
 FPPDIR="${FPPDIR:-/opt/fpp}"
+
+# Rebuild the compiled part (DeadZones) from the updated source before fppd loads it again;
+# never fails the update (see the script).
+"$(dirname "$0")/build_deadzones.sh"
 API="http://127.0.0.1/api/fppd/plugin/AirDefender"
 
 VERSION="$(curl -s -m 10 http://127.0.0.1/api/fppd/version 2>/dev/null)"

@@ -242,9 +242,10 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <div class="tab-pane fade" id="ad-dz" role="tabpanel" aria-labelledby="ad-dz-tab">
             <?php airdefender_print_group('DeadZones', array('deadZonesEnabled')); ?>
             <div class="alert alert-info">
-                <b>Still being built.</b> DeadZones will close a head's shutter while it points into an area you've masked out.
-                For now this page only stores each head's pan and tilt details; zones can't be drawn yet and nothing changes on the lights.
+                <b>Still being built.</b> DeadZones closes a head's shutter while it points into an area you've masked out.
+                The check itself is in place, but zones can't be drawn on this page yet.
             </div>
+            <div class="mb-3" id="adDzStatus" role="status"></div>
             <div id="adDzSetup" class="d-none">
                 <h2>Pan and tilt</h2>
                 <p class="text-body-secondary">
@@ -291,6 +292,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     </table>
                 </div>
                 <div class="form-text" id="adDzNone">No heads yet: add them on the <b>Moving heads</b> tab first.</div>
+                <div class="table-responsive d-none mt-3" id="adDzLiveWrap">
+                    <h2>Right now</h2>
+                    <table class="table table-sm align-middle" id="adDzLive">
+                        <thead><tr><th scope="col">Head</th><th scope="col">Pan</th><th scope="col">Tilt</th><th scope="col">Zones</th><th scope="col">Shutter</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="form-text">Pan and tilt are the channel values (0-255) where the head really is, allowing for how fast it turns.</div>
+                </div>
             </div>
         </div>
     </div>
@@ -632,6 +641,51 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     });
     if ($id('deadZonesEnabled')) { $id('deadZonesEnabled').addEventListener('change', updateDeadZones); }
     if ($id('ad-dz-tab')) { $id('ad-dz-tab').addEventListener('shown.bs.tab', updateDeadZones); }
+
+    // What the compiled part in fppd says, asked every 2 seconds only while this tab is showing.
+    var dzTimer = null;
+    function dzCell(tr, text, cls) { var td = document.createElement('td'); td.textContent = text; if (cls) { td.className = cls; } tr.appendChild(td); }
+    function showDzStatus(d) {
+        var box = $id('adDzStatus'), wrap = $id('adDzLiveWrap');
+        if (!d) {
+            box.className = 'mb-3 text-warning-emphasis';
+            box.textContent = "DeadZones isn't available on this FPP right now: its compiled part isn't loaded in fppd. "
+                + 'Restart FPPD; if this stays, it could not be built when Air Defender was installed. Everything else in Air Defender works without it.';
+            wrap.classList.add('d-none');
+            return;
+        }
+        var setUp = (d.heads || []).filter(function (h) { return h.setUp; }).length;
+        box.className = 'mb-3 ' + (d.failed || d.error ? 'text-danger' : 'text-body-secondary');
+        box.textContent = d.failed || d.error ? d.error
+            : d.enabled ? 'DeadZones is running: ' + setUp + ' head' + (setUp === 1 ? '' : 's') + ' set up.'
+            : 'DeadZones is ready and switched off.';
+        var body = $id('adDzLive').querySelector('tbody');
+        body.textContent = '';
+        (d.heads || []).forEach(function (h) {
+            var tr = document.createElement('tr');
+            dzCell(tr, h.name || 'MH' + h.id);
+            dzCell(tr, h.pan === null || h.pan === undefined ? '-' : h.pan);
+            dzCell(tr, h.tilt === null || h.tilt === undefined ? '-' : h.tilt);
+            dzCell(tr, h.zones);
+            var why = { zone: 'Closed: in ' + (h.zone || 'a zone'), tilt: 'Closed: past its tilt limit', 'other-head': "Closed: another head's zone" }[h.reason];
+            dzCell(tr, h.closed ? (why || 'Closed') : 'Show', h.closed ? 'text-warning-emphasis fw-semibold' : '');
+            body.appendChild(tr);
+        });
+        wrap.classList.toggle('d-none', !d.enabled || !(d.heads || []).length);
+    }
+    function pollDz() {
+        fetch('api/plugin-apis/AirDefender/deadzones', { credentials: 'same-origin', cache: 'no-store' })
+            .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
+            .then(function (d) { showDzStatus(d && d.loaded ? d : null); }, function () { showDzStatus(null); });
+    }
+    function watchDz() {
+        var showing = $id('ad-dz') && $id('ad-dz').classList.contains('active') && !document.hidden;
+        if (showing && !dzTimer) { pollDz(); dzTimer = setInterval(pollDz, 2000); }
+        if (!showing && dzTimer) { clearInterval(dzTimer); dzTimer = null; }
+    }
+    document.querySelectorAll('#adTabs a').forEach(function (a) { a.addEventListener('shown.bs.tab', watchDz); });
+    document.addEventListener('visibilitychange', watchDz);
+    setTimeout(watchDz, 500);   // if the page opens on this tab
 
     updatePlaylists();
     refresh();

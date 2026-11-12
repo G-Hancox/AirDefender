@@ -39,6 +39,7 @@ require_once(__DIR__ . "/airdefender_secret.php");
 require_once(__DIR__ . "/airdefender_playlists.php");
 require_once(__DIR__ . "/airdefender_receiver.php");
 require_once(__DIR__ . "/airdefender_statefile.php");
+require_once(__DIR__ . "/airdefender_deadzones.php");
 
 const AIRDEFENDER_PLUGIN = "AirDefender";
 const AIRDEFENDER_DEFAULT_CLEAR_DELAY = 30;
@@ -517,6 +518,8 @@ while (true) {
         airdefender_log_once("head{$n}", $h['enabled'] && $h['message'] !== '' ? $h['message'] . '.' : null);
     }
     ksort($heads);
+    // DeadZones: keep the compiled part's file matching the settings (written only when something changes).
+    airdefender_deadzones_sync($settings, $resolved);
     [$lat, $lon] = airdefender_location($settings);
 
     $test = airdefender_test_status();

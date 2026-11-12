@@ -6,3 +6,8 @@ last_event.json
 *.tmp
 override.json
 loop.lock
+
+# Built on the device by scripts/fpp_install.sh
+*.o
+*.so
+*.dylib

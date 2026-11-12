@@ -1,0 +1,47 @@
+{
+    "enabled": true,
+    "margin": 4,
+    "holdMs": 300,
+    "heads": [
+        {
+            "id": 1,
+            "name": "Left mover",
+            "shutter": 82454,
+            "closed": 0,
+            "pan": 82448,
+            "tilt": 82450,
+            "panRange": 540,
+            "panSlew": 120,
+            "tiltRange": 270,
+            "tiltSlew": 180,
+            "tiltMin": 20,
+            "tiltMax": 255,
+            "zones": [
+                {
+                    "name": "Neighbour's house",
+                    "points": [
+                        [
+                            100,
+                            50
+                        ],
+                        [
+                            150,
+                            50
+                        ],
+                        [
+                            150,
+                            100
+                        ],
+                        [
+                            100,
+                            100
+                        ]
+                    ],
+                    "alsoCloses": [
+                        2
+                    ]
+                }
+            ]
+        }
+    ]
+}
