@@ -203,7 +203,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                                 <?php $airdefenderOnlyManual = !$airdefenderModels && !$missing && $source !== 'xlights'; ?>
                                 <select class="form-select form-select-sm" data-field="Model" aria-label="Head <?php echo $n; ?> model"<?php echo $airdefenderOnlyManual
                                     ? ' disabled data-only-manual title="FPP has no models yet, so this head uses its start channel. To pick heads by name, upload from xLights with FPP Connect\'s Models column set to All."' : ''; ?>>
-                                    <?php if ($source === 'xlights'): ?><option value="@xlights" selected>From xLights</option><?php endif; ?>
+                                    <?php if ($source === 'xlights'): ?><option value="@xlights" selected>Imported</option><?php endif; ?>
                                     <option value=""<?php echo $model === '' && $source !== 'xlights' ? ' selected' : ''; ?>>Manual channel</option>
                                     <?php if ($missing): ?><option value="<?php echo htmlspecialchars($model, ENT_QUOTES); ?>" selected><?php echo htmlspecialchars($model); ?> (not found)</option><?php endif; ?>
                                     <?php foreach ((array) $airdefenderModels as $mName => $mInfo): ?>
@@ -553,7 +553,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     function label(row) { return field(row, 'Name').value.trim() || 'MH' + row.getAttribute('data-head'); }
 
     // Works out the head's FPP channel and shows it: [channel or 0, text, Bootstrap text class].
-    // "From xLights" is a manual head whose start and shutter channels were imported (and are locked until it's set to Manual).
+    // "Imported" is a manual head whose start and shutter channels were imported (and are locked until it's set to Manual).
     function imported(row) { return field(row, 'Model').value === '@xlights'; }
     function modelOf(row) { return imported(row) ? '' : field(row, 'Model').value; }
     function resolve(row) {
@@ -605,7 +605,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         field(row, 'Model').addEventListener('change', function () {
             var sel = this, name = field(row, 'Name'), prev = setting(key(row, 'Model'), '');
             if (sel.value === '@xlights') {
-                save(key(row, 'Source'), 'xlights'); save(key(row, 'Model'), '', label(row) + ': from xLights');
+                save(key(row, 'Source'), 'xlights'); save(key(row, 'Model'), '', label(row) + ': imported');
                 showRow(row); saveChannel(row); return;
             }
             if (setting(key(row, 'Source'), '') !== '') { save(key(row, 'Source'), ''); }
@@ -1459,7 +1459,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 put('Model', '');
                 var start = xlStart(mhXl, name, 0), sh = parseInt(m.getAttribute('DmxShutterChannel'), 10);
                 if (start > 0 && start <= <?php echo AIRDEFENDER_MAX_CHANNEL; ?>) { put('Start', start); } else { noChannel.push(name); }
-                // Locked as "From xLights" only when both channels came from the files; otherwise left Manual to finish by hand.
+                // Locked as "Imported" only when both channels came from the files; otherwise left Manual to finish by hand.
                 put('Source', start > 0 && start <= <?php echo AIRDEFENDER_MAX_CHANNEL; ?> && sh > 0 && sh <= 512 ? 'xlights' : '');
             }
             var shutter = parseInt(m.getAttribute('DmxShutterChannel'), 10);
