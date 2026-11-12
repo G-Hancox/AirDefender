@@ -25,7 +25,7 @@ as you change it (a note pops up to say so) and takes effect within a second; FP
 <p>On a Remote, only General and Moving heads are shown: the rest is set on the Player.</p>
 
 <h3>Moving heads</h3>
-<p>One row per head (up to 8). <b>Add head</b> adds a row; the bin button removes one (after asking). The arrows move a head up or down the list, taking its DeadZones values and zones with it.</p>
+<p>One row per head (up to 8). <b>Add head</b> adds a row; the bin button removes one (after asking). <b>Reorder</b> unlocks the list: drag each head by its grip (mouse or finger), then press <b>Done reordering</b> to lock the new order. Each head takes its DeadZones values and zones with it.</p>
 <p><b>Import models from xLights</b>: pick <b>xlights_rgbeffects.xml</b> from your show folder and tick the moving heads to protect. Each gets its name, its shutter channel and the FPP model with the same name, if FPP has one. xLights' file does not say which controller or channel a head is on, so without a matching FPP model you enter the Start ch. by hand, plus its DeadZones pan and tilt. A head already here with the same name is updated, not added twice. xLights has no "closed" value, so check that one.</p>
 <ul>
     <li><b>On</b>: whether Air Defender protects this head.</li>

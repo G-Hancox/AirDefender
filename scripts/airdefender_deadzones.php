@@ -314,7 +314,7 @@ if (!function_exists('airdefender_zones_request')) {
      *   realign     head, now1 / now2 (JSON [pan,tilt]: where landmark 1 / 2 is now)
      *   realign_undo head
      *   zones_import zones (JSON, a file from Export) -> replaces every head's zones
-     *   heads_swap  a, b (two heads swapped places on the Moving heads tab)
+     *   heads_reorder order (JSON: the old head numbers in their new order)
      * Returns [http status, answer].
      */
     function airdefender_zones_request(array $req): array
@@ -339,29 +339,33 @@ if (!function_exists('airdefender_zones_request')) {
             $answer['imported'] = $count;
             return [$code, $answer];
         }
-        if ($action === 'heads_swap') {
-            // Two heads swapped places on the Moving heads tab: their zones go with them, and "also close" follows.
-            $a = (int) ($req['a'] ?? 0); $b = (int) ($req['b'] ?? 0);
-            if ($a < 1 || $a > 8 || $b < 1 || $b > 8 || $a === $b) {
-                return [400, ['error' => 'Unknown heads.']];
+        if ($action === 'heads_reorder') {
+            // The heads were dragged into a new order on the Moving heads tab: order[i] is the head that is now head i+1.
+            // Their zones go with them, and "also close" follows.
+            $order = json_decode((string) ($req['order'] ?? ''), true);
+            $order = is_array($order) ? array_values(array_map('intval', $order)) : [];
+            $sorted = $order; sort($sorted);
+            if ($sorted !== range(1, count($order)) || count($order) < 2 || count($order) > 8) {
+                return [400, ['error' => 'Unknown order.']];
             }
-            $ha = $z['heads'][(string) $a] ?? null; $hb = $z['heads'][(string) $b] ?? null;
-            unset($z['heads'][(string) $a], $z['heads'][(string) $b]);
-            if ($hb !== null) { $z['heads'][(string) $a] = $hb; }
-            if ($ha !== null) { $z['heads'][(string) $b] = $ha; }
+            $newId = [];   // old head -> new head
+            foreach ($order as $i => $old) { $newId[$old] = $i + 1; }
+            $heads = [];
             foreach ($z['heads'] as $k => $h) {
-                foreach ((is_array($h['zones'] ?? null) ? $h['zones'] : []) as $i => $zone) {
-                    if (is_array($zone['alsoCloses'] ?? null)) {
-                        $z['heads'][$k]['zones'][$i]['alsoCloses'] = array_map(function ($o) use ($a, $b) {
-                            $o = (int) $o; return $o === $a ? $b : ($o === $b ? $a : $o);
-                        }, $zone['alsoCloses']);
+                $k = (int) $k;
+                if (is_array($h['zones'] ?? null)) {
+                    foreach ($h['zones'] as $i => $zone) {
+                        $h['zones'][$i]['alsoCloses'] = array_map(function ($o) use ($newId) { $o = (int) $o; return $newId[$o] ?? $o; },
+                            is_array($zone['alsoCloses'] ?? null) ? $zone['alsoCloses'] : []);
                     }
                 }
+                $heads[(string) ($newId[$k] ?? $k)] = $h;
             }
-            if (($ha !== null || $hb !== null) && !airdefender_zones_write($z)) {
+            $z['heads'] = $heads;
+            if (!airdefender_zones_write($z)) {
                 return [500, ['error' => 'Could not save the zones in ' . airdefender_deadzones_dir() . '. Check file permissions.']];
             }
-            return [200, ['swapped' => [$a, $b]]];
+            return [200, ['order' => $order]];
         }
         if ($action === 'zones_get') {
             $out = [];

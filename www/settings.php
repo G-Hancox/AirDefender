@@ -212,8 +212,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <td><input type="number" class="form-control form-control-sm" data-field="ClosedValue" value="<?php echo max(0, min(255, (int) airdefender_page_setting("head{$n}ClosedValue", '0'))); ?>" min="0" max="255" step="1" aria-label="Head <?php echo $n; ?> closed value"></td>
                             <td class="small" data-result></td>
                             <td class="text-nowrap">
-                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-move="-1" title="Move up" aria-label="Move head <?php echo $n; ?> up"><i class="fas fa-arrow-up"></i></button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-move="1" title="Move down" aria-label="Move head <?php echo $n; ?> down"><i class="fas fa-arrow-down"></i></button>
+                                <span class="btn btn-sm btn-outline-secondary text-body airdefender-grip d-none" data-grip title="Drag to move" aria-hidden="true"><i class="fas fa-grip-lines"></i></span>
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-remove title="Remove this head" aria-label="Remove head <?php echo $n; ?>"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
@@ -223,6 +222,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <button type="button" class="buttons" id="adAddHead"><i class="fas fa-plus"></i> Add head</button>
+                <button type="button" class="buttons" id="adReorder" aria-pressed="false"><i class="fas fa-lock"></i> Reorder</button>
                 <button type="button" class="buttons" id="adMhXlImport"><i class="fas fa-file-import"></i> Import models from xLights</button>
                 <input type="file" class="d-none" id="adMhXlFile" accept=".xml,text/xml">
             </div>
@@ -474,7 +474,10 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     .airdefender-playlists .form-check { break-inside: avoid; display: flex; align-items: center; gap: .5rem; min-height: 2rem; padding-left: 0; margin-bottom: .25rem; }
     .airdefender-playlists .form-check .form-check-input { float: none; margin: 0; flex-shrink: 0; }
     /* Keep the head table's inputs usable on a phone: the table scrolls sideways in its own box. */
-    .airdefender-heads { min-width: 52rem; }
+    .airdefender-heads { min-width: 46rem; }
+    .airdefender-grip { cursor: grab; touch-action: none; }
+    .airdefender-dragging { opacity: .6; }
+    .airdefender-dragging td { background: var(--bs-tertiary-bg); }
     .airdefender-heads input[data-field="Name"], .airdefender-heads select { min-width: 8rem; }
     .airdefender-heads input[type="number"] { min-width: 5.5rem; }
 </style>
@@ -633,49 +636,79 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             field(row, 'Start').disabled = false; field(row, 'Start').value = ''; field(row, 'Start').setAttribute('data-manual', '');
             field(row, 'Offset').value = 1; field(row, 'ClosedValue').value = 0; row.setAttribute('data-channel', 0);
             if (rows.filter(function (r) { return !r.classList.contains('d-none'); }).length > 1) { row.classList.add('d-none'); }
-            showRow(row); updateAdd(); moveButtons();
+            showRow(row); updateAdd();
             toast(name + ' removed.');
         });
     });
-    // Up and down: two heads swap places, with everything that belongs to each (settings, DeadZones values, zones).
-    function moveButtons() {
-        var shown = rows.filter(function (r) { return !r.classList.contains('d-none'); });
+    // Reorder, like FPP's MultiSync page: press to unlock, drag the heads by their grips, press again to lock the new order.
+    // Each head takes everything that belongs to it (settings, DeadZones values, zones) to its new place.
+    var reordering = false, tbody = rows[0].parentNode;
+    function reorderMode(on) {
+        reordering = on;
+        var b = $id('adReorder');
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.innerHTML = on ? '<i class="fas fa-lock-open"></i> Done reordering' : '<i class="fas fa-lock"></i> Reorder';
+        b.classList.toggle('btn-warning', on);
         rows.forEach(function (r) {
-            var i = shown.indexOf(r);
-            r.querySelector('[data-move="-1"]').disabled = i <= 0;
-            r.querySelector('[data-move="1"]').disabled = i < 0 || i >= shown.length - 1;
+            r.querySelector('[data-grip]').classList.toggle('d-none', !on);
+            r.querySelector('[data-remove]').classList.toggle('d-none', on);
+            r.classList.toggle('airdefender-dragrow', on);
+            r.querySelectorAll('input, select').forEach(function (i) { i.disabled = on || (i.getAttribute('data-field') === 'Start' && field(r, 'Model').value !== ''); });
         });
+        $id('adAddHead').disabled = on;
+        $id('adMhXlImport').disabled = on;
     }
     rows.forEach(function (row) {
-        row.querySelectorAll('[data-move]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var shown = rows.filter(function (r) { return !r.classList.contains('d-none'); });
-                var other = shown[shown.indexOf(row) + parseInt(btn.getAttribute('data-move'), 10)];
-                if (!other) { return; }
-                var a = row.getAttribute('data-head'), b = other.getAttribute('data-head'), what = label(row);
-                document.querySelectorAll('#adHeads [data-move]').forEach(function (x) { x.disabled = true; });
-                post({ action: 'heads_swap', a: a, b: b }).then(function () {
-                    // Every setting either head has (head<n>Name, head<n>PanCh, ...), swapped.
-                    var re = new RegExp('^head(' + a + '|' + b + ')(\\D.*)$'), suffixes = {}, saves = [];
-                    Object.keys(typeof pluginSettings !== 'undefined' ? pluginSettings : {}).forEach(function (k) { var m = k.match(re); if (m) { suffixes[m[2]] = 1; } });
-                    Object.keys(suffixes).forEach(function (s) {
-                        var va = setting('head' + a + s, ''), vb = setting('head' + b + s, '');
-                        if (va !== vb) { saves.push(save('head' + a + s, vb)); saves.push(save('head' + b + s, va)); }
-                    });
-                    try { sessionStorage.setItem('airdefenderXlMsg', JSON.stringify({ ok: what + ' moved.', warn: '' })); } catch (e) {}
-                    $.when.apply($, saves).always(function () { location.reload(); });
-                }).catch(function (e) { toast(e.message, false); moveButtons(); });
-            });
+        var grip = row.querySelector('[data-grip]');
+        grip.addEventListener('pointerdown', function (e) {
+            if (!reordering) { return; }
+            e.preventDefault();
+            row.classList.add('airdefender-dragging');
+            function move(ev) {
+                var under = document.elementFromPoint(ev.clientX, ev.clientY), over = under && under.closest('#adHeads tr[data-head]');
+                if (!over || over === row || over.classList.contains('d-none')) { return; }
+                var box = over.getBoundingClientRect();
+                tbody.insertBefore(row, ev.clientY < box.top + box.height / 2 ? over : over.nextSibling);
+            }
+            function up() {
+                row.classList.remove('airdefender-dragging');
+                document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+            }
+            // On the whole page: moving the row in the table would lose a capture on the grip.
+            document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
         });
     });
-    moveButtons();
+    $id('adReorder').addEventListener('click', function () {
+        if (!reordering) { reorderMode(true); return; }
+        // Locking: the heads in their new order, then the unused slots, become heads 1, 2, 3...
+        var inPage = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-head]'));
+        var order = inPage.filter(function (r) { return !r.classList.contains('d-none'); })
+            .concat(inPage.filter(function (r) { return r.classList.contains('d-none'); }))
+            .map(function (r) { return r.getAttribute('data-head'); });
+        if (order.every(function (n, i) { return n === String(i + 1); })) { reorderMode(false); return; }
+        $id('adReorder').disabled = true;
+        post({ action: 'heads_reorder', order: JSON.stringify(order.map(Number)) }).then(function () {
+            // Every setting any head has (head<n>Name, head<n>PanCh, ...): head i+1 takes old head order[i]'s.
+            var suffixes = {}, old = {}, saves = [];
+            Object.keys(typeof pluginSettings !== 'undefined' ? pluginSettings : {}).forEach(function (k) { var m = k.match(/^head(\d)(\D.*)$/); if (m) { suffixes[m[2]] = 1; } });
+            Object.keys(suffixes).forEach(function (s) { order.forEach(function (n) { old[n + s] = setting('head' + n + s, ''); }); });
+            Object.keys(suffixes).forEach(function (s) {
+                order.forEach(function (n, i) {
+                    var v = old[n + s];
+                    if (v !== old[(i + 1) + s]) { saves.push(save('head' + (i + 1) + s, v)); }
+                });
+            });
+            try { sessionStorage.setItem('airdefenderXlMsg', JSON.stringify({ ok: 'New order saved.', warn: '' })); } catch (e) {}
+            $.when.apply($, saves).always(function () { location.reload(); });
+        }).catch(function (e) { toast(e.message, false); $id('adReorder').disabled = false; });
+    });
     $id('adAddHead').addEventListener('click', function () {
         var row = rows.filter(function (r) { return r.classList.contains('d-none'); })[0];
         if (!row) { return; }
         row.classList.remove('d-none');
         field(row, 'Enabled').checked = true;
         save(key(row, 'Enabled'), 1);
-        showRow(row); updateAdd(); moveButtons();
+        showRow(row); updateAdd();
         field(row, 'Name').focus();
     });
     updateAdd();
