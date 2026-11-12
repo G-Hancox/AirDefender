@@ -338,7 +338,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                                 </div>
                             </div>
                             <div class="mb-2">
-                                <button type="button" class="btn btn-sm btn-outline-warning" id="adAimBeam" aria-pressed="false"><i class="fas fa-lightbulb"></i> Beam on</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary text-body" id="adAimBeam" aria-pressed="false"><i class="far fa-lightbulb"></i> Beam</button>
                                 <span class="form-text d-none" id="adAimNoDim">No dimmer channel set for this head: the beam is the show's.</span>
                             </div>
                             <label class="form-text d-block" for="adAimLevel">Brightness</label>
@@ -774,9 +774,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         if (!on) { return; }
         $id('adAimRead').innerHTML = '';
         ['Pan ' + aim.pan, 'Tilt ' + aim.tilt].forEach(function (t) { var d = document.createElement('div'); d.textContent = t; $id('adAimRead').appendChild(d); });
+        // Lit (yellow, solid bulb) while the beam is on; plain with an outline bulb while it's off, like xLights' Output to Lights.
         var beam = $id('adAimBeam');
-        beam.classList.toggle('active', !!aim.beam); beam.setAttribute('aria-pressed', aim.beam ? 'true' : 'false');
-        beam.innerHTML = '<i class="fas fa-lightbulb"></i> ' + (aim.beam ? 'Beam off' : 'Beam on');
+        beam.className = 'btn btn-sm ' + (aim.beam ? 'btn-warning' : 'btn-outline-secondary text-body');
+        beam.setAttribute('aria-pressed', aim.beam ? 'true' : 'false');
+        beam.title = aim.beam ? 'Beam is on: press to turn it off' : 'Beam is off: press to turn it on';
+        beam.innerHTML = '<i class="' + (aim.beam ? 'fas' : 'far') + ' fa-lightbulb"></i> Beam';
         $id('adAimLevel').value = aim.level;
     }
     function aimSend(fields) {
