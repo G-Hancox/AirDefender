@@ -122,9 +122,10 @@ if (!function_exists('airdefender_aim_file')) {
             }
             $a = [
                 'head' => $id, 'name' => (string) ($h['name'] ?? "MH{$id}"),
-                // Start from where it was last aimed this session, else the middle.
-                'pan' => $a !== null && (int) $a['head'] === $id ? (int) $a['pan'] : 128,
-                'tilt' => $a !== null && (int) $a['head'] === $id ? (int) $a['tilt'] : 128,
+                // Start at the head's rest position (pan 0, tilt 0), matching the picture; pressing Aim again on the
+                // head already being aimed keeps it where it is.
+                'pan' => $a !== null && (int) $a['head'] === $id ? (int) $a['pan'] : 0,
+                'tilt' => $a !== null && (int) $a['head'] === $id ? (int) $a['tilt'] : 0,
                 'beam' => false, 'level' => 64,
             ];
         } elseif ($a === null) {
