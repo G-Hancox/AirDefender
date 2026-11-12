@@ -184,6 +184,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                     <tbody>
                     <?php for ($n = 1; $n <= AIRDEFENDER_HEADS; $n++):
                         $model = airdefender_page_setting("head{$n}Model");
+                        $source = $model === '' ? airdefender_page_setting("head{$n}Source") : '';   // 'xlights': start and shutter came from xLights' files
                         $missing = $model !== '' && is_array($airdefenderModels) && !isset($airdefenderModels[$model]);
                         $start = (int) airdefender_page_setting("head{$n}Start", '0');
                         $offset = max(1, (int) airdefender_page_setting("head{$n}Offset", '1'));
@@ -199,8 +200,11 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                             <td class="text-nowrap"><span class="btn btn-sm btn-outline-secondary text-body airdefender-grip d-none me-1" data-grip title="Drag to move" aria-hidden="true"><i class="fas fa-grip-lines"></i></span><input class="form-check-input" type="checkbox" data-field="Enabled" aria-label="Protect head <?php echo $n; ?>"<?php echo $enabled ? ' checked' : ''; ?>></td>
                             <td><input type="text" class="form-control form-control-sm" data-field="Name" value="<?php echo htmlspecialchars($name, ENT_QUOTES); ?>" maxlength="40" placeholder="MH<?php echo $n; ?>" aria-label="Head <?php echo $n; ?> name"></td>
                             <td>
-                                <select class="form-select form-select-sm" data-field="Model" aria-label="Head <?php echo $n; ?> model">
-                                    <option value=""<?php echo $model === '' ? ' selected' : ''; ?>>Manual channel</option>
+                                <?php $airdefenderOnlyManual = !$airdefenderModels && !$missing && $source !== 'xlights'; ?>
+                                <select class="form-select form-select-sm" data-field="Model" aria-label="Head <?php echo $n; ?> model"<?php echo $airdefenderOnlyManual
+                                    ? ' disabled data-only-manual title="FPP has no models yet, so this head uses its start channel. To pick heads by name, upload from xLights with FPP Connect\'s Models column set to All."' : ''; ?>>
+                                    <?php if ($source === 'xlights'): ?><option value="@xlights" selected>From xLights</option><?php endif; ?>
+                                    <option value=""<?php echo $model === '' && $source !== 'xlights' ? ' selected' : ''; ?>>Manual channel</option>
                                     <?php if ($missing): ?><option value="<?php echo htmlspecialchars($model, ENT_QUOTES); ?>" selected><?php echo htmlspecialchars($model); ?> (not found)</option><?php endif; ?>
                                     <?php foreach ((array) $airdefenderModels as $mName => $mInfo): ?>
                                         <option value="<?php echo htmlspecialchars((string) $mName, ENT_QUOTES); ?>"<?php echo $model === (string) $mName ? ' selected' : ''; ?>><?php echo htmlspecialchars((string) $mName); ?></option>
@@ -549,19 +553,23 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     function label(row) { return field(row, 'Name').value.trim() || 'MH' + row.getAttribute('data-head'); }
 
     // Works out the head's FPP channel and shows it: [channel or 0, text, Bootstrap text class].
+    // "From xLights" is a manual head whose start and shutter channels were imported (and are locked until it's set to Manual).
+    function imported(row) { return field(row, 'Model').value === '@xlights'; }
+    function modelOf(row) { return imported(row) ? '' : field(row, 'Model').value; }
     function resolve(row) {
-        var model = field(row, 'Model').value, start = field(row, 'Start'), off = parseInt(field(row, 'Offset').value, 10);
+        var model = modelOf(row), start = field(row, 'Start'), off = parseInt(field(row, 'Offset').value, 10);
         var known = modelsKnown && Object.prototype.hasOwnProperty.call(models, model);
+        field(row, 'Offset').disabled = reordering || imported(row);
         if (model === '') {
-            if (start.disabled) { start.value = start.getAttribute('data-manual') || ''; }
-            start.disabled = false;
+            if (start.hasAttribute('data-from-model')) { start.value = start.getAttribute('data-manual') || ''; start.removeAttribute('data-from-model'); }
+            start.disabled = reordering || imported(row);
             var st = parseInt(start.value, 10);
             if (!(st >= 1)) { return [0, 'Enter the start channel', 'text-warning-emphasis']; }
             if (!(off >= 1)) { return [0, 'Enter the shutter channel', 'text-warning-emphasis']; }
             if (st + off - 1 > MAX_CH) { return [0, 'Past FPP’s last channel', 'text-danger']; }
             return [st + off - 1, 'ch ' + (st + off - 1), 'text-success-emphasis'];
         }
-        if (!start.disabled) { start.setAttribute('data-manual', start.value); }
+        if (!start.hasAttribute('data-from-model')) { start.setAttribute('data-manual', start.value); start.setAttribute('data-from-model', ''); }
         start.value = known ? models[model].start : '';
         start.disabled = true;
         var last = parseInt(row.getAttribute('data-channel'), 10) || 0;
@@ -596,12 +604,17 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         field(row, 'Name').addEventListener('change', function () { save(key(row, 'Name'), this.value.trim(), label(row) + '’s name'); });
         field(row, 'Model').addEventListener('change', function () {
             var sel = this, name = field(row, 'Name'), prev = setting(key(row, 'Model'), '');
+            if (sel.value === '@xlights') {
+                save(key(row, 'Source'), 'xlights'); save(key(row, 'Model'), '', label(row) + ': from xLights');
+                showRow(row); saveChannel(row); return;
+            }
+            if (setting(key(row, 'Source'), '') !== '') { save(key(row, 'Source'), ''); }
             // A head named after its old model takes the new model's name.
             if (sel.value !== '' && (name.value.trim() === '' || name.value.trim() === prev)) {
                 name.value = sel.value;
                 save(key(row, 'Name'), sel.value);
             }
-            save(key(row, 'Model'), sel.value, label(row) + '’s model');
+            save(key(row, 'Model'), sel.value, label(row) + (sel.value === '' && prev === '' ? ': manual channel, unlocked' : '’s model'));
             showRow(row); saveChannel(row);
         });
         ['Start', 'Offset', 'ClosedValue'].forEach(function (f) {
@@ -623,7 +636,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         row.querySelector('[data-remove]').addEventListener('click', function () {
             if (!window.confirm('Remove ' + label(row) + '? Air Defender stops protecting it.')) { return; }
             var name = label(row);
-            var blank = { Enabled: 0, Name: '', Model: '', Start: 0, Offset: 1, ClosedValue: 0, Channel: 0 };
+            var blank = { Enabled: 0, Name: '', Model: '', Source: '', Start: 0, Offset: 1, ClosedValue: 0, Channel: 0 };
             Object.keys(blank).forEach(function (f) { save(key(row, f), blank[f]); });
             // Its DeadZones pan and tilt details go too, so a new head in this slot starts clean.
             document.querySelectorAll('#adDzHeads tr[data-dz-head="' + row.getAttribute('data-head') + '"] [data-dz-field]').forEach(function (input) {
@@ -653,7 +666,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             r.querySelector('[data-grip]').classList.toggle('d-none', !on);
             r.querySelector('[data-remove]').classList.toggle('d-none', on);
             r.classList.toggle('airdefender-dragrow', on);
-            r.querySelectorAll('input, select').forEach(function (i) { i.disabled = on || (i.getAttribute('data-field') === 'Start' && field(r, 'Model').value !== ''); });
+            r.querySelectorAll('input, select').forEach(function (i) { i.disabled = on || i.hasAttribute('data-only-manual'); });
+            showRow(r);   // locks Start and Shutter ch. again where they should be
         });
         $id('adAddHead').disabled = on;
         $id('adMhXlImport').disabled = on;
@@ -1367,7 +1381,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             rowsEl.textContent = '';
             document.querySelectorAll('#adDzHeads tr[data-dz-head]:not(.d-none)').forEach(function (dz) {
                 var n = dz.getAttribute('data-dz-head'), row = document.querySelector('#adHeads tr[data-head="' + n + '"]');
-                var name = label(row), m = byName[xlName(name)] || byName[xlName(field(row, 'Model').value)];
+                var name = label(row), m = byName[xlName(name)] || byName[xlName(modelOf(row))];
                 if (m) { (xlApply(dz, m) ? done : empty).push(name); return; }
                 // No match by name: let them pick (or skip) which xLights moving head this is.
                 var line = document.createElement('label'); line.className = 'd-flex flex-wrap align-items-center gap-2';
@@ -1407,7 +1421,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 var cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'form-check-input m-0'; cb.checked = true; cb.value = name;
                 var t = document.createElement('span'); t.textContent = name;
                 var note = document.createElement('span'); note.className = 'form-text m-0';
-                var opt = Array.prototype.slice.call(field(rows[0], 'Model').options).some(function (o) { return o.value && xlName(o.value) === xlName(name); });
+                var opt = Array.prototype.slice.call(field(rows[0], 'Model').options).some(function (o) { return o.value && o.value !== '@xlights' && xlName(o.value) === xlName(name); });
                 var start = xlStart(xl, name, 0);
                 note.textContent = [here ? 'already here: will be updated' : '',
                     opt ? 'FPP model' : start ? 'starts at channel ' + start : xl.hasNetworks ? 'start channel: enter by hand' : 'start channel: pick xlights_networks.xml too, or enter by hand']
@@ -1438,13 +1452,15 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             function put(f, v) { saves.push(save('head' + n + f, v)); }
             put('Enabled', 1); put('Name', name);
             // By FPP model when FPP has one with the same name (xLights' upload names them the same); else xLights' start channel.
-            var opt = Array.prototype.slice.call(field(row, 'Model').options).filter(function (o) { return o.value && xlName(o.value) === xlName(name); })[0];
-            if (opt) { put('Model', opt.value); } else if (field(row, 'Model').value && updated.indexOf(name) >= 0) {
+            var opt = Array.prototype.slice.call(field(row, 'Model').options).filter(function (o) { return o.value && o.value !== '@xlights' && xlName(o.value) === xlName(name); })[0];
+            if (opt) { put('Model', opt.value); put('Source', ''); } else if (modelOf(row) && updated.indexOf(name) >= 0) {
                 // Already set up on an FPP model by another name: leave it on that model.
             } else {
                 put('Model', '');
-                var start = xlStart(mhXl, name, 0);
+                var start = xlStart(mhXl, name, 0), sh = parseInt(m.getAttribute('DmxShutterChannel'), 10);
                 if (start > 0 && start <= <?php echo AIRDEFENDER_MAX_CHANNEL; ?>) { put('Start', start); } else { noChannel.push(name); }
+                // Locked as "From xLights" only when both channels came from the files; otherwise left Manual to finish by hand.
+                put('Source', start > 0 && start <= <?php echo AIRDEFENDER_MAX_CHANNEL; ?> && sh > 0 && sh <= 512 ? 'xlights' : '');
             }
             var shutter = parseInt(m.getAttribute('DmxShutterChannel'), 10);
             if (shutter > 0 && shutter <= 512) { put('Offset', shutter); } else { noShutter.push(name); }
