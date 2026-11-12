@@ -59,6 +59,10 @@ $airdefenderPage = array(
     .airdefender-radar .hit { fill: transparent; cursor: pointer; }
     .airdefender-radar .picked { fill: none; stroke: var(--bs-primary); stroke-width: 1.5; }
     .airdefender-radar.turning .hit { cursor: inherit; }
+    /* The Aircraft card never grows the row: its details scroll inside it. Beside the radar it takes the Sky card's
+       height; stacked on a phone it keeps a fixed height. */
+    .airdefender-plane-body { position: relative; min-height: 17rem; }
+    .airdefender-plane-scroll { position: absolute; inset: 0; padding: inherit; overflow-y: auto; }
     .airdefender-radar .compass { fill: var(--bs-body-color); font-weight: 700; }
     .airdefender-radar.turning { cursor: grab; touch-action: none; }
     .airdefender-radar.turning .scope { stroke: var(--bs-primary); stroke-dasharray: 6 4; }
@@ -138,12 +142,12 @@ $airdefenderPage = array(
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
                     <span class="fw-bold">Aircraft</span><small class="text-end" id="adPlaneState"></small>
                 </div>
-                <div class="card-body" aria-live="polite">
+                <div class="card-body airdefender-plane-body" aria-live="polite"><div class="airdefender-plane-scroll small">
                     <div class="text-body-secondary" id="adPlaneEmpty"></div>
                     <div class="d-none" id="adPlane">
                         <div class="d-flex align-items-start gap-2">
                             <div class="me-auto">
-                                <div class="fw-semibold fs-5" id="adPlaneTitle"></div>
+                                <div class="fw-semibold fs-6" id="adPlaneTitle"></div>
                                 <div class="text-body-secondary" id="adPlaneSub"></div>
                             </div>
                             <button type="button" class="btn-close" id="adPlaneClose" aria-label="Clear the selected aircraft"></button>
@@ -152,7 +156,7 @@ $airdefenderPage = array(
                         <div class="d-flex flex-wrap gap-3" id="adPlaneLinks"></div>
                         <div class="form-text d-none" id="adPlaneLocked">Other aircraft are locked until the all clear.</div>
                     </div>
-                </div>
+                </div></div>
             </div>
         </div>
 
@@ -527,7 +531,7 @@ $airdefenderPage = array(
         rows.forEach(function (r) {
             if (r[1] === null || r[1] === undefined || r[1] === '') { return; }
             var dt = document.createElement('dt'); dt.className = 'col-4 fw-normal text-body-secondary'; dt.textContent = r[0];
-            var dd = document.createElement('dd'); dd.className = 'col-8 mb-1'; dd.textContent = r[1];
+            var dd = document.createElement('dd'); dd.className = 'col-8 mb-0'; dd.textContent = r[1];
             dl.appendChild(dt); dl.appendChild(dd);
         });
         var links = $id('adPlaneLinks'); links.textContent = '';
