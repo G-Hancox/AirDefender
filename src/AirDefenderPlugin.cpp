@@ -25,6 +25,7 @@
 
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <csignal>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
@@ -140,6 +141,14 @@ private:
             return;
         }
         if (pid == 0) {
+            // fppd's threads block or ignore some signals, and a child keeps that across exec: give the
+            // scripts (and the loop they start) a clean slate, so they can be stopped normally.
+            sigset_t none;
+            sigemptyset(&none);
+            sigprocmask(SIG_SETMASK, &none, nullptr);
+            for (int sig : { SIGTERM, SIGINT, SIGHUP, SIGQUIT, SIGCHLD, SIGPIPE }) {
+                signal(sig, SIG_DFL);
+            }
             // Child: quiet, and (to start the loop) a second fork so the script belongs to no one in fppd.
             int devnull = open("/dev/null", O_RDWR);
             if (devnull >= 0) {

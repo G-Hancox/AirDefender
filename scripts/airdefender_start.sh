@@ -22,11 +22,16 @@ LOG="${LOGDIR}/plugin-AirDefender.log"
 # Stop copies left over from before: the watchdog first, so it cannot restart the loop.
 pkill -f "${SUPERVISOR}" 2>/dev/null
 pkill -f "${LOOP}" 2>/dev/null
-# Give them up to a second to go, without waiting when there was nothing to stop.
-for _ in 1 2 3 4 5 6 7 8 9 10; do
+# Give them up to 2 s to go, without waiting when there was nothing to stop.
+for _ in $(seq 1 20); do
     pgrep -f "${LOOP}" >/dev/null 2>&1 || break
     sleep 0.1
 done
+# A loop started by a process that blocks SIGTERM (seen under fppd in FPP's Docker
+# image) can't be stopped politely, and would hold the lock so the new loop can't
+# run. After 2 s, stop it for certain.
+pkill -KILL -f "${SUPERVISOR}" 2>/dev/null
+pkill -KILL -f "${LOOP}" 2>/dev/null
 
 if [ "$(id -u)" = "0" ] && id fpp >/dev/null 2>&1; then
     RUN_AS="runuser -u fpp --"

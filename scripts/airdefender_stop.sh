@@ -13,4 +13,13 @@ echo "Stopping Air Defender detection loop"
 pkill -f "${PLUGIN_DIR}/scripts/airdefender_start.sh" 2>/dev/null
 pkill -f "${PLUGIN_DIR}/scripts/airdefender_supervise.sh" 2>/dev/null
 pkill -f "${PLUGIN_DIR}/scripts/airdefender_loop.php" 2>/dev/null
+# A loop that ignores SIGTERM (started by a process that blocks it, as seen under
+# fppd in FPP's Docker image) would keep running old code after an update: give
+# it up to 2 s, then stop it for certain.
+for _ in $(seq 1 20); do
+    pgrep -f "${PLUGIN_DIR}/scripts/airdefender_loop.php" >/dev/null 2>&1 || break
+    sleep 0.1
+done
+pkill -KILL -f "${PLUGIN_DIR}/scripts/airdefender_supervise.sh" 2>/dev/null
+pkill -KILL -f "${PLUGIN_DIR}/scripts/airdefender_loop.php" 2>/dev/null
 exit 0
