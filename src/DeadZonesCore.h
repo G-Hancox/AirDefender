@@ -130,6 +130,8 @@ public:
                 continue;   // not set up: left alone (another head's zone can still close it)
             }
             float pan = data[h.panCh], tilt = data[h.tiltCh];
+            bool moved = s.started && !snap;
+            DzPoint from{ s.realPan, s.realTilt };
             if (snap || !s.started) {
                 s.realPan = pan; s.realTilt = tilt; s.started = true;
             } else {
@@ -144,6 +146,11 @@ public:
             DzReason why = check(h, pan, tilt, zone);
             if (why == DZ_OPEN) {
                 why = check(h, s.realPan, s.realTilt, zone);
+            }
+            // The whole way the head went since the last frame, not just where it ended up: a fast swing (or a jump in
+            // the data with no slew) across a small zone between two frames still closes it.
+            if (why == DZ_OPEN && moved && (from.pan != s.realPan || from.tilt != s.realTilt)) {
+                why = checkPath(h, from, DzPoint{ s.realPan, s.realTilt }, zone);
             }
             if (why != DZ_OPEN) {
                 if (s.closedUntil < 0) { s.closes++; }
@@ -218,6 +225,40 @@ private:
         t = t < 0 ? 0 : (t > 1 ? 1 : t);
         float px = a.pan + t * dx - pan, py = a.tilt + t * dy - tilt;
         return px * px + py * py;
+    }
+
+    /* Squared distance between the line segments a-b and c-d (0 if they cross). */
+    static float segDist2(const DzPoint& a, const DzPoint& b, const DzPoint& c, const DzPoint& d) {
+        auto cross = [](const DzPoint& o, const DzPoint& p, const DzPoint& q) {
+            return (p.pan - o.pan) * (q.tilt - o.tilt) - (p.tilt - o.tilt) * (q.pan - o.pan);
+        };
+        float d1 = cross(c, d, a), d2 = cross(c, d, b), d3 = cross(a, b, c), d4 = cross(a, b, d);
+        if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) { return 0; }
+        float m = dist2(c, d, a.pan, a.tilt);
+        m = std::min(m, dist2(c, d, b.pan, b.tilt));
+        m = std::min(m, dist2(a, b, c.pan, c.tilt));
+        return std::min(m, dist2(a, b, d.pan, d.tilt));
+    }
+
+    /* Did the line from a to b pass into a zone it didn't start in (or within margin of one)? Its ends were checked already, and a
+       tilt limit is a straight line, so only the zones need looking at. */
+    DzReason checkPath(const DzHead& h, const DzPoint& a, const DzPoint& b, int& zone) const {
+        float m = config.margin, m2 = m * m;
+        float p0 = std::min(a.pan, b.pan), p1 = std::max(a.pan, b.pan);
+        float t0 = std::min(a.tilt, b.tilt), t1 = std::max(a.tilt, b.tilt);
+        for (size_t z = 0; z < h.zones.size(); z++) {
+            const DzZone& zn = h.zones[z];
+            const std::vector<DzPoint>& o = zn.outline;
+            if (o.size() < 3 || p1 < zn.minPan - m || p0 > zn.maxPan + m || t1 < zn.minTilt - m || t0 > zn.maxTilt + m) {
+                continue;
+            }
+            if (inZone(o, a.pan, a.tilt, m)) { continue; }   // it started in this one: the last frame dealt with it
+            for (size_t i = 0, j = o.size() - 1; i < o.size(); j = i++) {
+                if (segDist2(a, b, o[j], o[i]) <= m2) { zone = (int)z; return DZ_ZONE; }
+            }
+        }
+        zone = -1;
+        return DZ_OPEN;
     }
 
     DzReason check(const DzHead& h, float pan, float tilt, int& zone) const {

@@ -165,6 +165,40 @@ int main() {
         CHECK("sequence starts: the sweep from rest through the zone closes the shutter", closedOnTheWay);
         CHECK("after the sweep: open again", d[2] == 255);
     }
+    // The path between frames: a small zone (pan 120-124) that a single frame's move jumps right over.
+    {
+        DzConfig c = oneHead(); c.margin = 0;
+        c.heads[0].zones[0].outline = { {120, 60}, {124, 60}, {124, 90}, {120, 90} };
+        DzEngine p; p.setConfig(c);
+        frame(d, 50, 75); p.process(0, d, 16);
+        frame(d, 200, 75); p.process(15, d, 16);
+        CHECK("path: no slew, the data jumps across a small zone in one frame: closed", d[2] == 0);
+        frame(d, 200, 75); p.process(30, d, 16);
+        CHECK("path: still there next frame, no hold: open again", d[2] == 255);
+
+        frame(d, 50, 50); p.process(1000, d, 16);
+        frame(d, 200, 50); p.process(1015, d, 16);
+        CHECK("path: a jump that passes below the zone: open", d[2] == 255);
+        frame(d, 118, 40); p.process(1030, d, 16);
+        frame(d, 118, 110); p.process(1045, d, 16);
+        CHECK("path: a jump that passes beside the zone: open", d[2] == 255);
+        frame(d, 50, 75); p.process(5000, d, 16);
+        frame(d, 200, 75); p.process(5600, d, 16);
+        CHECK("path: after a long gap (head had time to arrive): not counted", d[2] == 255);
+
+        DzConfig cm = c; cm.margin = 3; p.setConfig(cm);
+        frame(d, 50, 58); p.process(0, d, 16);
+        frame(d, 200, 58); p.process(15, d, 16);
+        CHECK("path: passes 2 below the zone, margin 3: closed", d[2] == 0);
+
+        // A fast head with slew set (8 values a frame at 66.7 fps) sweeping past: closed while it crosses.
+        DzConfig cs = c; cs.heads[0].panPerMs = 0.55f; p.setConfig(cs);
+        long long t = 0; frame(d, 50, 75); p.process(t, d, 16);
+        bool closed = false;
+        for (int i = 0; i < 40; i++) { t += 15; frame(d, 200, 75); p.process(t, d, 16); closed = closed || d[2] == 0; }
+        CHECK("path: fast slewing head sweeps a 4-wide zone: closed on the way", closed);
+        CHECK("path: and open once past", d[2] == 255);
+    }
     std::printf("%s (%d failed)\n", failures ? "FAILED" : "All passed", failures);
     return failures ? 1 : 0;
 }

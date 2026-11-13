@@ -7,6 +7,8 @@
   channels, then **Aim** the head from the page and mark the corners. Also tilt limits, landmarks to **Re-align**
   next season, **Test zones**, and **Export** / **Import**. **Run DeadZones** while a sequence is playing (the
   default) or always. Plane safety works the same whether it's on or off.
+- **Catches fast swings**: each frame checks the whole way a head moved since the last one, not just where it
+  ended up, so a quick sweep across a small zone between two frames still closes the shutter.
 - **Check my sequences** (optional): runs your sequences through DeadZones without the lights and lists each moment a
   lit beam points into a zone.
 - **How it runs**: a small compiled part, built on your FPP at install (and again when FPP is upgraded), checks each
