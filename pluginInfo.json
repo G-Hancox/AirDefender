@@ -2,7 +2,7 @@
     "repoName": "AirDefender",
     "name": "Air Defender",
     "author": "G Hancox",
-    "description": "Closes your moving heads' shutters while low aircraft fly near your show. It only sees aircraft that broadcast ADS-B, with some delay, and doesn't replace your own obligations for sky-pointing beams and lasers. Sends your show's location (rounded to about 1 km) to adsb.fi; only if you use them, to adsb.lol as a backup and to Open-Meteo to look up your ground elevation.",
+    "description": "Closes your moving heads' shutters while low aircraft fly near your show. Optional DeadZones also closes a head while it points into an area you mark out, like a neighbour's house or the road. It only sees aircraft that broadcast ADS-B, with some delay, and doesn't replace your own obligations for sky-pointing beams and lasers. Sends your show's location (rounded to about 1 km) to adsb.fi; only if you use them, to adsb.lol as a backup and to Open-Meteo to look up your ground elevation.",
     "homeURL": "https://github.com/G-Hancox/AirDefender",
     "srcURL": "https://github.com/G-Hancox/AirDefender.git",
     "bugURL": "https://github.com/G-Hancox/AirDefender/issues",
