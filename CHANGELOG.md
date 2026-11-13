@@ -20,6 +20,14 @@
   **Manual tracking** (was Start tracking) moved to the Test tab. The boxes keep their size as things come and go.
 - **Privacy note**: FPP asks you to review Air Defender's privacy details again after this update, because they now
   mention DeadZones. Nothing new is sent anywhere; DeadZones runs entirely on your FPP.
+## 1.7.4 (2026-11-13)
+
+- **Manual tracking** (was Start tracking) is now on the dashboard's **Test** tab; while it runs, the banner shows
+  **Manual tracking active** with the time left and a **Stop** button on every tab.
+- **Restarts and updates always stop the old detection loop**, even one that has stopped responding, so two can
+  never run at once.
+- **Messages show head names as plain text**, so a name with unusual characters can't upset them.
+- **Phones**: the Manual tracking badge wraps instead of making the page wider than the screen.
 
 ## 1.7.3 (2026-11-11)
 
