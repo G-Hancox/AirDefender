@@ -462,6 +462,10 @@ $airdefenderPage = array(
             cls = 'danger'; title = 'DeadZones off'; sub = d.error || 'It hit an error; see fppd.log.';
         } else if (!d.enabled) {
             title = 'DeadZones off'; sub = 'No heads set up for it yet.';
+        } else if (d.waiting) {
+            title = 'DeadZones on'; sub = 'Waiting for a sequence to play';
+            var t0 = 0; (d.heads || []).forEach(function (h) { t0 += h.closes || 0; });
+            if (t0) { sub += ' \u00b7 ' + t0 + ' close' + (t0 === 1 ? '' : 's') + ' since FPP started'; }
         } else {
             var now = (d.heads || []).filter(function (h) { return h.closed; }), total = 0;
             (d.heads || []).forEach(function (h) { total += h.closes || 0; });

@@ -86,6 +86,8 @@ if (!function_exists('airdefender_deadzones_file')) {
         $out = [
             // Air Defender's own switch turns everything off, DeadZones included.
             'enabled' => $on('enabled') && $on('deadZonesEnabled'),
+            // Only while a sequence plays (the default), or on everything FPP outputs (test patterns, effects too).
+            'onlyWhilePlaying' => (string) ($settings['deadZonesWhen'] ?? 'playing') !== 'always',
             'margin' => max(0, min(50, (float) ($zones['margin'] ?? 3))),
             'holdMs' => max(0, min(5000, (int) ($zones['holdMs'] ?? 250))),
             'heads' => [],

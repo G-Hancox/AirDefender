@@ -37,7 +37,9 @@ Version 1.7.0 (see [CHANGELOG.md](CHANGELOG.md)). For FPP 10 and later.
 
 Closes a moving head's shutter while it points into an area you've marked out, such as a neighbour's window, the
 road or a bedroom, and opens it again once the head has left. It is **off by default** and turned on in Settings, on
-the **DeadZones** tab. Plane safety works the same whether it's on or off.
+the **DeadZones** tab. Plane safety works the same whether it's on or off. **Run DeadZones** picks when it checks:
+**While a sequence is playing** (the default; FPP's Display Testing, test patterns and effects are left alone) or
+**Always**.
 
 - **Heads**: each head's pan, tilt and dimmer channels, range and slew (how fast it really turns). **Import models
   from xLights** on the Moving heads tab fills these in from your show folder.

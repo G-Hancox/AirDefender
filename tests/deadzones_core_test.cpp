@@ -149,6 +149,22 @@ int main() {
         frame(d, 125, 75); o.process(1000, d, 16);
         CHECK("aiming another head: this one still closes", d[2] == 0);
     }
+    // Waiting for a sequence (apply = false): nothing touched, but the heads are still followed, so a sequence's
+    // first sweep from rest through a zone is caught.
+    {
+        DzConfig c = oneHead(); c.heads[0].panPerMs = 0.1f;   // 100 values a second
+        DzEngine w; w.setConfig(c);
+        long long t = 0;
+        for (; t < 1000; t += 25) { frame(d, 125, 75); w.process(t, d, 16, false); }
+        CHECK("waiting: shutter left open even inside a zone", d[2] == 255);
+        CHECK("waiting: nothing counted as closed", w.getStates()[0].closedUntil < 0 && w.getStates()[0].closes == 0);
+        // Rest at pan 10, then the sequence starts and sends it to 200, through the zone (100-150).
+        for (; t < 2000; t += 25) { frame(d, 10, 75); w.process(t, d, 16, false); }
+        bool closedOnTheWay = false;
+        for (; t < 5000; t += 25) { frame(d, 200, 75); w.process(t, d, 16, true); closedOnTheWay = closedOnTheWay || d[2] == 0; }
+        CHECK("sequence starts: the sweep from rest through the zone closes the shutter", closedOnTheWay);
+        CHECK("after the sweep: open again", d[2] == 255);
+    }
     std::printf("%s (%d failed)\n", failures ? "FAILED" : "All passed", failures);
     return failures ? 1 : 0;
 }

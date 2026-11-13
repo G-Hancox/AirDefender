@@ -45,7 +45,8 @@
         "airdefenderDeadZones": {
             "description": "DeadZones",
             "settings": [
-                "deadZonesEnabled"
+                "deadZonesEnabled",
+                "deadZonesWhen"
             ]
         }
     },
@@ -218,9 +219,19 @@
         },
         "deadZonesEnabled": {
             "description": "Enable DeadZones",
-            "tip": "Off unless you turn it on. DeadZones will close a head's shutter while it points into an area you've masked out, like a neighbour's house or the road. It is still being built: for now this only stores each head's pan and tilt details, and changes nothing on the lights.",
+            "tip": "Off unless you turn it on. DeadZones closes a head's shutter while it points into an area you've marked out, like a neighbour's house or the road. Set it up below: heads, then zones.",
             "type": "checkbox",
             "default": "0"
+        },
+        "deadZonesWhen": {
+            "description": "Run DeadZones",
+            "tip": "<b>While a sequence is playing</b>: only while FPP plays a sequence (scheduled, from a playlist, started by hand, or from Remote Falcon); FPP's Display Testing, test patterns and effects are left alone.<br><b>Always</b>: everything FPP outputs, test patterns and effects too.",
+            "type": "select",
+            "options": {
+                "While a sequence is playing": "playing",
+                "Always": "always"
+            },
+            "default": "playing"
         }
     }
 }

@@ -59,6 +59,7 @@ struct DzHead {
 
 struct DzConfig {
     bool enabled = false;
+    bool onlyWhilePlaying = true;   // checked by the plugin: leave frames alone unless a sequence is playing
     float margin = 3;               // channel values added around every zone, so an edge doesn't flicker
     int holdMs = 250;               // stays closed this long after leaving, for the same reason
     std::vector<DzHead> heads;
@@ -104,9 +105,10 @@ public:
      * One frame, just before it goes out. nowMs is real time, not sequence
      * time (a sequence restarting must not look like time running backwards).
      * Only ever writes a shutter's closed value; pan, tilt and everything
-     * else are left exactly as the show set them.
+     * else are left exactly as the show set them. With apply false it only
+     * follows where the heads really are and changes nothing.
      */
-    void process(long long nowMs, uint8_t* data, size_t len) {
+    void process(long long nowMs, uint8_t* data, size_t len, bool apply = true) {
         if (!config.enabled || config.heads.empty() || data == nullptr) {
             return;
         }
@@ -134,6 +136,10 @@ public:
                 s.realPan = approach(s.realPan, pan, h.panPerMs * dt);
                 s.realTilt = approach(s.realTilt, tilt, h.tiltPerMs * dt);
             }
+            if (!apply) {   // only following the heads: nothing closed, nothing written
+                s.closedUntil = -1; s.reason = DZ_OPEN; s.zone = -1;
+                continue;
+            }
             int zone = -1;
             DzReason why = check(h, pan, tilt, zone);
             if (why == DZ_OPEN) {
@@ -149,7 +155,7 @@ public:
                 }
             }
         }
-        for (size_t i = 0; i < config.heads.size(); i++) {
+        for (size_t i = 0; i < config.heads.size() && apply; i++) {
             const DzHead& h = config.heads[i];
             DzHeadState& s = states[i];
             if (h.id == aiming && aiming != 0) {

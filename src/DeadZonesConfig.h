@@ -38,6 +38,7 @@ inline float dzPerMs(float slew, float range) {
 inline DzConfig dzParseConfig(const Json::Value& root, long maxChannels) {
     DzConfig c;
     c.enabled = root.isMember("enabled") && root["enabled"].asBool();
+    c.onlyWhilePlaying = !root.isMember("onlyWhilePlaying") || root["onlyWhilePlaying"].asBool();
     c.margin = std::max(0.0f, std::min(50.0f, dzNumber(root, "margin", 3)));
     c.holdMs = (int)std::max(0.0f, std::min(5000.0f, dzNumber(root, "holdMs", 250)));
     const Json::Value& heads = root["heads"];

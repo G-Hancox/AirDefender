@@ -115,6 +115,9 @@ until you pick the model again.</p>
 <p>Closes a moving head's shutter while it points into an area you've marked out (a neighbour's window, the road), and
 opens it again once it has left, allowing for how fast the head really turns. Off unless you switch it on; plane safety
 works the same either way.</p>
+<p><b>Run DeadZones</b>: <b>While a sequence is playing</b> (the default) checks only while FPP plays a sequence, whether
+scheduled, from a playlist, started by hand or from Remote Falcon, and leaves FPP's Display Testing, test patterns and
+effects alone. <b>Always</b> checks everything FPP outputs.</p>
 <ul>
     <li><b>Heads</b>: each head's pan, tilt and dimmer channels, range and slew. Heads imported from xLights already have them.</li>
     <li><b>Zones</b>: three cards like the dashboard. <b>Aim</b> steers a head (only while nothing is playing; it starts at rest with the beam off). The <b>Map</b> shows that head's zones, with where the beam points behind the show shaded (set which way the head faces at rest, and <b>Reverse pan</b> if it turns the other way). The <b>Zones</b> card marks and lists zones; each head is mapped on its own.

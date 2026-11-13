@@ -102,8 +102,13 @@ public:
                 reloadIfChanged();
                 engine.setAiming(aimedHead());
             }
-            if (engine.getConfig().enabled) {
-                engine.process(now, seqData, FPPD_MAX_CHANNELS);
+            const DzConfig& c = engine.getConfig();
+            // "While a sequence is playing": test patterns, effects and Display Testing are left alone.
+            bool waiting = c.enabled && c.onlyWhilePlaying && !(sequence && sequence->IsSequenceRunning());
+            if (c.enabled) {
+                // Waiting: keep following where each head really is (so the first moves of a sequence are
+                // right), but change nothing in the frame.
+                engine.process(now, seqData, FPPD_MAX_CHANNELS, !waiting);
                 frames++;
             }
         } catch (const std::exception& e) {
@@ -436,8 +441,11 @@ private:
         out["failed"] = (bool)failed;
         out["error"] = error;
         out["frames"] = (Json::UInt64)frames;
+        out["onlyWhilePlaying"] = c.onlyWhilePlaying;
+        out["waiting"] = c.enabled && !failed && (c.onlyWhilePlaying && !(sequence && sequence->IsSequenceRunning()));
         Json::Value heads(Json::arrayValue);
         static const char* const reasons[] = { "", "zone", "tilt", "other-head" };
+        bool idle = out["waiting"].asBool();
         for (size_t i = 0; i < c.heads.size() && i < states.size(); i++) {
             const DzHead& h = c.heads[i];
             const DzHeadState& s = states[i];
@@ -445,7 +453,7 @@ private:
             jh["id"] = h.id;
             jh["name"] = h.name;
             jh["setUp"] = h.panCh >= 0 && h.tiltCh >= 0;
-            jh["closed"] = s.closedUntil >= 0;
+            jh["closed"] = !idle && s.closedUntil >= 0;   // waiting for a sequence: nothing is being closed
             jh["reason"] = reasons[s.reason];
             jh["zone"] = s.reason == DZ_ZONE && s.zone >= 0 && s.zone < (int)h.zones.size() ? h.zones[s.zone].name : "";
             jh["pan"] = s.started ? Json::Value((int)std::lround(s.realPan)) : Json::Value();
