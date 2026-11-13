@@ -101,7 +101,7 @@ $airdefenderPage = array(
         </div>
         <button type="button" class="btn btn-danger d-none" id="adBannerTestStop">Stop test</button>
         <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOn">
-            <span class="badge text-bg-secondary fs-6" id="adOverrideLeft"></span>
+            <span class="badge text-bg-secondary fs-6 text-wrap text-start" id="adOverrideLeft"></span>
             <button type="button" class="btn btn-outline-secondary text-body" data-override-end>Stop</button>
         </div>
     </div>
