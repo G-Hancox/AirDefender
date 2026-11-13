@@ -45,8 +45,7 @@ $airdefenderPage = array(
 );
 ?>
 <style>
-    .airdefender-banners > #adBanner { flex: 2 1 22rem; min-width: 0; }
-    .airdefender-banners > .airdefender-dzbanner { flex: 1 1 14rem; min-width: 0; }
+    .airdefender-banners .alert { height: 100%; margin-bottom: 0; }
     /* The radar: a scope with range rings, a sweep and the aircraft, drawn in
        the theme's own colours (Bootstrap's variables, light and dark). */
     .airdefender-radar { width: 100%; max-width: 16rem; display: block; margin: 0 auto; }
@@ -92,7 +91,9 @@ $airdefenderPage = array(
         </div>
     </div>
 
-    <div class="d-flex flex-wrap gap-3 airdefender-banners">
+    <!-- On the same grid as the cards below: Air Defender over the first two, DeadZones (when on) over the third. -->
+    <div class="row g-3 mb-3 airdefender-banners">
+    <div class="<?php echo $airdefenderPage['deadZones'] ? 'col-12 col-xl-8' : 'col-12'; ?>">
     <div class="alert d-flex flex-wrap align-items-center justify-content-between gap-3" id="adBanner" role="status">
         <div>
             <h3 class="alert-heading h4 mb-1" id="adBannerTitle">&nbsp;</h3>
@@ -104,11 +105,14 @@ $airdefenderPage = array(
             <button type="button" class="btn btn-outline-secondary text-body" data-override-end>Stop</button>
         </div>
     </div>
+    </div>
     <?php if ($airdefenderPage['deadZones']): ?>
+    <div class="col-12 col-xl-4">
     <!-- DeadZones' own half of the banner (only when it's turned on): calm colours, so yellow always means aircraft. -->
     <div class="alert alert-secondary d-none airdefender-dzbanner" id="adDzBanner" role="status">
         <h3 class="alert-heading h4 mb-1" id="adDzTitle">DeadZones</h3>
         <div class="small" id="adDzSub">&nbsp;</div>
+    </div>
     </div>
     <?php endif; ?>
     </div>
