@@ -100,11 +100,19 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
   New per-head settings: Dimmer ch. and Shutter open value.
 - [x] Step 4b: **Zones** page (DeadZones settings now has Heads and Zones): aim a head, **Mark point** /
   **Undo point** / **Finish zone** (named), **Block below / Block above** for a tilt limit, a drawing of
-  the head's pan/tilt space with its zones and limit, and a list with delete and "Also close" other heads.
+  the head's pan/tilt space with its zones and limit, and a list with delete. ("Also close" other heads was tried and removed on Nov 12; the engine still supports it.)
   Zones are saved in zones.json (only when you change them); the loop passes them to the compiled part.
 - [x] Step 4c: landmarks and Re-align, Test zones, export/import, import from xLights.
 - [x] Step 5: Check my sequences (Check page; reads sequences with FPP's own reader on a low-priority thread, only while idle; results in memory only).
-- [x] Dashboard: the Moving heads card shows a DeadZone badge and the zone while DeadZones holds a head closed.
+- [x] Dashboard: a DeadZones banner beside Air Defender's (closing, last closed, waiting, failed); the Moving heads
+  card shows a DeadZone badge (zone on hover), also beside Closed while aircraft safety holds the head. Boxes keep
+  their size as things come and go.
+- [x] Nov 12: Zones page as three cards (Aim with a head picture, Rest direction, Reverse and Reset; Map with
+  front/behind-the-show shading; Zones with tabs for the list, editable tilt limits, landmarks and Test).
+  **Run DeadZones** while a sequence is playing (default) or always. **Import models from xLights** (show folder;
+  heads shown as Imported and locked) and **Reorder** on the Moving heads tab.
+- [x] Nov 12: tested on Docker FPP 10.0 with sequences playing; a fresh clone-and-install of the branch kept all
+  settings and zones. Sent to the FPP maintainer for a precheck (fpp-data issue #302).
 - [ ] Step 6: real-head testing on a Pi before it goes near dev.
 
 ## Decision (Nov 11): built into Air Defender
