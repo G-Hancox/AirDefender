@@ -1,5 +1,26 @@
 # Air Defender changelog
 
+## 1.8.0 (unreleased)
+
+- **DeadZones (optional, off by default)**: closes a moving head's shutter while it points into an area you mark,
+  like a neighbour's house or the road. Set it up on the new **DeadZones** tab: each head's pan, tilt and dimmer
+  channels, then **Aim** the head from the page and mark the corners. Also tilt limits, landmarks to **Re-align**
+  next season, **Test zones**, and **Export** / **Import**. **Run DeadZones** while a sequence is playing (the
+  default) or always. Plane safety works the same whether it's on or off.
+- **Check my sequences** (optional): runs your sequences through DeadZones without the lights and lists each moment a
+  lit beam points into a zone.
+- **How it runs**: a small compiled part, built on your FPP at install (and again when FPP is upgraded), checks each
+  frame just before it goes out and only changes the shutter channel. About a microsecond a frame, nothing written to
+  the SD card. If it can't be built or hits an error, DeadZones switches itself off and the rest of Air Defender works
+  as before.
+- **Import models from xLights** on the Moving heads tab: pick your show folder and it fills in each head's start
+  channel and shutter. Imported heads show as **Imported** with those locked; **Manual** unlocks them. **Reorder**
+  drags heads into the order you want.
+- **Dashboard**: a DeadZones banner beside Air Defender's, and the heads card shows **DeadZone** while it holds a head.
+  **Manual tracking** (was Start tracking) moved to the Test tab. The boxes keep their size as things come and go.
+- **Privacy note**: FPP asks you to review Air Defender's privacy details again after this update, because they now
+  mention DeadZones. Nothing new is sent anywhere; DeadZones runs entirely on your FPP.
+
 ## 1.7.3 (2026-11-11)
 
 - **The radar sweep keeps time with the checks**: one turn per **Check every** (10 seconds unless changed), with the

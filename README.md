@@ -44,8 +44,9 @@ the **DeadZones** tab. Plane safety works the same whether it's on or off. **Run
 - **Heads**: each head's pan, tilt and dimmer channels, range and slew (how fast it really turns). **Import models
   from xLights** on the Moving heads tab fills these in from your show folder.
 - **Zones**: steer a head from the page with **Aim** (only while nothing is playing; the beam stays off until you press
-  **Beam**), mark the corners of an area and finish the zone. A picture shows the head as seen from the front of the
-  house. Also: tilt limits, **landmarks** to **Re-align** the zones next season if a head goes back up a little
+  **Beam**), mark the corners of an area and finish the zone. The page has three cards: **Aim** (with a picture of the
+  head seen from the front, which way it faces at rest, **Reverse** and **Reset**), the **Map** of that head's zones
+  and tilt limits, and **Zones**, with tabs for the list, editable tilt limits, landmarks and Test. Also: tilt limits, **landmarks** to **Re-align** the zones next season if a head goes back up a little
   differently, **Test zones** (the head traces each outline), and **Export** / **Import** to back them up.
 - **Check** (optional): plays your sequences through the DeadZones check, without the lights, and lists each moment a
   lit beam points into a zone, so you can tidy it up in xLights. DeadZones protects every sequence during the show
@@ -54,7 +55,7 @@ the **DeadZones** tab. Plane safety works the same whether it's on or off. **Run
 During the show, a small compiled part inside fppd looks at every frame just before it goes out and, while a head
 (allowing for its slew) points into one of its zones, sets that frame's shutter channel to its closed value. It
 changes nothing else, costs about a microsecond a frame, and writes nothing to the SD card. The dashboard's Moving
-heads card shows **DeadZone** and the zone while it holds a head closed. If it ever hits an error it switches itself
+heads card shows **DeadZone** (the zone on hover) while it holds a head closed, and the DeadZones banner says which. If it ever hits an error it switches itself
 off and says why; plane safety doesn't depend on it.
 
 The compiled part is built on your FPP when Air Defender is installed or updated (a few seconds), and FPP rebuilds it
@@ -91,7 +92,9 @@ with the new code by itself. **Release Notes** in Plugin Manager shows the chang
 2. **Air Defender:** switch it **On** (a new install starts off). **Role** starts out matching FPP's own mode:
    **Player** on the FPP that runs the show (see [Player and Remote](#player-and-remote) if you have FPP Remotes).
 3. **Moving heads:** add each head. Pick its **model**, or choose **Manual channel** and enter its **start channel**
-   from xLights. Then enter the **shutter channel** from the fixture's DMX chart (for example 7) and the **closed**
+   from xLights, or press **Import models from xLights** and pick your xLights show folder: imported heads show as
+   **Imported** with their channels locked (switch to Manual to change them), and **Reorder** puts them in the order
+   you like. Then enter the **shutter channel** from the fixture's DMX chart (for example 7) and the **closed**
    value (often 0). The row shows the FPP channel it works out, for example `→ FPP ch 82454`.
 4. **When & where:** press **Check it on a map** and make sure the pin is on **your show**, not just your town (see
    [Check your location](#check-your-location)). Then press **Look it up** beside **Show elevation** so heights are
