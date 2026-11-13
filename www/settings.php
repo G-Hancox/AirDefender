@@ -299,10 +299,6 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 
         <div class="tab-pane fade" id="ad-dz" role="tabpanel" aria-labelledby="ad-dz-tab">
             <?php airdefender_print_group('DeadZones', array('deadZonesEnabled', 'deadZonesWhen')); ?>
-            <div class="alert alert-info">
-                <b>Still being built.</b> DeadZones closes a head's shutter while it points into an area you've masked out.
-                Everything is here: heads, zones (with landmarks, testing and backups) and checking your sequences. It still needs testing on real heads before it's released.
-            </div>
             <div class="mb-3" id="adDzStatus" role="status"></div>
             <div id="adDzSetup" class="d-none">
                 <!-- DeadZones' own pages, so the tab doesn't become one long page. -->
