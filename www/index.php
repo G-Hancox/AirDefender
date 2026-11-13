@@ -46,6 +46,12 @@ $airdefenderPage = array(
 ?>
 <style>
     .airdefender-banners .alert { height: 100%; margin-bottom: 0; }
+    /* Banner lines keep a fixed two-line height so the boxes don't grow and shrink every time a plane or a
+       DeadZone close comes and goes; longer text ends in … (the full text is on hover). Errors aren't cut. */
+    .airdefender-banners .ad-sub { line-height: 1.5; min-height: 3em; max-height: 3em; overflow: hidden;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+    .airdefender-banners .alert-danger .ad-sub { max-height: none; display: block; }
+    .airdefender-headbadge { min-width: 5.5em; }
     /* The radar: a scope with range rings, a sweep and the aircraft, drawn in
        the theme's own colours (Bootstrap's variables, light and dark). */
     .airdefender-radar { width: 100%; max-width: 16rem; display: block; margin: 0 auto; }
@@ -97,7 +103,7 @@ $airdefenderPage = array(
     <div class="alert d-flex flex-wrap align-items-center justify-content-between gap-3" id="adBanner" role="status">
         <div>
             <h3 class="alert-heading h4 mb-1" id="adBannerTitle">&nbsp;</h3>
-            <div id="adBannerSub">&nbsp;</div>
+            <div class="ad-sub" id="adBannerSub">&nbsp;</div>
         </div>
         <button type="button" class="btn btn-danger d-none" id="adBannerTestStop">Stop test</button>
         <div class="d-flex flex-wrap align-items-center gap-2 d-none" id="adOverrideOn">
@@ -111,7 +117,7 @@ $airdefenderPage = array(
     <!-- DeadZones' own half of the banner (only when it's turned on): calm colours, so yellow always means aircraft. -->
     <div class="alert alert-secondary d-none airdefender-dzbanner" id="adDzBanner" role="status">
         <h3 class="alert-heading h4 mb-1" id="adDzTitle">DeadZones</h3>
-        <div class="small" id="adDzSub">&nbsp;</div>
+        <div class="small ad-sub" id="adDzSub">&nbsp;</div>
     </div>
     </div>
     <?php endif; ?>
@@ -174,7 +180,7 @@ $airdefenderPage = array(
                     <span class="fw-bold">Moving heads</span><small class="text-body-secondary text-end" id="adFeedLite" data-lite></small>
                 </div>
                 <div class="card-body">
-                    <div id="adHeadsSummary" data-lite></div>
+                    <div class="text-truncate" id="adHeadsSummary" data-lite></div>
                     <div class="list-group list-group-flush d-none" id="adHeadsList" data-detail></div>
                 </div>
             </div>
@@ -407,6 +413,7 @@ $airdefenderPage = array(
         $id('adBanner').className = 'alert alert-' + cls + ' d-flex flex-wrap align-items-center justify-content-between gap-3';
         $id('adBannerTitle').textContent = title;
         $id('adBannerSub').textContent = sub;
+        $id('adBannerSub').title = sub;
         $id('adMeta').textContent = 'Version ' + <?php echo json_encode(airdefender_version()); ?> + (!live ? ''
             : live.role === 'remote' ? ' · Remote, follows the Player'
             : ' · Player, ' + (live.checkWhen === 'playing' ? 'selected playlists' : 'all scheduled shows'));
@@ -481,6 +488,7 @@ $airdefenderPage = array(
         el.className = 'alert alert-' + cls + ' airdefender-dzbanner';
         $id('adDzTitle').textContent = title;
         $id('adDzSub').textContent = sub;
+        $id('adDzSub').title = sub;
     }
     function dzPoll() {
         if (!cfg.deadZones) { return Promise.resolve(); }
@@ -514,17 +522,13 @@ $airdefenderPage = array(
             ch.textContent = h.channel ? 'ch ' + h.channel : 'no channel';
             name.appendChild(ch);
             var badge = document.createElement('span'), dz = dzClosed(h);
-            badge.className = 'badge ' + (h.closed ? 'text-bg-warning' : dz ? 'text-bg-info' : 'text-bg-secondary');
+            badge.className = 'badge airdefender-headbadge ' + (h.closed ? 'text-bg-warning' : dz ? 'text-bg-info' : 'text-bg-secondary');
             badge.textContent = h.closed ? 'Closed' : dz ? 'DeadZone' : 'Show';
+            // Why it's closed goes on hover (and the DeadZones banner), not an extra line, so the list doesn't jump.
+            badge.title = dz && !h.closed ? 'Closed by DeadZones: ' + dz : '';
             line.appendChild(name);
             line.appendChild(badge);
             item.appendChild(line);
-            if (dz) {
-                var why = document.createElement('div');
-                why.className = 'small text-body-secondary';
-                why.textContent = 'Closed: DeadZones \u00b7 ' + dz;
-                item.appendChild(why);
-            }
             if (h.problem) {
                 var p = document.createElement('div');
                 p.className = 'small text-danger';
@@ -544,6 +548,7 @@ $airdefenderPage = array(
             + (inZones && closed > 0 && closed < heads.length ? ' · ' + inZones + ' in a DeadZone' : '')
             + (problems ? ' · ' + problems + ' need attention (see Detailed)' : '');
         $id('adHeadsSummary').classList.toggle('text-danger', !!problems);
+        $id('adHeadsSummary').title = $id('adHeadsSummary').textContent;
     }
 
     /* ---------- sky ---------- */
