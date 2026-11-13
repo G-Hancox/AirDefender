@@ -527,7 +527,18 @@ $airdefenderPage = array(
             // Why it's closed goes on hover (and the DeadZones banner), not an extra line, so the list doesn't jump.
             badge.title = dz && !h.closed ? 'Closed by DeadZones: ' + dz : '';
             line.appendChild(name);
-            line.appendChild(badge);
+            // While aircraft safety holds a head closed, a DeadZone it's also in shows beside Closed.
+            var badges = document.createElement('span');
+            badges.className = 'd-flex gap-1 flex-shrink-0';
+            if (h.closed && dz) {
+                var dzb = document.createElement('span');
+                dzb.className = 'badge airdefender-headbadge text-bg-info';
+                dzb.textContent = 'DeadZone';
+                dzb.title = 'Also in a DeadZone: ' + dz;
+                badges.appendChild(dzb);
+            }
+            badges.appendChild(badge);
+            line.appendChild(badges);
             item.appendChild(line);
             if (h.problem) {
                 var p = document.createElement('div');
