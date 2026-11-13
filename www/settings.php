@@ -485,13 +485,19 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                                     </div>
                                 </div>
                                 <div class="d-none" data-more-pane="tilt" role="tabpanel">
-                        <div class="d-flex flex-wrap align-items-center gap-2" role="group" aria-label="Tilt limit">
-                            <span class="form-text">Tilt limit at this height:</span>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="below">Block below</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="above">Block above</button>
-                            <button type="button" class="btn btn-sm btn-link" data-tilt-limit="clear">Clear</button>
+                        <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                            <label class="d-flex align-items-center gap-2 m-0">Block below tilt
+                                <input type="number" class="form-control form-control-sm" style="width: 5.5rem" min="0" max="255" step="1" id="adTiltMin" aria-describedby="adTiltHelp"></label>
+                            <label class="d-flex align-items-center gap-2 m-0">Block above tilt
+                                <input type="number" class="form-control form-control-sm" style="width: 5.5rem" min="0" max="255" step="1" id="adTiltMax" aria-describedby="adTiltHelp"></label>
                         </div>
-                        <div class="form-text">Use whichever shades the side you don't want on the map.</div>
+                        <div class="d-flex flex-wrap align-items-center gap-2" role="group" aria-label="Set a tilt limit where the head points now">
+                            <span class="form-text m-0">While aiming:</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="below">Block below here</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-body" data-tilt-limit="above">Block above here</button>
+                            <button type="button" class="btn btn-sm btn-link" data-tilt-limit="clear">Clear both</button>
+                        </div>
+                        <div class="form-text" id="adTiltHelp">0 below and 255 above mean no limit. Use whichever shades the side you don't want on the map.</div>
                                 </div>
                                 <div class="d-none" data-more-pane="landmarks" role="tabpanel">
                         <p class="form-text mt-0 mb-2">Save 1 or 2 fixed spots (chimney, pole) with your zones. Next season, aim at them again and press <b>Re-align</b> to move every zone to match. Two spots far apart also fix a turned or tipped head.</p>
@@ -1319,6 +1325,11 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             svgEl('line', { x1: v, y1: 0, x2: v, y2: 255, 'class': 'grid' }, map);
             svgEl('line', { x1: 0, y1: v, x2: 255, y2: v, 'class': 'grid' }, map);
         });
+        // The tilt limit boxes show this head's limits (unless one is being typed in).
+        ['adTiltMin', 'adTiltMax'].forEach(function (id, k) {
+            var box = $id(id);
+            if (document.activeElement !== box) { box.value = h ? (k ? h.tiltMax : h.tiltMin) : (k ? 255 : 0); }
+        });
         if (h) {
             if (h.tiltMin > 0) { svgEl('rect', { x: 0, y: 255 - h.tiltMin, width: 255, height: h.tiltMin, 'class': 'limit' }, map); }
             if (h.tiltMax < 255) { svgEl('rect', { x: 0, y: 0, width: 255, height: 255 - h.tiltMax, 'class': 'limit' }, map); }
@@ -1407,6 +1418,22 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             draft = []; $id('adMarkName').value = ''; zonesSaved(d);
             toast('Zone saved' + (name ? ': ' + name : '') + '. The shutter now closes there.');
         }).catch(function (e) { toast(e.message, false); });
+    });
+    // Typed-in tilt limits: saved when the box is left (or Enter is pressed); no aiming needed.
+    [['adTiltMin', 'below'], ['adTiltMax', 'above']].forEach(function (pair) {
+        $id(pair[0]).addEventListener('change', function () {
+            var box = this, v = Math.max(0, Math.min(255, parseInt(box.value, 10) || 0));
+            var h = zonesData ? zonesData[zoneHead()] : null, lo = h ? h.tiltMin : 0, hi = h ? h.tiltMax : 255;
+            function putBack(msg) { box.value = pair[1] === 'below' ? lo : hi; toast(msg, false); }
+            if (pair[1] === 'below' ? v >= hi : v <= lo) {
+                putBack('Block below has to be lower than block above (now ' + lo + ' and ' + hi + ').');
+                return;
+            }
+            box.value = v;
+            post({ action: 'tilt_limit', head: zoneHead(), side: pair[1], tilt: v })
+                .then(function (d) { zonesSaved(d); toast(pair[1] === 'below' ? 'Blocks below tilt ' + v + '.' : 'Blocks above tilt ' + v + '.'); })
+                .catch(function (e) { putBack(e.message); });
+        });
     });
     document.querySelectorAll('[data-tilt-limit]').forEach(function (b) {
         b.addEventListener('click', function () {
