@@ -1,5 +1,14 @@
 # Air Defender changelog
 
+## 1.7.4 (2026-11-13)
+
+- **Manual tracking** (was Start tracking) is now on the dashboard's **Test** tab; while it runs, the banner shows
+  **Manual tracking active** with the time left and a **Stop** button on every tab.
+- **Restarts and updates always stop the old detection loop**, even one that has stopped responding, so two can
+  never run at once.
+- **Messages show head names as plain text**, so a name with unusual characters can't upset them.
+- **Phones**: the Manual tracking badge wraps instead of making the page wider than the screen.
+
 ## 1.7.3 (2026-11-11)
 
 - **The radar sweep keeps time with the checks**: one turn per **Check every** (10 seconds unless changed), with the
