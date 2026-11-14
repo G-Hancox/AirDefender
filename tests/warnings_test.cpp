@@ -82,7 +82,7 @@ int main() {
         // Turned off: Air Defender off means no Air Defender warnings; the setting off means none at all.
         AdWarnings w; AdWarnInput in = ok(1000); in.adEnabled = false; in.stateFound = false;
         CHECK("Air Defender off: no warnings", w.update(in).empty());
-        in = ok(1000); in.stateFound = false; in.warningsOn = false; in.dzOn = true; in.dzFailed = true;
+        in = ok(1000); in.stateFound = false; in.warnFeed = in.warnLoop = in.warnDz = false; in.dzOn = true; in.dzFailed = true;
         CHECK("warnings setting off: nothing, even with problems", w.update(in).empty());
     }
     {
@@ -104,13 +104,29 @@ int main() {
         // Reading FPP's plugin settings file.
         std::istringstream f("enabled = \"1\"\nnodeRole = \"master\"\ndeadZonesEnabled = \"1\"\nlatitude = \"41.5\"\n");
         AdWarnSettings s = adParseSettings(f);
-        CHECK("settings: on, DeadZones on, warnings on by default", s.adEnabled && s.dzOn && s.warningsOn);
-        std::istringstream g("enabled=\"0\"\r\nfppWarnings = \"0\"\r\n");
+        CHECK("settings: on, DeadZones on, all warnings by default", s.adEnabled && s.dzOn && s.warnFeed && s.warnLoop && s.warnDz);
+        std::istringstream g("enabled=\"0\"\r\nfppWarnings = \"off\"\r\n");
         s = adParseSettings(g);
-        CHECK("settings: off, warnings off, Windows line ends", !s.adEnabled && !s.warningsOn && !s.dzOn);
+        CHECK("settings: Off, Windows line ends: none", !s.adEnabled && !s.warnFeed && !s.warnLoop && !s.warnDz);
         std::istringstream e("");
         s = adParseSettings(e);
-        CHECK("settings: empty file: defaults", !s.adEnabled && s.warningsOn);
+        CHECK("settings: empty file: all", !s.adEnabled && s.warnFeed && s.warnLoop && s.warnDz);
+        std::istringstream pk("fppWarnings = \"pick\"\nwarnFeedDown = \"1\"\nwarnLoopStopped = \"0\"\n");
+        s = adParseSettings(pk);
+        CHECK("settings: pick: the ticked ones (unset ones stay on)", s.warnFeed && !s.warnLoop && s.warnDz);
+        std::istringstream al("fppWarnings = \"all\"\nwarnLoopStopped = \"0\"\n");
+        s = adParseSettings(al);
+        CHECK("settings: All ignores the ticks", s.warnLoop);
+    }
+    {
+        // Picking: only the wanted ones show, but a feed problem keeps counting while unwanted.
+        AdWarnings w; AdWarnInput in = ok(1000); in.feedError = true; in.warnFeed = false;
+        w.update(in); in.now = 1200; in.stateTime = 1195;
+        CHECK("feed warning not wanted: none", w.update(in).empty());
+        in.warnFeed = true;
+        CHECK("ticked again later: shows at once (the 2 minutes have passed)", has(w.update(in), AdWarnings::feedDown()));
+        in = ok(1000); in.stateFound = false; in.warnLoop = false;
+        CHECK("detection stopped, not wanted: none", w.update(in).empty());
     }
     std::printf("%s (%d failed)\n", failures ? "FAILED" : "All passed", failures);
     return failures ? 1 : 0;

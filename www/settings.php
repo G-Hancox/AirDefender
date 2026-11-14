@@ -142,14 +142,15 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <li class="nav-item"><a class="nav-link active" id="ad-general-tab" data-bs-toggle="tab" href="#ad-general" role="tab" aria-controls="ad-general" aria-selected="true">General</a></li>
         <li class="nav-item"><a class="nav-link" id="ad-heads-tab" data-bs-toggle="tab" href="#ad-heads" role="tab" aria-controls="ad-heads" aria-selected="false">Moving heads</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-when-tab" data-bs-toggle="tab" href="#ad-when" role="tab" aria-controls="ad-when" aria-selected="false">When &amp; where</a></li>
-        <li class="nav-item ad-player-only"><a class="nav-link" id="ad-limits-tab" data-bs-toggle="tab" href="#ad-limits" role="tab" aria-controls="ad-limits" aria-selected="false">Limits</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-feed-tab" data-bs-toggle="tab" href="#ad-feed" role="tab" aria-controls="ad-feed" aria-selected="false">Flight data</a></li>
+        <li class="nav-item ad-player-only"><a class="nav-link" id="ad-limits-tab" data-bs-toggle="tab" href="#ad-limits" role="tab" aria-controls="ad-limits" aria-selected="false">Limits</a></li>
+        <li class="nav-item"><a class="nav-link" id="ad-notify-tab" data-bs-toggle="tab" href="#ad-notify" role="tab" aria-controls="ad-notify" aria-selected="false">Notifications</a></li>
         <li class="nav-item"><a class="nav-link" id="ad-dz-tab" data-bs-toggle="tab" href="#ad-dz" role="tab" aria-controls="ad-dz" aria-selected="false">DeadZones</a></li>
     </ul>
 
     <div class="tab-content">
         <div class="tab-pane fade show active" id="ad-general" role="tabpanel" aria-labelledby="ad-general-tab">
-            <?php airdefender_print_group('Air Defender', array('enabled', 'nodeRole', $airdefenderRoleRows, 'masterAddress', $airdefenderPasswordRow, $airdefenderRemoteNote, 'fppWarnings')); ?>
+            <?php airdefender_print_group('Air Defender', array('enabled', 'nodeRole', $airdefenderRoleRows, 'masterAddress', $airdefenderPasswordRow, $airdefenderRemoteNote)); ?>
         </div>
 
         <div class="tab-pane fade" id="ad-heads" role="tabpanel" aria-labelledby="ad-heads-tab">
@@ -297,6 +298,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
                 array('adsbSourceUrl' => $airdefenderFeedOptions)); ?>
         </div>
 
+        <div class="tab-pane fade" id="ad-notify" role="tabpanel" aria-labelledby="ad-notify-tab">
+            <p>If the heads stop being protected, a warning appears at the top of FPP&rsquo;s pages and goes away by itself once
+                things work again. Apps that pass on FPP&rsquo;s warnings, such as FPPMon, can send it to your phone. Never for an
+                aircraft closing the heads, or outside show times.</p>
+            <?php airdefender_print_group('FPP warnings', array('fppWarnings', 'warnFeedDown', 'warnLoopStopped', 'warnDeadZones')); ?>
+        </div>
         <div class="tab-pane fade" id="ad-dz" role="tabpanel" aria-labelledby="ad-dz-tab">
             <?php airdefender_print_group('DeadZones', array('deadZonesEnabled', 'deadZonesWhen')); ?>
             <div class="mb-3" id="adDzStatus" role="status"></div>
@@ -926,7 +933,14 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     /* Called by FPP's setting helpers after each save. */
     window.airdefenderSettingSaved = function () { refresh(); };
 
-    function refresh() { updateRole(); updateLocation(); updateLimits(); }
+    // Notifications: the three choices only show for "Only the ones I pick".
+    function updateWarnings() {
+        var pick = $id('fppWarnings') && $id('fppWarnings').value === 'pick';
+        ['warnFeedDown', 'warnLoopStopped', 'warnDeadZones'].forEach(function (id) {
+            if ($id(id + 'Row')) { $id(id + 'Row').classList.toggle('d-none', !pick); }
+        });
+    }
+    function refresh() { updateRole(); updateLocation(); updateLimits(); updateWarnings(); }
 
     // Come back to the tab you were on.
     try {
@@ -942,6 +956,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     });
     if ($id('useFPPLocation')) { $id('useFPPLocation').addEventListener('change', refresh); }
     if ($id('nodeRole')) { $id('nodeRole').addEventListener('change', refresh); }
+    if ($id('fppWarnings')) { $id('fppWarnings').addEventListener('change', updateWarnings); }
     // Check every is 5 to 15 seconds: put an older setting, or a number typed outside that, back in range and save it.
     (function () {
         var f = $id('fetchInterval');

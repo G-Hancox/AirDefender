@@ -5,8 +5,16 @@
             "settings": [
                 "enabled",
                 "nodeRole",
-                "masterAddress",
-                "fppWarnings"
+                "masterAddress"
+            ]
+        },
+        "airdefenderNotify": {
+            "description": "FPP warnings",
+            "settings": [
+                "fppWarnings",
+                "warnFeedDown",
+                "warnLoopStopped",
+                "warnDeadZones"
             ]
         },
         "airdefenderWhen": {
@@ -213,8 +221,31 @@
             "default": "0"
         },
         "fppWarnings": {
-            "description": "FPP warnings when something's wrong",
-            "tip": "On: if the heads aren't being protected (no flight data for 2 minutes during a show, aircraft detection stopped, or DeadZones switched itself off), Air Defender adds a warning to the top of FPP's pages, and apps that pass on FPP's warnings (such as FPPMon) can send it to your phone. It goes away by itself once things are working again. Needs Air Defender's compiled part (built when it is installed).",
+            "description": "FPP warnings",
+            "tip": "When the heads stop being protected, Air Defender adds a warning to the top of FPP's pages, and apps that pass on FPP's warnings (such as FPPMon) can send it to your phone. It goes away by itself once things work again. <b>All</b>: every warning below. <b>Only the ones I pick</b>: tick the ones you want. <b>Off</b>: none. Needs Air Defender's compiled part (built when it is installed).",
+            "type": "select",
+            "options": {
+                "All": "all",
+                "Only the ones I pick": "pick",
+                "Off": "off"
+            },
+            "default": "all"
+        },
+        "warnFeedDown": {
+            "description": "No flight data for 2 minutes",
+            "tip": "During a show, the flight data service hasn't answered for 2 minutes (on a Remote: it can't reach the Player). It says whether Close heads if the feed is down has closed them.",
+            "type": "checkbox",
+            "default": "1"
+        },
+        "warnLoopStopped": {
+            "description": "Aircraft detection stopped",
+            "tip": "Air Defender's detection hasn't checked in for 90 seconds, so nothing is watching for aircraft.",
+            "type": "checkbox",
+            "default": "1"
+        },
+        "warnDeadZones": {
+            "description": "DeadZones turned itself off",
+            "tip": "DeadZones hit an error and switched itself off (only if you use DeadZones). Plane safety still works.",
             "type": "checkbox",
             "default": "1"
         },

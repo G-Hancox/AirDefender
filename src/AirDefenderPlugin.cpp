@@ -180,7 +180,8 @@ private:
     AdWarnings warnings;
     std::set<std::string> warningsShown;
     long long settingsTime = -1, stateTime = -1;
-    bool setWarnings = true, setEnabled = false, setDzOn = false;
+    AdWarnSettings setWarn;
+    bool setEnabled = false, setDzOn = false;
     Json::Value lastState;
 
     void stopWarnings() {
@@ -218,7 +219,7 @@ private:
         std::string path = FPP_DIR_MEDIA("/config/plugin.AirDefender");
         struct stat st;
         if (stat(path.c_str(), &st) != 0) {
-            setWarnings = true; setEnabled = false; setDzOn = false; settingsTime = -1;
+            setWarn = AdWarnSettings(); setEnabled = false; setDzOn = false; settingsTime = -1;
             return;
         }
         if ((long long)st.st_mtime == settingsTime) {
@@ -227,14 +228,16 @@ private:
         settingsTime = (long long)st.st_mtime;
         std::ifstream f(path);
         AdWarnSettings w = adParseSettings(f);
-        setWarnings = w.warningsOn; setEnabled = w.adEnabled; setDzOn = w.dzOn;
+        setWarn = w; setEnabled = w.adEnabled; setDzOn = w.dzOn;
     }
 
     void warningsTick() {
         readWarningSettings();
         AdWarnInput in;
         in.now = time(nullptr);
-        in.warningsOn = setWarnings;
+        in.warnFeed = setWarn.warnFeed;
+        in.warnLoop = setWarn.warnLoop;
+        in.warnDz = setWarn.warnDz;
         in.adEnabled = setEnabled;
         in.loadedAt = warnLoadedAt;
         in.dzOn = setDzOn;

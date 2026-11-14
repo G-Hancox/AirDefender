@@ -1,6 +1,6 @@
 <h2>Air Defender Settings</h2>
 
-<p>The page has five tabs, in the order you would set things up. Like FPP's own settings, each setting saves as soon
+<p>The page has seven tabs, in the order you would set things up. Like FPP's own settings, each setting saves as soon
 as you change it (a note pops up to say so) and takes effect within a second; FPP does not need a restart. The
 <b>?</b> beside a setting explains it.</p>
 
@@ -21,13 +21,8 @@ as you change it (a note pops up to say so) and takes effect within a second; FP
     <li><b>Player's UI password</b> (Remote only): needed only if the Player has an FPP UI password. It is kept in
         its own file in FPP's plugindata folder that only the fpp user can read, and never shown. Type it and press
         <b>Save password</b>; <b>Remove</b> clears the saved one.</li>
-    <li><b>FPP warnings when something's wrong</b> (on unless you turn it off): if the heads stop being protected
-        (no flight data for 2 minutes during a show, or on a Remote no answer from the Player; aircraft detection
-        stopped; DeadZones switched itself off), a warning appears at the top of FPP's pages and goes away by itself
-        once things work again. Apps that pass on FPP's warnings, such as FPPMon, can send it to your phone. Needs the
-        compiled part built at install.</li>
 </ul>
-<p>On a Remote, only General and Moving heads are shown: the rest is set on the Player.</p>
+<p>On a Remote, General, Moving heads, Notifications and DeadZones are shown: the rest is set on the Player.</p>
 
 <h3>Moving heads</h3>
 <p>One row per head (up to 8). <b>Add head</b> adds a row; the bin button removes one (after asking). <b>Reorder</b> unlocks the list: drag each head by its grip (mouse or finger), then press <b>Done reordering</b> to lock the new order. Each head takes its DeadZones values and zones with it.</p>
@@ -82,18 +77,6 @@ until you pick the model again.</p>
         or your phone. Left at 0, heights are measured above sea level, as before.</li>
 </ul>
 
-<h3>Limits</h3>
-<ul>
-    <li><b>Distance</b> (nautical miles) and <b>Altitude</b> (feet): heads close when an aircraft is inside the
-        distance <i>and</i> below the altitude. With a <b>Show elevation</b> set, the altitude is measured above your
-        show, and the note under it shows what that is above sea level.</li>
-    <li><b>Hold after it leaves</b>: how long, in seconds, heads stay closed after the last aircraft leaves
-        (0&ndash;600, default 30), so one on the edge of the area does not flash them on and off.</li>
-    <li><b>Check every</b>: how often, in seconds, to ask for new flight data (5 to 15; never slower, so a fast aircraft can't get too close between looks). Every 10 seconds is about
-        1,800 requests in a 5-hour show night, which matters because free services limit how many they answer. A
-        smaller distance may want a quicker check.</li>
-</ul>
-
 <h3>Flight data</h3>
 <ul>
     <li><b>Service</b>: <b>adsb.fi</b> (the default) and <b>adsb.lol</b> are free community services for personal,
@@ -114,6 +97,30 @@ until you pick the model again.</p>
     <li><b>Close heads if the feed is down</b>: off (the default), if the service stops answering, heads stay as they are
         unless an aircraft was near when it stopped. On, heads close whenever it stops answering, until it answers
         again: stricter, but an internet outage keeps them closed.</li>
+</ul>
+
+<h3>Limits</h3>
+<ul>
+    <li><b>Distance</b> (nautical miles) and <b>Altitude</b> (feet): heads close when an aircraft is inside the
+        distance <i>and</i> below the altitude. With a <b>Show elevation</b> set, the altitude is measured above your
+        show, and the note under it shows what that is above sea level.</li>
+    <li><b>Hold after it leaves</b>: how long, in seconds, heads stay closed after the last aircraft leaves
+        (0&ndash;600, default 30), so one on the edge of the area does not flash them on and off.</li>
+    <li><b>Check every</b>: how often, in seconds, to ask for new flight data (5 to 15; never slower, so a fast aircraft can't get too close between looks). Every 10 seconds is about
+        1,800 requests in a 5-hour show night, which matters because free services limit how many they answer. A
+        smaller distance may want a quicker check.</li>
+</ul>
+
+<h3>Notifications</h3>
+<p>If the heads stop being protected, Air Defender adds a warning to the top of FPP's pages, and it goes away by itself
+once things work again. Apps that pass on FPP's warnings, such as FPPMon, can send it to your phone. Never for an
+aircraft closing the heads, or outside show times. Needs the compiled part built at install.</p>
+<ul>
+    <li><b>FPP warnings</b>: <b>All</b> (the default), <b>Only the ones I pick</b> (tick them below), or <b>Off</b>.</li>
+    <li><b>No flight data for 2 minutes</b>: during a show, the service hasn't answered (on a Remote: it can't reach
+        the Player). It says if <b>Close heads if the feed is down</b> has closed them.</li>
+    <li><b>Aircraft detection stopped</b>: no check-in from it for 90 seconds.</li>
+    <li><b>DeadZones turned itself off</b>: after an error, only if you use DeadZones.</li>
 </ul>
 
 <h3>DeadZones</h3>

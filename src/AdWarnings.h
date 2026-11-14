@@ -23,7 +23,9 @@ namespace airdefender {
 /* What the plugin read this time round. Times are in seconds. */
 struct AdWarnInput {
     long long now = 0;
-    bool warningsOn = true;      // the "FPP warnings when something's wrong" setting
+    bool warnFeed = true;        // which warnings are wanted (the Notifications tab)
+    bool warnLoop = true;
+    bool warnDz = true;
     bool adEnabled = false;      // the "Enable Air Defender" setting
     long long loadedAt = 0;      // when the plugin started (the loop gets time to start)
     bool stateFound = false;     // the loop's status file exists
@@ -39,7 +41,9 @@ struct AdWarnInput {
 
 /* The settings it needs, from FPP's plugin settings file (lines like: key = "value"). */
 struct AdWarnSettings {
-    bool warningsOn = true;   // on unless turned off
+    bool warnFeed = true;     // All (the default) means all three
+    bool warnLoop = true;
+    bool warnDz = true;
     bool adEnabled = false;
     bool dzOn = false;
 };
@@ -50,15 +54,25 @@ inline AdWarnSettings adParseSettings(std::istream& f) {
         size_t a = t.find_first_not_of(" \t\r\""), b = t.find_last_not_of(" \t\r\"");
         t = a == std::string::npos ? "" : t.substr(a, b - a + 1);
     };
+    std::string mode = "all";
+    bool feed = true, loop = true, dz = true;
     while (std::getline(f, line)) {
         size_t eq = line.find('=');
         if (eq == std::string::npos) { continue; }
         std::string key = line.substr(0, eq), val = line.substr(eq + 1);
         trim(key); trim(val);
         bool on = val == "1" || val == "true" || val == "on";
-        if (key == "fppWarnings") { out.warningsOn = on || val.empty(); }
+        if (key == "fppWarnings") { mode = val; }
+        else if (key == "warnFeedDown") { feed = on; }
+        else if (key == "warnLoopStopped") { loop = on; }
+        else if (key == "warnDeadZones") { dz = on; }
         else if (key == "enabled") { out.adEnabled = on; }
         else if (key == "deadZonesEnabled") { out.dzOn = on; }
+    }
+    if (mode == "off" || mode == "0") {
+        out.warnFeed = out.warnLoop = out.warnDz = false;
+    } else if (mode == "pick") {
+        out.warnFeed = feed; out.warnLoop = loop; out.warnDz = dz;
     }
     return out;
 }
@@ -95,11 +109,8 @@ public:
     /* The warnings that should be showing now. Remembers when a feed problem started, so call it every few seconds. */
     std::vector<std::string> update(const AdWarnInput& in) {
         std::vector<std::string> out;
-        if (!in.warningsOn) {
-            problemSince = -1;
-            return out;
-        }
-        if (in.dzOn && in.dzFailed) {
+        // Worked out whatever is wanted (so a feed problem's 2 minutes keep counting), then filtered.
+        if (in.warnDz && in.dzOn && in.dzFailed) {
             out.push_back(dzFailed());
         }
         if (!in.adEnabled) {
@@ -109,7 +120,7 @@ public:
         bool fresh = in.stateFound && in.now - in.stateTime <= LOOP_STALE_SEC;
         if (!fresh) {
             problemSince = -1;
-            if (in.now - in.loadedAt >= START_GRACE_SEC) {
+            if (in.warnLoop && in.now - in.loadedAt >= START_GRACE_SEC) {
                 out.push_back(loopStopped());
             }
             return out;
@@ -122,7 +133,7 @@ public:
         if (problemSince < 0 || in.now < problemSince) {
             problemSince = in.now;
         }
-        if (in.now - problemSince >= FEED_DOWN_SEC) {
+        if (in.warnFeed && in.now - problemSince >= FEED_DOWN_SEC) {
             out.push_back(in.remote ? playerLost() : in.closedForFeed ? feedDownClosed() : feedDown());
         }
         return out;

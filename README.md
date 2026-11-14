@@ -107,18 +107,20 @@ Every page has help behind FPP's **?** button.
 
 ## Settings
 
-The settings page has five tabs, like FPP's own settings. Each setting saves as you change it (a note pops up to
+The settings page has seven tabs, in the order you'd set things up, like FPP's own settings. Each setting saves as you change it (a note pops up to
 say so) and takes effect within a second; no restart is needed.
 
 | Tab | What's there |
 |---|---|
-| **General** | Enable Air Defender; **Role** (Player or Remote, starting from FPP's own mode); on a Remote, the Player's address and UI password; **FPP warnings when something's wrong** (see [FPP warnings](#fpp-warnings)). |
+| **General** | Enable Air Defender; **Role** (Player or Remote, starting from FPP's own mode); on a Remote, the Player's address and UI password |
 | **Moving heads** | Up to 8 heads: name, model or manual start channel, shutter channel in the fixture, closed value. |
 | **When & where** | **Check for aircraft during** (all scheduled shows, or only selected playlists) with the playlist list, the show location and its elevation. |
-| **Limits** | Distance (NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
 | **Flight data** | The service (or your own receiver's address), **Test connection**, an optional backup service (also for your own receiver), and **Close heads if the feed is down**. |
+| **Limits** | Distance (NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
+| **Notifications** | **FPP warnings**: All, Only the ones I pick, or Off (see [FPP warnings](#fpp-warnings)). |
+| **DeadZones** | Optional: see [DeadZones](#deadzones-optional). |
 
-On a Remote only **General** and **Moving heads** are shown: the rest is set on the Player.
+On a Remote, **General**, **Moving heads**, **Notifications** and **DeadZones** are shown: the rest is set on the Player.
 
 ### Picking heads by model
 
@@ -250,7 +252,7 @@ itself once things work again:
 
 Nothing is warned about outside show times, or for an aircraft closing the heads (that's Air Defender working).
 Apps that pass on FPP's warnings, such as **FPPMon**, can send them to your phone, with nothing to set up in Air
-Defender. Turn it off with **FPP warnings when something's wrong** on the General tab. It needs the compiled part
+Defender. Choose them on the **Notifications** tab: **All** (the default), **Only the ones I pick**, or **Off**. It needs the compiled part
 built at install (the same one DeadZones uses); without it there are no warnings, and the dashboard still shows
 everything.
 
