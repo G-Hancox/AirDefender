@@ -142,8 +142,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <li class="nav-item"><a class="nav-link active" id="ad-general-tab" data-bs-toggle="tab" href="#ad-general" role="tab" aria-controls="ad-general" aria-selected="true">General</a></li>
         <li class="nav-item"><a class="nav-link" id="ad-heads-tab" data-bs-toggle="tab" href="#ad-heads" role="tab" aria-controls="ad-heads" aria-selected="false">Moving heads</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-when-tab" data-bs-toggle="tab" href="#ad-when" role="tab" aria-controls="ad-when" aria-selected="false">When &amp; where</a></li>
-        <li class="nav-item ad-player-only"><a class="nav-link" id="ad-limits-tab" data-bs-toggle="tab" href="#ad-limits" role="tab" aria-controls="ad-limits" aria-selected="false">Limits</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-feed-tab" data-bs-toggle="tab" href="#ad-feed" role="tab" aria-controls="ad-feed" aria-selected="false">Flight data</a></li>
+        <li class="nav-item ad-player-only"><a class="nav-link" id="ad-limits-tab" data-bs-toggle="tab" href="#ad-limits" role="tab" aria-controls="ad-limits" aria-selected="false">Limits</a></li>
     </ul>
 
     <div class="tab-content">

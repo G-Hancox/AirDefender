@@ -75,18 +75,6 @@ until you pick the model again.</p>
         or your phone. Left at 0, heights are measured above sea level, as before.</li>
 </ul>
 
-<h3>Limits</h3>
-<ul>
-    <li><b>Distance</b> (nautical miles, 1 to 15; a setting saved above 15 is used as 15) and <b>Altitude</b> (feet): heads close when an aircraft is inside the
-        distance <i>and</i> below the altitude. With a <b>Show elevation</b> set, the altitude is measured above your
-        show, and the note under it shows what that is above sea level.</li>
-    <li><b>Hold after it leaves</b>: how long, in seconds, heads stay closed after the last aircraft leaves
-        (0&ndash;600, default 30), so one on the edge of the area does not flash them on and off.</li>
-    <li><b>Check every</b>: how often, in seconds, to ask for new flight data (5 to 15; never slower, so a fast aircraft can't get too close between looks). Every 10 seconds is about
-        1,800 requests in a 5-hour show night, which matters because free services limit how many they answer. A
-        smaller distance may want a quicker check.</li>
-</ul>
-
 <h3>Flight data</h3>
 <ul>
     <li><b>Service</b>: <b>adsb.fi</b> (the default) and <b>adsb.lol</b> are free community services for personal,
@@ -108,3 +96,15 @@ until you pick the model again.</p>
         unless an aircraft was near when it stopped. On, heads close whenever it stops answering, until it answers
         again: stricter, but an internet outage keeps them closed.</li>
 </ul>
+<h3>Limits</h3>
+<ul>
+    <li><b>Distance</b> (nautical miles, 1 to 15; a setting saved above 15 is used as 15) and <b>Altitude</b> (feet): heads close when an aircraft is inside the
+        distance <i>and</i> below the altitude. With a <b>Show elevation</b> set, the altitude is measured above your
+        show, and the note under it shows what that is above sea level.</li>
+    <li><b>Hold after it leaves</b>: how long, in seconds, heads stay closed after the last aircraft leaves
+        (0&ndash;600, default 30), so one on the edge of the area does not flash them on and off.</li>
+    <li><b>Check every</b>: how often, in seconds, to ask for new flight data (5 to 15; never slower, so a fast aircraft can't get too close between looks). Every 10 seconds is about
+        1,800 requests in a 5-hour show night, which matters because free services limit how many they answer. A
+        smaller distance may want a quicker check.</li>
+</ul>
+
