@@ -114,6 +114,9 @@ Same job as plane safety - "close the shutter when it isn't safe" - for a differ
 - [x] Nov 12: tested on Docker FPP 10.0 with sequences playing; a fresh clone-and-install of the branch kept all
   settings and zones. Sent to the FPP maintainer for a precheck (fpp-data issue #302).
 - [ ] Step 6: real-head testing on a Pi before it goes near dev.
+- [ ] If the real-head test shows the shutter closing late: first check each head's slew against a timed full
+  sweep, then a bigger margin; if still late, add a **Close early (ms)** setting (default 0) that checks where
+  each head will be that far ahead, from its speed and where the data is sending it.
 
 ## Decision (Nov 11): built into Air Defender
 
