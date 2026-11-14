@@ -226,7 +226,8 @@ Choose **Lite** (refreshes every 5 seconds) or **Detailed** (every 2 seconds, ad
 and every head's state). Your choice is remembered in that browser. The dashboard only asks FPP for anything while it
 is open.
 
-On the radar, aircraft that report a heading are small arrows pointing the way they fly (inside a ring for a
+The radar's range rings are marked in nautical miles, at a round step for your limit, with the dashed limit ring
+last (5 NM: 1, 2, 3, 4, 5; 10 NM: 2.5, 5, 7.5, 10). On the radar, aircraft that report a heading are small arrows pointing the way they fly (inside a ring for a
 helicopter, hollow for a drone, balloon or glider); the rest are dots. Click one for its type, registration, height,
 speed and a link to follow it on a live map. To
 match the radar to the way you face your display, press the lock beside **Sky**, drag the radar round (or use the

@@ -19,6 +19,8 @@
   its Player), aircraft detection stopped, or DeadZones switched off after an error each add a warning to the top
   of FPP's pages, gone again once things work. Apps that pass on FPP's warnings, such as FPPMon, can send them to
   your phone. Choose All, some or none on the new **Notifications** tab; never for an aircraft closing the heads or outside show times.
+- **Radar range rings mean something**: marked in nautical miles at a round step for your limit, the dashed limit
+  ring last (5 NM: 1, 2, 3, 4, 5).
 - **Settings tabs in setup order**: General, Moving heads, When & where, Flight data, Limits, Notifications, DeadZones.
 - **Import models from xLights** on the Moving heads tab: pick your show folder and it fills in each head's start
   channel and shutter. Imported heads show as **Imported** with those locked; **Manual** unlocks them. **Reorder**
