@@ -116,7 +116,7 @@ say so) and takes effect within a second; no restart is needed.
 | **Moving heads** | Up to 8 heads: name, model or manual start channel, shutter channel in the fixture, closed value. |
 | **When & where** | **Check for aircraft during** (all scheduled shows, or only selected playlists) with the playlist list, the show location and its elevation. |
 | **Flight data** | The service (or your own receiver's address), **Test connection**, an optional backup service (also for your own receiver), and **Close heads if the feed is down**. |
-| **Limits** | Distance (NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
+| **Limits** | Distance (1 to 15 NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
 | **Notifications** | **FPP warnings**: All, Only the ones I pick, or Off (see [FPP warnings](#fpp-warnings)). |
 | **DeadZones** | Optional: see [DeadZones](#deadzones-optional). |
 

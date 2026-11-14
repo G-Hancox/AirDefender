@@ -957,6 +957,22 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     if ($id('useFPPLocation')) { $id('useFPPLocation').addEventListener('change', refresh); }
     if ($id('nodeRole')) { $id('nodeRole').addEventListener('change', refresh); }
     if ($id('fppWarnings')) { $id('fppWarnings').addEventListener('change', updateWarnings); }
+    // Distance is 1 to 15 NM: likewise.
+    (function () {
+        var f = $id('distanceNM');
+        if (!f) { return; }
+        function clamp() {
+            var v = parseFloat(f.value);
+            if (isNaN(v)) { return; }
+            var c = Math.min(15, Math.max(1, v));
+            if (c !== v) {
+                f.value = c;
+                if (typeof window.distanceNMChanged === 'function') { window.distanceNMChanged(); }   // FPP's helper saves it
+            }
+        }
+        f.addEventListener('change', clamp);
+        clamp();
+    })();
     // Check every is 5 to 15 seconds: put an older setting, or a number typed outside that, back in range and save it.
     (function () {
         var f = $id('fetchInterval');

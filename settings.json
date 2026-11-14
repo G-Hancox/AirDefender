@@ -145,10 +145,10 @@
         },
         "distanceNM": {
             "description": "Distance",
-            "tip": "Heads close when an aircraft is inside this distance and below the altitude. 1 NM is about 1.85 km.",
+            "tip": "Heads close when an aircraft is inside this distance and below the altitude. 1 NM is about 1.85 km. 1 to 15 NM: a few miles is usually plenty, and wider only closes the heads for low aircraft far from your show.",
             "type": "number",
             "min": 1,
-            "max": 50,
+            "max": 15,
             "default": "5",
             "suffix": "NM"
         },

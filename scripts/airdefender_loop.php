@@ -467,7 +467,8 @@ while (true) {
     // Not saved yet (a new install): follow FPP's own Player Mode.
     $savedRole = (string) airdefender_setting($settings, 'nodeRole', '');
     $role = strtolower($savedRole !== '' ? $savedRole : airdefender_fpp_role()) === 'remote' ? 'remote' : 'master';
-    $maxNm = max(0.1, (float) airdefender_setting($settings, 'distanceNM', 5));
+    // 1 to 15 NM: wider only closes heads for low aircraft far from the show; a saved setting above 15 is used as 15.
+    $maxNm = min(15.0, max(0.1, (float) airdefender_setting($settings, 'distanceNM', 5)));
     $maxFt = max(0, (float) airdefender_setting($settings, 'altitudeThresholdFt', 3000));
     // Heights are compared above the show, not above sea level.
     $elevationFt = airdefender_clamp_elevation(airdefender_setting($settings, 'showElevationFt', 0));
