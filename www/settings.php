@@ -149,7 +149,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
 
     <div class="tab-content">
         <div class="tab-pane fade show active" id="ad-general" role="tabpanel" aria-labelledby="ad-general-tab">
-            <?php airdefender_print_group('Air Defender', array('enabled', 'nodeRole', $airdefenderRoleRows, 'masterAddress', $airdefenderPasswordRow, $airdefenderRemoteNote)); ?>
+            <?php airdefender_print_group('Air Defender', array('enabled', 'nodeRole', $airdefenderRoleRows, 'masterAddress', $airdefenderPasswordRow, $airdefenderRemoteNote, 'fppWarnings')); ?>
         </div>
 
         <div class="tab-pane fade" id="ad-heads" role="tabpanel" aria-labelledby="ad-heads-tab">

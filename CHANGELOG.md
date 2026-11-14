@@ -15,6 +15,10 @@
   frame just before it goes out and only changes the shutter channel. About a microsecond a frame, nothing written to
   the SD card. If it can't be built or hits an error, DeadZones switches itself off and the rest of Air Defender works
   as before.
+- **FPP warnings when the heads aren't protected**: no flight data for 2 minutes during a show (or a Remote losing
+  its Player), aircraft detection stopped, or DeadZones switched off after an error each add a warning to the top
+  of FPP's pages, gone again once things work. Apps that pass on FPP's warnings, such as FPPMon, can send them to
+  your phone. On by default (General tab); never for an aircraft closing the heads or outside show times.
 - **Import models from xLights** on the Moving heads tab: pick your show folder and it fills in each head's start
   channel and shutter. Imported heads show as **Imported** with those locked; **Manual** unlocks them. **Reorder**
   drags heads into the order you want.

@@ -5,7 +5,8 @@
             "settings": [
                 "enabled",
                 "nodeRole",
-                "masterAddress"
+                "masterAddress",
+                "fppWarnings"
             ]
         },
         "airdefenderWhen": {
@@ -210,6 +211,12 @@
             "tip": "If the chosen service stops answering or limits requests, ask another in the same check, and go back to the chosen one when it answers (it is tried again every minute). adsb.fi and adsb.lol back each other up; your own receiver falls back on adsb.fi. Off by default, because turning it on means the backup service is sent your show's location (rounded to about 1 km) while it is used.",
             "type": "checkbox",
             "default": "0"
+        },
+        "fppWarnings": {
+            "description": "FPP warnings when something's wrong",
+            "tip": "On: if the heads aren't being protected (no flight data for 2 minutes during a show, aircraft detection stopped, or DeadZones switched itself off), Air Defender adds a warning to the top of FPP's pages, and apps that pass on FPP's warnings (such as FPPMon) can send it to your phone. It goes away by itself once things are working again. Needs Air Defender's compiled part (built when it is installed).",
+            "type": "checkbox",
+            "default": "1"
         },
         "feedDownSafe": {
             "description": "Close heads if the feed is down",

@@ -25,6 +25,12 @@
  * seq=<file> starts reading one sequence with FPP's own reader, on its own
  * low-priority thread and only while nothing is playing (stop=1 stops it);
  * GET .../deadzones/check gives its progress and results. Reads only.
+ *
+ * FPP warnings (src/AdWarnings.h): every 5 s a small thread reads the loop's
+ * status (in memory) and the settings, and adds or removes Air Defender's own
+ * FPP warnings to match: feed down 2 min, detection stopped, DeadZones off
+ * after an error. FPP shows them on every page; apps such as FPPMon pass them
+ * on. They are removed when things recover and when the plugin stops.
  */
 #include <fpp-pch.h>
 
@@ -40,7 +46,10 @@
 #include <ctime>
 
 #include <atomic>
+#include <condition_variable>
 #include <cstdlib>
+#include <fstream>
+#include <set>
 #include <exception>
 #include <memory>
 #include <thread>
@@ -50,6 +59,7 @@
 
 #include "Plugin.h"
 #include "Sequence.h"
+#include "Warnings.h"
 #include "common.h"
 #include "fpphttp.h"
 #include "log.h"
@@ -57,6 +67,7 @@
 
 #include "fseq/FSEQFile.h"
 
+#include "AdWarnings.h"
 #include "DeadZonesCheck.h"
 #include "DeadZonesConfig.h"
 #include "DeadZonesCore.h"
@@ -77,12 +88,18 @@ public:
         // lifecycle callbacks don't run: start plane safety's detection loop here instead, in the
         // background, exactly as callbacks.sh would (the script waits for an old loop to go first).
         runScript("airdefender_start.sh", true);
+        warnLoadedAt = time(nullptr);
+        warnThread = std::thread([this]() { runWarnings(); });
     }
-    // A sequence check still running must be stopped before its thread object goes (else std::terminate).
-    virtual ~AirDefenderPlugin() { stopCheck(); }
+    // Threads still running must be stopped before their objects go (else std::terminate).
+    virtual ~AirDefenderPlugin() {
+        stopWarnings();
+        stopCheck();
+    }
 
     /* fppd stopping, or unloading the plugin to update or uninstall it: stop the loop, as callbacks.sh would. */
     virtual std::function<bool()> shutdown() override {
+        stopWarnings();   // also takes its warnings off FPP's list
         stopCheck();
         runScript("airdefender_stop.sh", false);
         return nullptr;
@@ -153,6 +170,114 @@ private:
     long long fileSize = -1;
     unsigned long long frames = 0;
     volatile bool failed = false;
+
+    // FPP warnings: their own thread, waking every 5 s.
+    std::thread warnThread;
+    std::mutex warnMutex;
+    std::condition_variable warnWake;
+    bool warnStop = false;
+    long long warnLoadedAt = 0;
+    AdWarnings warnings;
+    std::set<std::string> warningsShown;
+    long long settingsTime = -1, stateTime = -1;
+    bool setWarnings = true, setEnabled = false, setDzOn = false;
+    Json::Value lastState;
+
+    void stopWarnings() {
+        {
+            std::lock_guard<std::mutex> lock(warnMutex);
+            warnStop = true;
+        }
+        warnWake.notify_all();
+        if (warnThread.joinable()) {
+            warnThread.join();
+        }
+    }
+
+    void runWarnings() {
+        std::unique_lock<std::mutex> lock(warnMutex);
+        while (!warnStop) {
+            lock.unlock();
+            try {
+                warningsTick();
+            } catch (...) {
+                // A warning is a nicety: never let it take anything else down.
+            }
+            lock.lock();
+            warnWake.wait_for(lock, std::chrono::seconds(5), [this]() { return warnStop; });
+        }
+        lock.unlock();
+        for (const std::string& w : warningsShown) {
+            WarningHolder::RemoveWarning(w);
+        }
+        warningsShown.clear();
+    }
+
+    /* The three settings it needs, from FPP's plugin settings file (lines like: key = "value"), read when it changes. */
+    void readWarningSettings() {
+        std::string path = FPP_DIR_MEDIA("/config/plugin.AirDefender");
+        struct stat st;
+        if (stat(path.c_str(), &st) != 0) {
+            setWarnings = true; setEnabled = false; setDzOn = false; settingsTime = -1;
+            return;
+        }
+        if ((long long)st.st_mtime == settingsTime) {
+            return;
+        }
+        settingsTime = (long long)st.st_mtime;
+        std::ifstream f(path);
+        AdWarnSettings w = adParseSettings(f);
+        setWarnings = w.warningsOn; setEnabled = w.adEnabled; setDzOn = w.dzOn;
+    }
+
+    void warningsTick() {
+        readWarningSettings();
+        AdWarnInput in;
+        in.now = time(nullptr);
+        in.warningsOn = setWarnings;
+        in.adEnabled = setEnabled;
+        in.loadedAt = warnLoadedAt;
+        in.dzOn = setDzOn;
+        in.dzFailed = failed;
+        // The loop's status: the newer of the copy in memory and the one in the plugin folder (see airdefender_statefile.php).
+        struct stat a, b;
+        std::string mem = "/dev/shm/AirDefender/state.json", disk = pluginDir + "/state.json";
+        bool am = stat(mem.c_str(), &a) == 0, bd = stat(disk.c_str(), &b) == 0;
+        if (am || bd) {
+            bool useMem = am && (!bd || a.st_mtime >= b.st_mtime);
+            long long t = (long long)(useMem ? a.st_mtime : b.st_mtime);
+            in.stateFound = true;
+            in.stateTime = t;
+            if (t != stateTime) {
+                Json::Value s;
+                if (LoadJsonFromFile(useMem ? mem : disk, s) && s.isObject()) {
+                    lastState = s;
+                    stateTime = t;
+                }
+            }
+            const Json::Value& s = lastState;
+            in.checking = s.get("checking", true).asBool();
+            in.remote = s.get("role", "master").asString() == "remote";
+            in.feedError = s.isMember("feedError") && !s["feedError"].isNull();
+            in.playerLost = s.isMember("master") && s["master"].isObject() && !s["master"].get("connected", true).asBool();
+            in.closedForFeed = s.get("reason", "").asString() == "feed-down";
+        }
+        std::vector<std::string> want = warnings.update(in);
+        std::set<std::string> now(want.begin(), want.end());
+        for (const std::string& w : warningsShown) {
+            if (!now.count(w)) {
+                WarningHolder::RemoveWarning(w);
+                LogInfo(VB_PLUGIN, "Air Defender: cleared FPP warning: %s\n", w.c_str());
+            }
+        }
+        for (const std::string& w : now) {
+            if (!warningsShown.count(w)) {
+                WarningHolder::AddWarning(w);
+                LogWarn(VB_PLUGIN, "Air Defender: FPP warning: %s\n", w.c_str());
+            }
+        }
+        warningsShown = now;
+    }
 
     // "Check my sequences": one sequence at a time, on its own thread.
     std::thread checkThread;
@@ -467,9 +592,9 @@ private:
     }
 };
 
-// Safe to unload: no timers, commands or outbound requests of its own; the sequence check's
-// thread is stopped and joined in shutdown(), and its routes go through registerPluginApi()
-// and are given back in unregisterApis().
+// Safe to unload: no timers, commands or outbound requests of its own; the sequence check's and
+// the warnings' threads are stopped and joined in shutdown() (the warnings taken off FPP's list),
+// and its routes go through registerPluginApi() and are given back in unregisterApis().
 FPP_PLUGIN_SUPPORTS_UNLOAD()
 
 extern "C" {

@@ -112,7 +112,7 @@ say so) and takes effect within a second; no restart is needed.
 
 | Tab | What's there |
 |---|---|
-| **General** | Enable Air Defender; **Role** (Player or Remote, starting from FPP's own mode); on a Remote, the Player's address and UI password. |
+| **General** | Enable Air Defender; **Role** (Player or Remote, starting from FPP's own mode); on a Remote, the Player's address and UI password; **FPP warnings when something's wrong** (see [FPP warnings](#fpp-warnings)). |
 | **Moving heads** | Up to 8 heads: name, model or manual start channel, shutter channel in the fixture, closed value. |
 | **When & where** | **Check for aircraft during** (all scheduled shows, or only selected playlists) with the playlist list, the show location and its elevation. |
 | **Limits** | Distance (NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
@@ -237,6 +237,22 @@ arrows), then press the lock again to save it.
   runs past midnight) or the **Last 7 days**, newest first, with how many times the heads closed. **Everything**
   shows the full log instead.
 - **Clear log** deletes the Air Defender log. Nothing else trims it, so it keeps everything until you clear it.
+
+## FPP warnings
+
+If the heads stop being protected, Air Defender adds a warning to the top of FPP's own pages, and it goes away by
+itself once things work again:
+
+- **No flight data for 2 minutes** during a show (on a Remote: **can't reach the Player for 2 minutes**). It says
+  whether the heads are closed for it (**Close heads if the feed is down**).
+- **Aircraft detection has stopped** (no check-in for 90 seconds).
+- **DeadZones turned itself off** after an error, if you use it.
+
+Nothing is warned about outside show times, or for an aircraft closing the heads (that's Air Defender working).
+Apps that pass on FPP's warnings, such as **FPPMon**, can send them to your phone, with nothing to set up in Air
+Defender. Turn it off with **FPP warnings when something's wrong** on the General tab. It needs the compiled part
+built at install (the same one DeadZones uses); without it there are no warnings, and the dashboard still shows
+everything.
 
 ## FPP commands
 
@@ -375,6 +391,7 @@ on GitHub. **Air Defender - Help** in FPP's Help menu links there too.
 | Detection loop: reads settings every second, checks the feed, decides, holds or releases the overlays | `scripts/airdefender_loop.php` |
 | Watchdog that keeps the loop running; fppd starts and stops it (through the compiled part when it's built, else through the lifecycle callbacks) | `callbacks.sh`, `scripts/airdefender_supervise.sh`, `scripts/airdefender_start.sh`, `scripts/airdefender_stop.sh` |
 | DeadZones, inside fppd: the per-frame check, its settings file, Check my sequences, and its routes (`/api/plugin-apis/AirDefender/deadzones`, `.../deadzones/check`) | `src/AirDefenderPlugin.cpp`, `src/DeadZonesCore.h`, `src/DeadZonesConfig.h`, `src/DeadZonesCheck.h`, `Makefile`, `scripts/build_deadzones.sh`; tests in `tests/` |
+| FPP warnings (feed down, detection stopped, DeadZones off), from the loop's `state.json` and the plugin settings | `src/AdWarnings.h` (which warnings), `src/AirDefenderPlugin.cpp` (adds and removes them); tests in `tests/warnings_test.cpp` |
 | DeadZones zones and aiming (writes `deadzones.json` for the compiled part when settings change) | `scripts/airdefender_deadzones.php`, `scripts/airdefender_aim.php` |
 | Shutter overlays (`PUT /api/overlays/range/<ch>`, FPP's proxy to fppd) | `scripts/airdefender_controller.php` |
 | Heads by model or manual channel | `scripts/airdefender_models.php` |

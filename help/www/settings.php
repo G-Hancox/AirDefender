@@ -21,6 +21,11 @@ as you change it (a note pops up to say so) and takes effect within a second; FP
     <li><b>Player's UI password</b> (Remote only): needed only if the Player has an FPP UI password. It is kept in
         its own file in FPP's plugindata folder that only the fpp user can read, and never shown. Type it and press
         <b>Save password</b>; <b>Remove</b> clears the saved one.</li>
+    <li><b>FPP warnings when something's wrong</b> (on unless you turn it off): if the heads stop being protected
+        (no flight data for 2 minutes during a show, or on a Remote no answer from the Player; aircraft detection
+        stopped; DeadZones switched itself off), a warning appears at the top of FPP's pages and goes away by itself
+        once things work again. Apps that pass on FPP's warnings, such as FPPMon, can send it to your phone. Needs the
+        compiled part built at install.</li>
 </ul>
 <p>On a Remote, only General and Moving heads are shown: the rest is set on the Player.</p>
 
