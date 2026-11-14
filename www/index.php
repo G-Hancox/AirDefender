@@ -660,6 +660,14 @@ $airdefenderPage = array(
         $id('adPlaneSub').textContent = [p.id !== p.hex ? p.id : '', p.reg !== p.id ? p.reg : '', p.op].filter(Boolean).join(' · ')
             || 'No callsign';
         var above = live && live.limits && live.limits.elevationFt;
+        // Which limit it's outside: too far, too high, both, or no height to judge by.
+        function outsideWhy(pl) {
+            var l = limits(), why = [];
+            if (pl.nm > l.nm) { why.push('too far'); }
+            if (pl.ft === null || pl.ft === undefined) { why.push('no height reported'); }
+            else if (pl.ft > l.ft) { why.push('too high'); }
+            return why.length ? 'Outside: ' + why.join(' and ') : 'Outside';
+        }
         var rows = [
             ['Type', [p.type, KIND_NAME[p.cat]].filter(Boolean).join(' · ')],
             ['Distance', p.nm + ' NM ' + compass(p.brg).split(' ')[0] + ' of the show'],
@@ -667,7 +675,7 @@ $airdefenderPage = array(
             ['Climb', p.vs === undefined ? null : Math.abs(p.vs) < 200 ? 'Level' : (p.vs > 0 ? 'Climbing ' : 'Descending ') + num(Math.abs(p.vs)) + ' ft/min'],
             ['Speed', p.gs === undefined ? null : p.gs + ' kn (' + Math.round(p.gs * 1.15078) + ' mph)'],
             ['Heading', p.trk === null || p.trk === undefined ? null : compass(p.trk)],
-            ['Limits', p.in ? 'Inside' : 'Outside (too far or too high)'],
+            ['Limits', p.in ? 'Inside' : outsideWhy(p)],
             ['Other', [p.year ? 'built ' + p.year : '', p.sq ? 'squawk ' + p.sq : '', p.hex ? 'ICAO ' + p.hex.toUpperCase() : '']
                 .filter(Boolean).join(' · ')]
         ];
