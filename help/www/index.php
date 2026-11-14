@@ -47,7 +47,7 @@ While it runs the banner says <b>Manual tracking active</b> with the time left a
 
 <h3>Sky (Detailed)</h3>
 <p>Your show is the dot in the middle, north is up unless you turn the radar, and the dashed yellow ring is your
-distance limit. The rings inside it are marked in nautical miles (for a 5 NM limit: 1, 2, 3, 4 and 5). Yellow marks are aircraft inside your limits (close enough and low enough); grey marks are aircraft
+distance limit. The rings inside it are marked in nautical miles (for a 5 NM limit: 1, 2, 3, 4 and 5), and the compass letters and bearing ticks sit round the outside. Yellow marks are aircraft inside your limits (close enough and low enough); grey marks are aircraft
 that are too high or too far. An aircraft that reports its heading is a small arrow pointing the way it is flying: solid for a plane, inside a ring
 for a helicopter, and hollow for a drone, balloon, glider or anything else. One that doesn't report a heading is a dot. Hover over a mark for its callsign, distance, height (above your show once
 <b>Show elevation</b> is set in Settings) and heading. Tap an aircraft for its details in the <b>Aircraft</b> card. Aircraft on the ground are not shown.
