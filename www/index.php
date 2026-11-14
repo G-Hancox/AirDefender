@@ -68,8 +68,9 @@ $airdefenderPage = array(
     .airdefender-radar .wedge { fill: var(--bs-success); opacity: .25; }
     .airdefender-radar .beam { stroke: var(--bs-success); }
     .airdefender-radar .centre { fill: var(--bs-success); }
-    .airdefender-radar .limit { fill: none; stroke: var(--bs-success); opacity: .55; }
-    .airdefender-radar.has-in .limit { stroke: var(--bs-warning); opacity: 1; }   /* yellow only while an aircraft is inside */
+    /* The limit: a soft dashed yellow boundary, bright and bolder while an aircraft is inside it. */
+    .airdefender-radar .limit { fill: none; stroke: var(--bs-warning); opacity: .8; stroke-width: 1.4; stroke-dasharray: 4 3; }
+    .airdefender-radar.has-in .limit { opacity: 1; stroke-width: 2; }
     .airdefender-radar .label, .airdefender-radar .plane { fill: var(--bs-secondary-color); }
     .airdefender-radar .limit-label { fill: var(--bs-secondary-color); }
     .airdefender-radar .plane.in, .airdefender-radar.has-in .limit-label { fill: var(--bs-warning); }
@@ -739,7 +740,7 @@ $airdefenderPage = array(
         var ex = (100 - R * Math.sin(Math.PI / 3)).toFixed(1), ey = (100 - R * Math.cos(Math.PI / 3)).toFixed(1);
         el('path', { d: 'M100 100 L' + ex + ' ' + ey + ' A' + R + ' ' + R + ' 0 0 1 100 ' + (100 - R) + ' Z', 'class': 'wedge' }, undefined, sweep);
         el('line', { x1: 100, y1: 100, x2: 100, y2: 100 - R, 'class': 'beam', 'stroke-width': 2, 'stroke-linecap': 'round' }, undefined, sweep);
-        el('circle', { cx: 100, cy: 100, r: (R * limNm / outer).toFixed(1), 'class': 'limit', 'stroke-width': 1.6 });
+        el('circle', { cx: 100, cy: 100, r: (R * limNm / outer).toFixed(1), 'class': 'limit' });
         // Each ring's distance, down the lower right (clear of the compass letters).
         rings.forEach(function (rd) {
             var rr = R * rd / outer, an = Math.PI * 3 / 4;
