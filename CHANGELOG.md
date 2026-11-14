@@ -19,12 +19,7 @@
   its Player), aircraft detection stopped, or DeadZones switched off after an error each add a warning to the top
   of FPP's pages, gone again once things work. Apps that pass on FPP's warnings, such as FPPMon, can send them to
   your phone. Choose All, some or none on the new **Notifications** tab; never for an aircraft closing the heads or outside show times.
-- **Radar range rings mean something**: marked in nautical miles at a round step for your limit, the dashed
-  yellow limit ring last (5 NM: 1, 2, 3, 4, 5), softer until an aircraft is inside it. Compass letters and bearing ticks sit
-  round the outside, and the radar fills the room its card has.
-- **Distance is now 1 to 15 NM** (it was up to 50). A few miles is usually plenty; wider only closes the heads for
-  low aircraft far from the show. A saved setting above 15 is used as 15.
-- **Settings tabs in setup order**: General, Moving heads, When & where, Flight data, Limits, Notifications, DeadZones.
+- **New tabs**: Notifications and DeadZones, after Limits.
 - **Import models from xLights** on the Moving heads tab: pick your show folder and it fills in each head's start
   channel and shutter. Imported heads show as **Imported** with those locked; **Manual** unlocks them. **Reorder**
   drags heads into the order you want.
@@ -32,6 +27,18 @@
   **Manual tracking** (was Start tracking) moved to the Test tab. The boxes keep their size as things come and go.
 - **Privacy note**: FPP asks you to review Air Defender's privacy details again after this update, because they now
   mention DeadZones. Nothing new is sent anywhere; DeadZones runs entirely on your FPP.
+## 1.7.5 (2026-11-13)
+
+- **Radar range rings mean something**: marked in nautical miles at a round step for your limit, with the dashed
+  yellow limit ring last (5 NM: 1, 2, 3, 4, 5; 10 NM: 2.5, 5, 7.5, 10). The limit ring is softer until an aircraft
+  is inside it.
+- **Compass letters and bearing ticks** sit round the outside of the radar, clear of the rings.
+- **Bigger radar**: it fills the room its card has without making the row taller, and its summary
+  ("12 around · 1 inside") moves to the Aircraft card's header.
+- **Distance is now 1 to 15 NM** (it was up to 50). A few miles is usually plenty; wider only closes the heads for
+  low aircraft far from the show. A saved setting above 15 is used as 15.
+- **Settings tabs in setup order**: Flight data now comes before Limits.
+
 ## 1.7.4 (2026-11-13)
 
 - **Manual tracking** (was Start tracking) is now on the dashboard's **Test** tab; while it runs, the banner shows
