@@ -48,6 +48,8 @@ $airdefenderPage = array(
     /* The radar fills whatever room its card has (the cards beside it set the row's height), never making it taller;
        stacked on a phone it takes the width, up to a sensible size. */
     .airdefender-radar-box { position: relative; flex: 1 1 auto; min-height: 16rem; }
+    /* The Aircraft card's header: what the radar sees, unless an aircraft is holding the heads (that says so instead). */
+    #adPlaneState:not(:empty) ~ #adSkyNote { display: none; }
     .airdefender-radar-box .airdefender-radar { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     @media (max-width: 767.98px) {
         .airdefender-radar-box { flex: none; min-height: 0; width: 100%; max-width: 24rem; margin: 0 auto; aspect-ratio: 1; }
@@ -124,7 +126,6 @@ $airdefenderPage = array(
                     <div class="airdefender-radar-box">
                         <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
                     </div>
-                    <div class="form-text text-center" id="adSkyNote"></div>
                     <div class="form-text text-center d-none" id="adTurnHelp">
                         Drag the radar to turn it, or use the arrows. <span class="fw-semibold" id="adTurnTop"></span>
                         <div class="d-flex justify-content-center gap-1 mt-1">
@@ -141,7 +142,7 @@ $airdefenderPage = array(
         <div class="col-md-6 col-xl-4 order-xl-1 d-none" data-detail>
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
-                    <span class="fw-bold">Aircraft</span><small class="text-end" id="adPlaneState"></small>
+                    <span class="fw-bold">Aircraft</span><small class="text-end" id="adPlaneState"></small><small class="text-end text-body-secondary" id="adSkyNote"></small>
                 </div>
                 <div class="card-body airdefender-plane-body" aria-live="polite"><div class="airdefender-plane-scroll small">
                     <div class="text-body-secondary" id="adPlaneEmpty"></div>
@@ -343,6 +344,8 @@ $airdefenderPage = array(
         steps.forEach(function (s) { if (Math.abs(nm / s - 4) < Math.abs(nm / best - 4)) { best = s; } });
         return best;
     }
+    // The radar's one-line summary, in the Aircraft card's header (full wording on hover).
+    function setSkyNote(text, full) { var n = $id('adSkyNote'); n.textContent = text; n.title = full; }
     function fmtNm(n) { return String(Math.round(n * 100) / 100); }
     function testLeft() {
         return status.active && status.endsAt ? status.endsAt - (Date.now() / 1000 + clockOffset) : 0;
@@ -670,11 +673,11 @@ $airdefenderPage = array(
         el('circle', { cx: 100, cy: 100, r: 4, 'class': 'centre' });
 
         if (live.role === 'remote') {
-            $id('adSkyNote').textContent = 'This Remote follows its Player, which checks the sky.';
+            setSkyNote('Follows the Player', 'This Remote follows its Player, which checks the sky.');
             return;
         }
         if (live.checking === false) {
-            $id('adSkyNote').textContent = 'Standby: not checking right now.';
+            setSkyNote('Standby', 'Standby: not checking right now.');
             return;
         }
         var planes = live.aircraft || [], inside = 0, highlight = shownKey(planes);
@@ -703,8 +706,12 @@ $airdefenderPage = array(
         });
         svg.classList.toggle('has-in', inside > 0);
         showPicked(planes);
-        $id('adSkyNote').textContent = !live.feed || live.feed.lastOkAgo === null ? 'Waiting for flight data'
-            : planes.length + ' aircraft around · ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft';
+        if (!live.feed || live.feed.lastOkAgo === null) {
+            setSkyNote('Waiting for flight data', 'Waiting for flight data');
+        } else {
+            setSkyNote(planes.length + ' around \u00b7 ' + inside + ' inside',
+                planes.length + ' aircraft around \u00b7 ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft');
+        }
     }
 
     /* ---------- turning the radar ---------- */
