@@ -59,6 +59,7 @@ puts it back. Press the lock again to save it; it stays locked so it can't be mo
 On a Remote, the Sky card says it follows its Player instead.</p>
 
 <h3>Aircraft (Detailed)</h3>
+<p>The Aircraft card's header says how many aircraft the radar shows and how many are inside your limits (hover for the limits).</p>
 <p>Tap an aircraft on the radar for everything the flight data says about it: type and name, callsign, registration and
 owner, distance, height, climb or descent, speed, heading, and links to follow it on a live map or FlightAware. Tap it
 again, tap empty radar, or press &times; to clear it. With nothing picked, the card names the nearest aircraft.</p>
