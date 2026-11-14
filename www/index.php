@@ -603,7 +603,7 @@ $airdefenderPage = array(
         // come inside are seen.
         var limNm = lim.nm > 0 ? lim.nm : 5;
         var outer = limNm * 1.12;
-        var R = 88;
+        var R = 80;   // leaves room round the rim for the compass letters and bearing ticks
         function el(tag, attrs, text, parent) {
             var e = document.createElementNS(NS, tag);
             for (var k in attrs) { e.setAttribute(k, attrs[k]); }
@@ -642,9 +642,17 @@ $airdefenderPage = array(
             el('text', { x: (100 + rr * Math.sin(an) + 2).toFixed(1), y: (100 - rr * Math.cos(an) + 2).toFixed(1),
                          'class': 'label', 'font-size': 6.5 }, fmtNm(rd));
         });
+        // Bearing ticks round the outside of the rim every 30 degrees (the compass letters mark the quarters).
+        for (var deg = 30; deg < 360; deg += 30) {
+            if (deg % 90 === 0) { continue; }
+            var ta = (deg - rotation) * Math.PI / 180;
+            el('line', { x1: (100 + (R + 2) * Math.sin(ta)).toFixed(1), y1: (100 - (R + 2) * Math.cos(ta)).toFixed(1),
+                         x2: (100 + (R + 6) * Math.sin(ta)).toFixed(1), y2: (100 - (R + 6) * Math.cos(ta)).toFixed(1),
+                         'class': 'grid', 'stroke-width': 1 });
+        }
         // The compass points, turned with the radar (its top shows the direction set with the lock button).
         [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(function (c) {
-            var a = (c[1] - rotation) * Math.PI / 180, r = R - 9;
+            var a = (c[1] - rotation) * Math.PI / 180, r = R + 10;
             el('text', { x: (100 + r * Math.sin(a)).toFixed(1), y: (100 - r * Math.cos(a) + 3).toFixed(1),
                          'class': c[0] === 'N' ? 'compass' : 'label', 'font-size': c[0] === 'N' ? 10 : 8, 'text-anchor': 'middle' }, c[0]);
         });
