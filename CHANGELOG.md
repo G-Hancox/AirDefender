@@ -1,6 +1,6 @@
 # Air Defender changelog
 
-## 1.7.5 (unreleased)
+## 1.7.5 (2026-11-13)
 
 - **Radar range rings mean something**: marked in nautical miles at a round step for your limit, with the dashed
   yellow limit ring last (5 NM: 1, 2, 3, 4, 5; 10 NM: 2.5, 5, 7.5, 10). The limit ring is softer until an aircraft
