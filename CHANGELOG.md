@@ -19,8 +19,9 @@
   its Player), aircraft detection stopped, or DeadZones switched off after an error each add a warning to the top
   of FPP's pages, gone again once things work. Apps that pass on FPP's warnings, such as FPPMon, can send them to
   your phone. Choose All, some or none on the new **Notifications** tab; never for an aircraft closing the heads or outside show times.
-- **Radar range rings mean something**: marked in nautical miles at a round step for your limit, the dashed limit
-  ring last (5 NM: 1, 2, 3, 4, 5).
+- **Radar range rings mean something**: marked in nautical miles at a round step for your limit, the limit ring
+  last (5 NM: 1, 2, 3, 4, 5), yellow only while an aircraft is inside it. Compass letters and bearing ticks sit
+  round the outside, and the radar fills the room its card has.
 - **Distance is now 1 to 15 NM** (it was up to 50). A few miles is usually plenty; wider only closes the heads for
   low aircraft far from the show. A saved setting above 15 is used as 15.
 - **Settings tabs in setup order**: General, Moving heads, When & where, Flight data, Limits, Notifications, DeadZones.
