@@ -47,7 +47,7 @@ While it runs the banner says <b>Manual tracking active</b> with the time left a
 
 <h3>Sky (Detailed)</h3>
 <p>Your show is the dot in the middle, north is up unless you turn the radar, and the dashed yellow ring is your
-distance limit. Yellow marks are aircraft inside your limits (close enough and low enough); grey marks are aircraft
+distance limit (brighter and bolder while an aircraft is inside it). The rings inside it are marked in nautical miles (for a 5 NM limit: 1, 2, 3, 4 and 5), and the compass letters and bearing ticks sit round the outside. Yellow marks are aircraft inside your limits (close enough and low enough); grey marks are aircraft
 that are too high or too far. An aircraft that reports its heading is a small arrow pointing the way it is flying: solid for a plane, inside a ring
 for a helicopter, and hollow for a drone, balloon, glider or anything else. One that doesn't report a heading is a dot. Hover over a mark for its callsign, distance, height (above your show once
 <b>Show elevation</b> is set in Settings) and heading. Tap an aircraft for its details in the <b>Aircraft</b> card. Aircraft on the ground are not shown.
@@ -59,6 +59,7 @@ puts it back. Press the lock again to save it; it stays locked so it can't be mo
 On a Remote, the Sky card says it follows its Player instead.</p>
 
 <h3>Aircraft (Detailed)</h3>
+<p>The Aircraft card's header says how many aircraft the radar shows and how many are inside your limits (hover for the limits).</p>
 <p>Tap an aircraft on the radar for everything the flight data says about it: type and name, callsign, registration and
 owner, distance, height, climb or descent, speed, heading, and links to follow it on a live map or FlightAware. Tap it
 again, tap empty radar, or press &times; to clear it. With nothing picked, the card names the nearest aircraft.</p>

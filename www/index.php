@@ -32,7 +32,7 @@ $airdefenderPage = array(
     // Last Event shows only triggers: safety on/off and tests. Everything else is in the log.
     'lastEvent' => airdefender_last_event(),
     'limits' => array(
-        'nm' => (float) airdefender_dash_setting('distanceNM', '5'),
+        'nm' => min(15.0, (float) airdefender_dash_setting('distanceNM', '5')),
         'ft' => (int) airdefender_dash_setting('altitudeThresholdFt', '3000'),
         'holdSec' => (int) airdefender_dash_setting('clearDelaySec', '30'),
         'elevationFt' => (int) airdefender_dash_setting('showElevationFt', '0'),
@@ -54,15 +54,26 @@ $airdefenderPage = array(
     .airdefender-headbadge { min-width: 5.5em; }
     /* The radar: a scope with range rings, a sweep and the aircraft, drawn in
        the theme's own colours (Bootstrap's variables, light and dark). */
-    .airdefender-radar { width: 100%; max-width: 16rem; display: block; margin: 0 auto; }
+    /* The radar fills whatever room its card has (the cards beside it set the row's height), never making it taller;
+       stacked on a phone it takes the width, up to a sensible size. */
+    .airdefender-radar-box { position: relative; flex: 1 1 auto; min-height: 16rem; }
+    /* The Aircraft card's header: what the radar sees, unless an aircraft is holding the heads (that says so instead). */
+    #adPlaneState:not(:empty) ~ #adSkyNote { display: none; }
+    .airdefender-radar-box .airdefender-radar { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    @media (max-width: 767.98px) {
+        .airdefender-radar-box { flex: none; min-height: 0; width: 100%; max-width: 24rem; margin: 0 auto; aspect-ratio: 1; }
+    }
     .airdefender-radar .scope { fill: var(--bs-success-bg-subtle); stroke: var(--bs-success); }
     .airdefender-radar .grid { fill: none; stroke: var(--bs-success-border-subtle); }
     .airdefender-radar .wedge { fill: var(--bs-success); opacity: .25; }
     .airdefender-radar .beam { stroke: var(--bs-success); }
     .airdefender-radar .centre { fill: var(--bs-success); }
-    .airdefender-radar .limit { fill: none; stroke: var(--bs-warning); }
+    /* The limit: a soft dashed yellow boundary, bright and bolder while an aircraft is inside it. */
+    .airdefender-radar .limit { fill: none; stroke: var(--bs-warning); opacity: .8; stroke-width: 1.4; stroke-dasharray: 4 3; }
+    .airdefender-radar.has-in .limit { opacity: 1; stroke-width: 2; }
     .airdefender-radar .label, .airdefender-radar .plane { fill: var(--bs-secondary-color); }
-    .airdefender-radar .limit-label, .airdefender-radar .plane.in { fill: var(--bs-warning); }
+    .airdefender-radar .limit-label { fill: var(--bs-secondary-color); }
+    .airdefender-radar .plane.in, .airdefender-radar.has-in .limit-label { fill: var(--bs-warning); }
     .airdefender-radar .ring, .airdefender-radar .hollow { fill: none; stroke: var(--bs-secondary-color); stroke-width: 1.2; stroke-linejoin: round; }
     .airdefender-radar .in .ring, .airdefender-radar .in .hollow { stroke: var(--bs-warning); }
     .airdefender-radar .hit { fill: transparent; cursor: pointer; }
@@ -135,9 +146,10 @@ $airdefenderPage = array(
                         title="Rotate the radar to set your north: click to unlock, then drag" aria-pressed="false"
                         aria-label="Rotate the radar to set your north"><i class="fas fa-fw fa-lock" id="adTurnIcon"></i></button>
                 </div>
-                <div class="card-body">
-                    <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
-                    <div class="form-text text-center" id="adSkyNote"></div>
+                <div class="card-body d-flex flex-column">
+                    <div class="airdefender-radar-box">
+                        <svg class="airdefender-radar" id="adRadar" viewBox="0 0 200 200" role="img" aria-label="Aircraft around the show"></svg>
+                    </div>
                     <div class="form-text text-center d-none" id="adTurnHelp">
                         Drag the radar to turn it, or use the arrows. <span class="fw-semibold" id="adTurnTop"></span>
                         <div class="d-flex justify-content-center gap-1 mt-1">
@@ -154,7 +166,7 @@ $airdefenderPage = array(
         <div class="col-md-6 col-xl-4 order-xl-1 d-none" data-detail>
             <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-baseline gap-2">
-                    <span class="fw-bold">Aircraft</span><small class="text-end" id="adPlaneState"></small>
+                    <span class="fw-bold">Aircraft</span><small class="text-end" id="adPlaneState"></small><small class="text-end text-body-secondary" id="adSkyNote"></small>
                 </div>
                 <div class="card-body airdefender-plane-body" aria-live="polite"><div class="airdefender-plane-scroll small">
                     <div class="text-body-secondary" id="adPlaneEmpty"></div>
@@ -350,6 +362,15 @@ $airdefenderPage = array(
         return Math.floor(sec / 3600) + ' h ago';
     }
     function num(n) { return Number(n).toLocaleString(); }
+    // A round spacing for the radar's range rings: about four of them inside the limit.
+    function ringStep(nm) {
+        var steps = [0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25], best = steps[0];
+        steps.forEach(function (s) { if (Math.abs(nm / s - 4) < Math.abs(nm / best - 4)) { best = s; } });
+        return best;
+    }
+    // The radar's one-line summary, in the Aircraft card's header (full wording on hover).
+    function setSkyNote(text, full) { var n = $id('adSkyNote'); n.textContent = text; n.title = full; }
+    function fmtNm(n) { return String(Math.round(n * 100) / 100); }
     function testLeft() {
         return status.active && status.endsAt ? status.endsAt - (Date.now() / 1000 + clockOffset) : 0;
     }
@@ -683,9 +704,11 @@ $airdefenderPage = array(
 
         var svg = $id('adRadar'), lim = limits();
         var NS = 'http://www.w3.org/2000/svg';
-        // The scope shows a little past the limit, so the limit ring sits inside the rim.
-        var outer = Math.max(1, Math.ceil(lim.nm || 5)) * 1.15;
-        var R = 88;
+        // Range rings at a round step, the last one the limit; the scope shows a little past it, so aircraft about to
+        // come inside are seen.
+        var limNm = lim.nm > 0 ? lim.nm : 5;
+        var outer = limNm * 1.12;
+        var R = 80;   // leaves room round the rim for the compass letters and bearing ticks
         function el(tag, attrs, text, parent) {
             var e = document.createElementNS(NS, tag);
             for (var k in attrs) { e.setAttribute(k, attrs[k]); }
@@ -694,10 +717,15 @@ $airdefenderPage = array(
             return e;
         }
         svg.textContent = '';
+        svg.classList.remove('has-in');   // set again below if an aircraft is inside
         // Drawn like the plugin's icon: a radar scope with range rings and a sweep.
         el('circle', { cx: 100, cy: 100, r: R, 'class': 'scope', 'stroke-width': 2.5 });
-        el('circle', { cx: 100, cy: 100, r: R * 2 / 3, 'class': 'grid', 'stroke-width': 1.2 });
-        el('circle', { cx: 100, cy: 100, r: R / 3, 'class': 'grid', 'stroke-width': 1.2 });
+        var step = ringStep(limNm), rings = [];
+        for (var d = step; d < limNm - step * 0.3; d += step) { rings.push(d); }
+        rings.forEach(function (rd) {
+            el('circle', { cx: 100, cy: 100, r: (R * rd / outer).toFixed(1), 'class': 'grid', 'stroke-width': 1 });
+        });
+        rings.push(limNm);
         el('line', { x1: 100, y1: 100 - R, x2: 100, y2: 100 + R, 'class': 'grid', 'stroke-width': 0.8 });
         el('line', { x1: 100 - R, y1: 100, x2: 100 + R, y2: 100, 'class': 'grid', 'stroke-width': 0.8 });
         // No sweep while nothing is being checked (standby, disabled, loop stopped), so a still radar means idle.
@@ -712,23 +740,36 @@ $airdefenderPage = array(
         var ex = (100 - R * Math.sin(Math.PI / 3)).toFixed(1), ey = (100 - R * Math.cos(Math.PI / 3)).toFixed(1);
         el('path', { d: 'M100 100 L' + ex + ' ' + ey + ' A' + R + ' ' + R + ' 0 0 1 100 ' + (100 - R) + ' Z', 'class': 'wedge' }, undefined, sweep);
         el('line', { x1: 100, y1: 100, x2: 100, y2: 100 - R, 'class': 'beam', 'stroke-width': 2, 'stroke-linecap': 'round' }, undefined, sweep);
-        el('circle', { cx: 100, cy: 100, r: R * Math.min(1, (lim.nm || outer) / outer),
-                       'class': 'limit', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
+        el('circle', { cx: 100, cy: 100, r: (R * limNm / outer).toFixed(1), 'class': 'limit' });
+        // Each ring's distance, down the lower right (clear of the compass letters).
+        rings.forEach(function (rd) {
+            var rr = R * rd / outer, an = Math.PI * 3 / 4;
+            el('text', { x: (100 + rr * Math.sin(an) + 2).toFixed(1), y: (100 - rr * Math.cos(an) + 2).toFixed(1),
+                         'class': 'label', 'font-size': 7.5 }, fmtNm(rd));
+        });
+        // Bearing ticks round the outside of the rim every 30 degrees (the compass letters mark the quarters).
+        for (var deg = 30; deg < 360; deg += 30) {
+            if (deg % 90 === 0) { continue; }
+            var ta = (deg - rotation) * Math.PI / 180;
+            el('line', { x1: (100 + (R + 2) * Math.sin(ta)).toFixed(1), y1: (100 - (R + 2) * Math.cos(ta)).toFixed(1),
+                         x2: (100 + (R + 6) * Math.sin(ta)).toFixed(1), y2: (100 - (R + 6) * Math.cos(ta)).toFixed(1),
+                         'class': 'grid', 'stroke-width': 1 });
+        }
         // The compass points, turned with the radar (its top shows the direction set with the lock button).
         [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(function (c) {
-            var a = (c[1] - rotation) * Math.PI / 180, r = R - 9;
+            var a = (c[1] - rotation) * Math.PI / 180, r = R + 10;
             el('text', { x: (100 + r * Math.sin(a)).toFixed(1), y: (100 - r * Math.cos(a) + 3).toFixed(1),
                          'class': c[0] === 'N' ? 'compass' : 'label', 'font-size': c[0] === 'N' ? 10 : 8, 'text-anchor': 'middle' }, c[0]);
         });
-        el('text', { x: 196, y: 196, 'class': 'limit-label', 'font-size': 8, 'text-anchor': 'end' }, (lim.nm || 5) + ' NM limit');
+        el('text', { x: 196, y: 196, 'class': 'limit-label', 'font-size': 8, 'text-anchor': 'end' }, fmtNm(limNm) + ' NM limit');
         el('circle', { cx: 100, cy: 100, r: 4, 'class': 'centre' });
 
         if (live.role === 'remote') {
-            $id('adSkyNote').textContent = 'This Remote follows its Player, which checks the sky.';
+            setSkyNote('Follows the Player', 'This Remote follows its Player, which checks the sky.');
             return;
         }
         if (live.checking === false) {
-            $id('adSkyNote').textContent = 'Standby: not checking right now.';
+            setSkyNote('Standby', 'Standby: not checking right now.');
             return;
         }
         var planes = live.aircraft || [], inside = 0, highlight = shownKey(planes);
@@ -755,9 +796,14 @@ $airdefenderPage = array(
                 + (p.trk !== null && p.trk !== undefined ? ' · heading ' + compass(p.trk) : '') + ' · click for details', hit);
             if (p.in) { inside++; }
         });
+        svg.classList.toggle('has-in', inside > 0);
         showPicked(planes);
-        $id('adSkyNote').textContent = !live.feed || live.feed.lastOkAgo === null ? 'Waiting for flight data'
-            : planes.length + ' aircraft around · ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft';
+        if (!live.feed || live.feed.lastOkAgo === null) {
+            setSkyNote('Waiting for flight data', 'Waiting for flight data');
+        } else {
+            setSkyNote(planes.length + ' around \u00b7 ' + inside + ' inside',
+                planes.length + ' aircraft around \u00b7 ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft');
+        }
     }
 
     /* ---------- turning the radar ---------- */

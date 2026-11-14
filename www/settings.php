@@ -142,8 +142,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <li class="nav-item"><a class="nav-link active" id="ad-general-tab" data-bs-toggle="tab" href="#ad-general" role="tab" aria-controls="ad-general" aria-selected="true">General</a></li>
         <li class="nav-item"><a class="nav-link" id="ad-heads-tab" data-bs-toggle="tab" href="#ad-heads" role="tab" aria-controls="ad-heads" aria-selected="false">Moving heads</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-when-tab" data-bs-toggle="tab" href="#ad-when" role="tab" aria-controls="ad-when" aria-selected="false">When &amp; where</a></li>
-        <li class="nav-item ad-player-only"><a class="nav-link" id="ad-limits-tab" data-bs-toggle="tab" href="#ad-limits" role="tab" aria-controls="ad-limits" aria-selected="false">Limits</a></li>
         <li class="nav-item ad-player-only"><a class="nav-link" id="ad-feed-tab" data-bs-toggle="tab" href="#ad-feed" role="tab" aria-controls="ad-feed" aria-selected="false">Flight data</a></li>
+        <li class="nav-item ad-player-only"><a class="nav-link" id="ad-limits-tab" data-bs-toggle="tab" href="#ad-limits" role="tab" aria-controls="ad-limits" aria-selected="false">Limits</a></li>
         <li class="nav-item"><a class="nav-link" id="ad-dz-tab" data-bs-toggle="tab" href="#ad-dz" role="tab" aria-controls="ad-dz" aria-selected="false">DeadZones</a></li>
     </ul>
 
@@ -942,6 +942,22 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     });
     if ($id('useFPPLocation')) { $id('useFPPLocation').addEventListener('change', refresh); }
     if ($id('nodeRole')) { $id('nodeRole').addEventListener('change', refresh); }
+    // Distance is 1 to 15 NM: likewise.
+    (function () {
+        var f = $id('distanceNM');
+        if (!f) { return; }
+        function clamp() {
+            var v = parseFloat(f.value);
+            if (isNaN(v)) { return; }
+            var c = Math.min(15, Math.max(1, v));
+            if (c !== v) {
+                f.value = c;
+                if (typeof window.distanceNMChanged === 'function') { window.distanceNMChanged(); }   // FPP's helper saves it
+            }
+        }
+        f.addEventListener('change', clamp);
+        clamp();
+    })();
     // Check every is 5 to 15 seconds: put an older setting, or a number typed outside that, back in range and save it.
     (function () {
         var f = $id('fetchInterval');
