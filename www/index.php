@@ -327,6 +327,13 @@ $airdefenderPage = array(
         return Math.floor(sec / 3600) + ' h ago';
     }
     function num(n) { return Number(n).toLocaleString(); }
+    // A round spacing for the radar's range rings: about four of them inside the limit.
+    function ringStep(nm) {
+        var steps = [0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25], best = steps[0];
+        steps.forEach(function (s) { if (Math.abs(nm / s - 4) < Math.abs(nm / best - 4)) { best = s; } });
+        return best;
+    }
+    function fmtNm(n) { return String(Math.round(n * 100) / 100); }
     function testLeft() {
         return status.active && status.endsAt ? status.endsAt - (Date.now() / 1000 + clockOffset) : 0;
     }
@@ -592,8 +599,10 @@ $airdefenderPage = array(
 
         var svg = $id('adRadar'), lim = limits();
         var NS = 'http://www.w3.org/2000/svg';
-        // The scope shows a little past the limit, so the limit ring sits inside the rim.
-        var outer = Math.max(1, Math.ceil(lim.nm || 5)) * 1.15;
+        // Range rings at a round step, the last one the limit; the scope shows a little past it, so aircraft about to
+        // come inside are seen.
+        var limNm = lim.nm > 0 ? lim.nm : 5;
+        var outer = limNm * 1.12;
         var R = 88;
         function el(tag, attrs, text, parent) {
             var e = document.createElementNS(NS, tag);
@@ -605,8 +614,12 @@ $airdefenderPage = array(
         svg.textContent = '';
         // Drawn like the plugin's icon: a radar scope with range rings and a sweep.
         el('circle', { cx: 100, cy: 100, r: R, 'class': 'scope', 'stroke-width': 2.5 });
-        el('circle', { cx: 100, cy: 100, r: R * 2 / 3, 'class': 'grid', 'stroke-width': 1.2 });
-        el('circle', { cx: 100, cy: 100, r: R / 3, 'class': 'grid', 'stroke-width': 1.2 });
+        var step = ringStep(limNm), rings = [];
+        for (var d = step; d < limNm - step * 0.3; d += step) { rings.push(d); }
+        rings.forEach(function (rd) {
+            el('circle', { cx: 100, cy: 100, r: (R * rd / outer).toFixed(1), 'class': 'grid', 'stroke-width': 1 });
+        });
+        rings.push(limNm);
         el('line', { x1: 100, y1: 100 - R, x2: 100, y2: 100 + R, 'class': 'grid', 'stroke-width': 0.8 });
         el('line', { x1: 100 - R, y1: 100, x2: 100 + R, y2: 100, 'class': 'grid', 'stroke-width': 0.8 });
         // No sweep while nothing is being checked (standby, disabled, loop stopped), so a still radar means idle.
@@ -621,15 +634,21 @@ $airdefenderPage = array(
         var ex = (100 - R * Math.sin(Math.PI / 3)).toFixed(1), ey = (100 - R * Math.cos(Math.PI / 3)).toFixed(1);
         el('path', { d: 'M100 100 L' + ex + ' ' + ey + ' A' + R + ' ' + R + ' 0 0 1 100 ' + (100 - R) + ' Z', 'class': 'wedge' }, undefined, sweep);
         el('line', { x1: 100, y1: 100, x2: 100, y2: 100 - R, 'class': 'beam', 'stroke-width': 2, 'stroke-linecap': 'round' }, undefined, sweep);
-        el('circle', { cx: 100, cy: 100, r: R * Math.min(1, (lim.nm || outer) / outer),
+        el('circle', { cx: 100, cy: 100, r: (R * limNm / outer).toFixed(1),
                        'class': 'limit', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' });
+        // Each ring's distance, down the lower right (clear of the compass letters).
+        rings.forEach(function (rd) {
+            var rr = R * rd / outer, an = Math.PI * 3 / 4;
+            el('text', { x: (100 + rr * Math.sin(an) + 2).toFixed(1), y: (100 - rr * Math.cos(an) + 2).toFixed(1),
+                         'class': 'label', 'font-size': 6.5 }, fmtNm(rd));
+        });
         // The compass points, turned with the radar (its top shows the direction set with the lock button).
         [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(function (c) {
             var a = (c[1] - rotation) * Math.PI / 180, r = R - 9;
             el('text', { x: (100 + r * Math.sin(a)).toFixed(1), y: (100 - r * Math.cos(a) + 3).toFixed(1),
                          'class': c[0] === 'N' ? 'compass' : 'label', 'font-size': c[0] === 'N' ? 10 : 8, 'text-anchor': 'middle' }, c[0]);
         });
-        el('text', { x: 196, y: 196, 'class': 'limit-label', 'font-size': 8, 'text-anchor': 'end' }, (lim.nm || 5) + ' NM limit');
+        el('text', { x: 196, y: 196, 'class': 'limit-label', 'font-size': 8, 'text-anchor': 'end' }, fmtNm(limNm) + ' NM limit');
         el('circle', { cx: 100, cy: 100, r: 4, 'class': 'centre' });
 
         if (live.role === 'remote') {
