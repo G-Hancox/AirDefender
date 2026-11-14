@@ -85,7 +85,7 @@ say so) and takes effect within a second; no restart is needed.
 | **General** | Enable Air Defender; **Role** (Player or Remote, starting from FPP's own mode); on a Remote, the Player's address and UI password. |
 | **Moving heads** | Up to 8 heads: name, model or manual start channel, shutter channel in the fixture, closed value. |
 | **When & where** | **Check for aircraft during** (all scheduled shows, or only selected playlists) with the playlist list, the show location and its elevation. |
-| **Limits** | Distance (NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
+| **Limits** | Distance (1 to 15 NM), altitude (ft), hold after the aircraft leaves, and how often to check. |
 | **Flight data** | The service (or your own receiver's address), **Test connection**, an optional backup service (also for your own receiver), and **Close heads if the feed is down**. |
 
 On a Remote only **General** and **Moving heads** are shown: the rest is set on the Player.

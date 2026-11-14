@@ -32,7 +32,7 @@ $airdefenderPage = array(
     // Last Event shows only triggers: safety on/off and tests. Everything else is in the log.
     'lastEvent' => airdefender_last_event(),
     'limits' => array(
-        'nm' => (float) airdefender_dash_setting('distanceNM', '5'),
+        'nm' => min(15.0, (float) airdefender_dash_setting('distanceNM', '5')),
         'ft' => (int) airdefender_dash_setting('altitudeThresholdFt', '3000'),
         'holdSec' => (int) airdefender_dash_setting('clearDelaySec', '30'),
         'elevationFt' => (int) airdefender_dash_setting('showElevationFt', '0'),

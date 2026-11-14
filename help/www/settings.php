@@ -77,7 +77,7 @@ until you pick the model again.</p>
 
 <h3>Limits</h3>
 <ul>
-    <li><b>Distance</b> (nautical miles) and <b>Altitude</b> (feet): heads close when an aircraft is inside the
+    <li><b>Distance</b> (nautical miles, 1 to 15; a setting saved above 15 is used as 15) and <b>Altitude</b> (feet): heads close when an aircraft is inside the
         distance <i>and</i> below the altitude. With a <b>Show elevation</b> set, the altitude is measured above your
         show, and the note under it shows what that is above sea level.</li>
     <li><b>Hold after it leaves</b>: how long, in seconds, heads stay closed after the last aircraft leaves
