@@ -352,6 +352,16 @@ function airdefender_show_state(): ?array
  * inside the schedule slot of a ticked one ($tickedSlot), such as a Remote
  * Falcon request inserted into the show. Nothing ticked: every playlist counts.
  */
+/*
+ * The remembered slot only stands while the playlist that set it is still
+ * ticked: unticking it (or ticking none) forgets the slot at once, instead of
+ * checking on until the slot ends or FPPD restarts.
+ */
+function airdefender_slot_still_ticked(string $tickedSlot, string $tickedName, array $only): bool
+{
+    return $tickedSlot !== '' && $only !== [] && in_array($tickedName, $only, true);
+}
+
 function airdefender_current_counts(array $show, array $only, string $tickedSlot): bool
 {
     return airdefender_playlist_selected($show['current'], $only)
@@ -427,6 +437,7 @@ $nearby = [];                // aircraft from the last good fetch, for the radar
 $show = null;                // what FPP is playing, re-read every 2 s
 $showAt = 0;
 $tickedSlot = '';            // schedule slot of the last ticked playlist seen playing
+$tickedName = '';            // and that playlist's name
 $receiverUrl = null;         // where your receiver's aircraft.json was found
 $wasChecking = null;
 $onBackup = false;           // the chosen service is not answering and the backup is
@@ -488,6 +499,10 @@ while (true) {
     if ($checkWhen === 'playing' && $onlyPlaylists === []) {
         $checkWhen = 'scheduled';
     }
+    if ($tickedSlot !== '' && !airdefender_slot_still_ticked($tickedSlot, $tickedName, $onlyPlaylists)) {
+        $tickedSlot = '';
+        $tickedName = '';
+    }
     [$feedTemplate, $feedNote] = airdefender_effective_feed((string) airdefender_setting($settings, 'adsbSourceUrl', ''));
     $receiverAddress = trim((string) ($settings['receiverAddress'] ?? ''));
     $backupTemplate = airdefender_truthy(airdefender_setting($settings, 'feedFallback', '0')) ? airdefender_feed_backup($feedTemplate) : null;
@@ -530,6 +545,7 @@ while (true) {
         if ($show !== null && $show['slot'] !== '' && $show['current'] !== '' && $onlyPlaylists !== []
             && airdefender_playlist_selected($show['current'], $onlyPlaylists)) {
             $tickedSlot = $show['slot'];
+            $tickedName = $show['current'];
         }
     }
     $overrideUntil = airdefender_override_until();

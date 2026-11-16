@@ -1,5 +1,10 @@
 # Air Defender changelog
 
+## 1.7.6 (unreleased)
+
+- **Unticking a playlist takes effect at once.** With Only selected playlists, unticking the playlist that's playing
+  now stops the checking straight away; before, it kept checking until that schedule slot ended or FPPD restarted.
+
 ## 1.7.5 (2026-11-13)
 
 - **Radar range rings mean something**: marked in nautical miles at a round step for your limit, with the dashed
