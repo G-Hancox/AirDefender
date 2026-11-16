@@ -27,6 +27,11 @@
   **Manual tracking** (was Start tracking) moved to the Test tab. The boxes keep their size as things come and go.
 - **Privacy note**: FPP asks you to review Air Defender's privacy details again after this update, because they now
   mention DeadZones. Nothing new is sent anywhere; DeadZones runs entirely on your FPP.
+## 1.7.6 (unreleased)
+
+- **Unticking a playlist takes effect at once.** With Only selected playlists, unticking the playlist that's playing
+  now stops the checking straight away; before, it kept checking until that schedule slot ended or FPPD restarted.
+
 ## 1.7.5 (2026-11-13)
 
 - **Radar range rings mean something**: marked in nautical miles at a round step for your limit, with the dashed
