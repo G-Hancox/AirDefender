@@ -130,7 +130,9 @@ the show once it is set.
 ### When it checks
 
 Air Defender only checks while there's a show to protect. Outside those times it is on **Standby**: it sends nothing
-to the flight-data service and leaves the shutters to the show. **Check for aircraft during** (on **When & where**) has two choices:
+to the flight-data service and leaves the shutters to the show. It keeps checking for 10 seconds after a show seems to
+stop, so the moment FPP switches songs (a Remote Falcon request going on, say) never lets the heads go.
+**Check for aircraft during** (on **When & where**) has two choices:
 
 - **All scheduled shows** (the default): checks during every scheduled show, starting **2 minutes before** each one
   so the heads are already protected when the lights come on.

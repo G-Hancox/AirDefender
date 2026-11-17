@@ -2,8 +2,11 @@
 
 ## 1.7.6 (unreleased)
 
+- **Song changes can't let the heads go.** Air Defender keeps checking for 10 seconds after a show seems to stop, so
+  a moment where FPP reports nothing playing while it switches songs (a Remote Falcon request going on, the next
+  playlist in a chain) never releases the heads. A real stop just ends 10 seconds later.
 - **Unticking a playlist takes effect at once.** With Only selected playlists, unticking the playlist that's playing
-  now stops the checking straight away; before, it kept checking until that schedule slot ended or FPPD restarted.
+  now stops the checking (after the same 10 seconds); before, it kept checking until that schedule slot ended or FPPD restarted.
 
 ## 1.7.5 (2026-11-13)
 

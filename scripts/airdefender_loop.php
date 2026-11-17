@@ -306,6 +306,7 @@ function airdefender_poll_master(string $address, string $password = ''): array
 /* ---------- show schedule ---------- */
 
 const AIRDEFENDER_SHOW_LEAD_SEC = 120;   // start checking this long before a scheduled show
+const AIRDEFENDER_STOP_GRACE_SEC = 10;   // keep checking this long after the show seems to stop (see below)
 const AIRDEFENDER_PRIMARY_RETRY_SEC = 60;  // while on the backup service, try the chosen one again this often
 
 /*
@@ -348,11 +349,6 @@ function airdefender_show_state(): ?array
 }
 
 /*
- * Whether what is playing now counts: a selected playlist, or anything played
- * inside the schedule slot of a ticked one ($tickedSlot), such as a Remote
- * Falcon request inserted into the show. Nothing ticked: every playlist counts.
- */
-/*
  * The remembered slot only stands while the playlist that set it is still
  * ticked: unticking it (or ticking none) forgets the slot at once, instead of
  * checking on until the slot ends or FPPD restarts.
@@ -362,6 +358,11 @@ function airdefender_slot_still_ticked(string $tickedSlot, string $tickedName, a
     return $tickedSlot !== '' && $only !== [] && in_array($tickedName, $only, true);
 }
 
+/*
+ * Whether what is playing now counts: a selected playlist, or anything played
+ * inside the schedule slot of a ticked one ($tickedSlot), such as a Remote
+ * Falcon request inserted into the show. Nothing ticked: every playlist counts.
+ */
 function airdefender_current_counts(array $show, array $only, string $tickedSlot): bool
 {
     return airdefender_playlist_selected($show['current'], $only)
@@ -379,6 +380,18 @@ function airdefender_current_counts(array $show, array $only, string $tickedSlot
  * $anyPlaying (Also check whenever FPP is playing), anything FPP plays counts
  * too: a playlist or a single sequence, scheduled or started by hand.
  */
+/*
+ * Checking stops only once the show has seemed stopped for
+ * AIRDEFENDER_STOP_GRACE_SEC: a moment where FPP reports nothing playing while
+ * it switches songs (a Remote Falcon request going on, the next playlist in a
+ * chain) can never let the heads go. A real stop just ends that much later.
+ * $lastWantedAt is when checking was last wanted.
+ */
+function airdefender_keep_checking(bool $wanted, ?bool $wasChecking, int $lastWantedAt, int $now): bool
+{
+    return $wanted || ($wasChecking === true && $now - $lastWantedAt < AIRDEFENDER_STOP_GRACE_SEC);
+}
+
 function airdefender_should_check(string $mode, ?array $show, ?int $overrideUntil, int $now, array $only = [], string $tickedSlot = '', bool $anyPlaying = false): bool
 {
     if ($overrideUntil !== null || $show === null || ($anyPlaying && $show['playing'])) {
@@ -440,6 +453,7 @@ $tickedSlot = '';            // schedule slot of the last ticked playlist seen p
 $tickedName = '';            // and that playlist's name
 $receiverUrl = null;         // where your receiver's aircraft.json was found
 $wasChecking = null;
+$lastWantedAt = 0;           // when checking was last wanted (for the stop grace)
 $onBackup = false;           // the chosen service is not answering and the backup is
 $primaryRetryAt = 0;
 $feedUsed = null;            // the service that gave the last good answer
@@ -549,7 +563,11 @@ while (true) {
         }
     }
     $overrideUntil = airdefender_override_until();
-    $checking = $role === 'remote' || airdefender_should_check($checkWhen, $show, $overrideUntil, $now, $onlyPlaylists, $tickedSlot, $anyPlaying);
+    $wanted = $role === 'remote' || airdefender_should_check($checkWhen, $show, $overrideUntil, $now, $onlyPlaylists, $tickedSlot, $anyPlaying);
+    if ($wanted) {
+        $lastWantedAt = $now;
+    }
+    $checking = airdefender_keep_checking($wanted, $wasChecking, $lastWantedAt, $now);
     // Playing, but a playlist that is not on the list (a late-night static one, say).
     $skippedPlaylist = !$checking && $show !== null && $show['playing'] && $show['current'] !== ''
         && !airdefender_current_counts($show, $onlyPlaylists, $tickedSlot) ? $show['current'] : null;
