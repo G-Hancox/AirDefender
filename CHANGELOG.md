@@ -29,7 +29,7 @@ Release notes and questions: the [Air Defender Facebook group](https://www.faceb
   **Manual tracking** (was Start tracking) moved to the Test tab. The boxes keep their size as things come and go.
 - **Privacy note**: FPP asks you to review Air Defender's privacy details again after this update, because they now
   mention DeadZones. Nothing new is sent anywhere; DeadZones runs entirely on your FPP.
-## 1.7.6 (unreleased)
+## 1.7.6 (2026-11-17)
 
 - **Song changes can't let the heads go.** Air Defender keeps checking for 10 seconds after a show seems to stop, so
   a moment where FPP reports nothing playing while it switches songs (a Remote Falcon request going on, the next
