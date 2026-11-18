@@ -1,5 +1,7 @@
 # Air Defender changelog
 
+Release notes and questions: the [Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289).
+
 ## 1.7.6 (unreleased)
 
 - **Song changes can't let the heads go.** Air Defender keeps checking for 10 seconds after a show seems to stop, so
