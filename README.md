@@ -2,6 +2,8 @@
 
 **Moving-head safety for Falcon Player (FPP): closes the shutters while low aircraft fly near your show.**
 
+Updates, release notes and questions: the **[Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289)**.
+
 Bright moving heads and beams pointed at the sky can dazzle pilots. Air Defender watches live ADS-B flight data
 for your location, and while an aircraft is close enough and low enough, it holds your moving heads' shutters
 closed. When the sky is clear again, it hands the shutters back to your sequence.
@@ -388,6 +390,9 @@ Options `--url`, `--lat`, `--lon`, `--distance`, `--altitude` and `--elevation` 
 
 [Report a problem, suggest a feature, or ask for a flight data service](https://github.com/G-Hancox/AirDefender/issues/new/choose)
 on GitHub. **Air Defender - Help** in FPP's Help menu links there too.
+
+For news, release notes and quick questions, join the **[Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289)**: updates are posted
+there first.
 
 ## How it works (for developers)
 
