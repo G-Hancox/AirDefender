@@ -29,6 +29,8 @@
  * an earlier run are forgotten without a delete.
  */
 
+require_once(__DIR__ . '/airdefender_http.php');
+
 class AirDefenderOutputs
 {
     // fppd's API through FPP's own /api proxy (Apache), the documented route
@@ -185,23 +187,12 @@ class AirDefenderOutputs
 
     protected function put(string $path, array $body): bool
     {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'PUT',
-                'header' => "Content-Type: application/json\r\n",
-                'content' => json_encode($body),
-                'timeout' => 3,
-                'ignore_errors' => true,
-            ],
+        [$status, $response] = airdefender_http(self::FPPD_API . $path, [
+            'method' => 'PUT',
+            'header' => "Content-Type: application/json\r\n",
+            'content' => json_encode($body),
+            'timeout' => 3,
         ]);
-
-        $response = @file_get_contents(self::FPPD_API . $path, false, $context);
-        $status = 0;
-        foreach ($http_response_header ?? [] as $line) {
-            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) {
-                $status = (int) $m[1];
-            }
-        }
 
         if ($response === false || $status !== 200) {
             $this->lastError = $status

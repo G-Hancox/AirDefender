@@ -13,6 +13,8 @@
  * a blip.
  */
 
+require_once(__DIR__ . '/airdefender_http.php');
+
 const AIRDEFENDER_FPP_API = 'http://127.0.0.1/api';
 
 // How long the loop trusts a setting before asking FPP again.
@@ -21,10 +23,7 @@ const AIRDEFENDER_FPP_SETTING_TTL_SEC = 60;
 /* GET one of FPP's API paths ('/settings/TimeZone', say): decoded JSON, or null. */
 function airdefender_fpp_api(string $path, float $timeout = 2.0)
 {
-    $context = stream_context_create(['http' => ['timeout' => $timeout, 'ignore_errors' => true]]);
-    $body = @file_get_contents(AIRDEFENDER_FPP_API . $path, false, $context);
-    $headers = function_exists('http_get_last_response_headers') ? http_get_last_response_headers() : ($http_response_header ?? null);
-    $status = isset($headers[0]) && preg_match('#^HTTP/\S+\s+(\d+)#', $headers[0], $m) ? (int) $m[1] : 0;
+    [$status, $body] = airdefender_http(AIRDEFENDER_FPP_API . $path, ['timeout' => $timeout]);
     if ($body === false || $status !== 200) {
         return null;
     }
