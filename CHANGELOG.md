@@ -2,7 +2,7 @@
 
 Release notes and questions: the [Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289).
 
-## 1.7.7 (unreleased)
+## 1.7.7 (2026-11-22)
 
 - **Ready for PHP 8.4** (FPP 11 on Debian Trixie): Air Defender no longer uses PHP's `$http_response_header`, which
   PHP 8.4 deprecates; every web request reads its status another way. A full run with every PHP warning switched on
