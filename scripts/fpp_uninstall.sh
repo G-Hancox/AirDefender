@@ -4,12 +4,19 @@
 # Air Defender uninstall script. FPP runs this (as root) just before it
 # deletes the plugin's folder.
 
+# FPP's scripts/common (MEDIADIR, LOGDIR, FPPUSER) isn't safe under set -u, so
+# it is sourced first and set -u comes after.
+. "${FPPDIR:-/opt/fpp}/scripts/common" >/dev/null 2>&1 || true
+set -u
+: "${MEDIADIR:=/home/fpp/media}"
+: "${LOGDIR:=${MEDIADIR}/logs}"
+
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Stop the detection loop; otherwise it keeps running from memory after its
 # files are gone.
-pkill -f "${PLUGIN_DIR}/scripts/airdefender_supervise.sh" 2>/dev/null
-pkill -f "${PLUGIN_DIR}/scripts/airdefender_loop.php" 2>/dev/null
+pkill -f "${PLUGIN_DIR}/scripts/airdefender_supervise.sh" 2>/dev/null || true
+pkill -f "${PLUGIN_DIR}/scripts/airdefender_loop.php" 2>/dev/null || true
 
 # If safety mode was on, hand any shutter channels the loop was holding back
 # to the sequence now, rather than leaving them closed until fppd restarts.
@@ -49,10 +56,12 @@ rm -rf /dev/shm/AirDefender 2>/dev/null
 # and the log (which lists aircraft that passed near the show). A Reinstall
 # (FPP sets FPP_PLUGIN_REINSTALL=1 from 10.4) keeps the password, so Remotes
 # don't have to be given it again after an FPP OS upgrade.
-. "${FPPDIR:-/opt/fpp}/scripts/common" >/dev/null 2>&1 || true   # MEDIADIR, LOGDIR
-: "${MEDIADIR:=/home/fpp/media}"
-: "${LOGDIR:=${MEDIADIR}/logs}"
+# Everything else Air Defender writes (state.json, test.json, override.json,
+# the lock files and any temp files) is in its folder, which FPP deletes next,
+# or in /dev/shm/AirDefender above.
 if [ "${FPP_PLUGIN_REINSTALL:-0}" != "1" ]; then
     rm -rf "${MEDIADIR}/plugindata/AirDefender" 2>/dev/null
+else
+    rm -f "${MEDIADIR}/plugindata/AirDefender/"*.tmp.* 2>/dev/null   # left only if a save was cut short
 fi
 rm -f "${LOGDIR}/plugin-AirDefender.log" "${LOGDIR}/plugin-AirDefender.log".* 2>/dev/null

@@ -128,7 +128,7 @@ function airdefender_live_status(bool $detailed = false): array
  * hold callsigns of aircraft that passed nearby. Returns false if the log
  * could not be emptied.
  */
-function airdefender_clear_log(): bool
+function airdefender_clear_log(string $from = 'unknown address'): bool
 {
     $ok = true;
     if (file_exists(airdefender_log_file())) {
@@ -148,7 +148,7 @@ function airdefender_clear_log(): bool
     }
     @unlink(airdefender_last_event_file());
     if ($ok) {
-        airdefender_test_log("Log cleared from the dashboard.");
+        airdefender_test_log("Log cleared from the dashboard (from {$from}).");
     }
     return $ok;
 }

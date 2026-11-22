@@ -3,8 +3,8 @@
  * Air Defender - Copyright (C) 2026 G Hancox. Created by G Hancox, built with Claude.
  * Licensed under the GNU GPL v2; see LICENSE.
  *
- * Start or stop a test from the command line. Used by the FPP commands in
- * commands/ (Air Defender: Start Test / Stop Test).
+ * Start or stop a test, or manual tracking, from the command line. Used by the
+ * FPP commands in commands/ (Air Defender: Start Test, Stop Test, Check Now).
  *
  *   php airdefender_test_cli.php start <seconds>
  *   php airdefender_test_cli.php stop

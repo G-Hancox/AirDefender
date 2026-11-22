@@ -12,7 +12,8 @@
  *                                           (view=detailed adds nearby aircraft)
  *   POST action=start&duration=<seconds> -> start a test
  *   POST action=stop                     -> end a test early
- *   POST action=clear_log                -> empty the Air Defender log
+ *   POST action=clear_log&expect=<log file name> -> empty the Air Defender log; refused
+ *                                           unless expect names the real log file
  *   POST action=override&minutes=<n>     -> check for aircraft now, for n minutes
  *   POST action=override_off             -> end that early
  *   POST action=elevation&lat=&lon=        -> ground elevation there, in feet (Settings'
@@ -20,8 +21,11 @@
  *   POST action=feed_test&url=&lat=&lon=&nm=&ft=&elev=&receiver=
  *                                        -> ask a flight-data service once (Settings'
  *                                           Test connection); only offered services
- *   POST action=set_password&password=   -> save (or with '' remove) a Remote's copy
- *                                           of the Player's UI password
+ *   POST action=set_password&password=   -> save a Remote's copy of the Player's UI password
+ *   POST action=set_password&remove=1    -> remove it (an empty password alone is refused)
+ *
+ * Clearing the log and saving or removing the password are logged with the
+ * address they came from (never the password).
  *
  *   POST action=aim_start&head=<n> | aim_set&pan=&tilt=&beam=&level= | aim_keep | aim_end
  *                                        -> DeadZones aiming (scripts/airdefender_aim.php)
@@ -91,7 +95,15 @@ switch ($action) {
         $status = airdefender_test_stop();
         break;
     case 'clear_log':
-        if (!airdefender_clear_log()) {
+        // FPP's pages have no login, so the request must say which file it means to
+        // delete, and that must be the real log: a stray or replayed POST can't wipe it.
+        if ((string) ($_POST['expect'] ?? '') !== basename(airdefender_log_file())) {
+            http_response_code(409);
+            echo json_encode(['error' => 'Not cleared: the request did not name the Air Defender log ('
+                . basename(airdefender_log_file()) . '). Reload the page and try again.']);
+            exit;
+        }
+        if (!airdefender_clear_log((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown address'))) {
             http_response_code(500);
             echo json_encode(['error' => 'Could not clear the log. Check that the log file is writable.']);
             exit;
@@ -181,11 +193,22 @@ switch ($action) {
         // with WriteSettingToFile like the other settings.
         require_once(dirname(__DIR__) . "/scripts/airdefender_secret.php");
         $password = (string) ($_POST['password'] ?? '');
+        $remove = ($_POST['remove'] ?? '') === '1';
+        if ($password === '' && !$remove) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No password given. To remove the saved one, use Remove.']);
+            exit;
+        }
+        if ($remove) {
+            $password = '';
+        }
         if (!airdefender_set_master_password($password)) {
             http_response_code(500);
             echo json_encode(['error' => 'Could not save the password in ' . airdefender_plugindata_dir() . '. Check file permissions.']);
             exit;
         }
+        airdefender_write_log(($password === '' ? "Removed" : "Saved") . " the Player's UI password on this Remote"
+            . " (from " . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown address') . ").");
         echo json_encode(['ok' => true, 'saved' => $password !== '']);
         exit;
     case 'status':

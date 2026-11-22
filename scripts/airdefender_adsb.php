@@ -8,6 +8,8 @@
  * does exactly what the loop does.
  */
 
+require_once(__DIR__ . '/airdefender_http.php');
+
 const AIRDEFENDER_FEET_PER_METER = 3.28084;
 
 // Open-Meteo's elevation lookup (Copernicus DEM, 90 m), used only when the
@@ -159,21 +161,10 @@ function airdefender_parse_aircraft($data): array
  */
 function airdefender_fetch_feed(string $url, int $maxAgeSec = 0, int $timeout = 8): array
 {
-    $context = stream_context_create([
-        'http' => [
-            'timeout' => $timeout,
-            'header' => "User-Agent: FPP-AirDefender\r\nAccept: application/json\r\n",
-            'ignore_errors' => true,
-        ],
+    [$status, $body] = airdefender_http($url, [
+        'timeout' => $timeout,
+        'header' => "User-Agent: FPP-AirDefender\r\nAccept: application/json\r\n",
     ]);
-
-    $body = @file_get_contents($url, false, $context);
-    $status = 0;
-    foreach ($http_response_header ?? [] as $line) {
-        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) {
-            $status = (int) $m[1];
-        }
-    }
 
     if ($body === false || $body === '') {
         return [null, "No answer from the ADS-B feed"];

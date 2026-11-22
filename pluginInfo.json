@@ -68,7 +68,28 @@
                 "about": "third-parties",
                 "keptDays": null,
                 "canDelete": true,
-                "where": "plugin log (/home/fpp/media/logs/plugin-AirDefender.log), kept until you press Clear log on the dashboard"
+                "where": "plugin log (logs/plugin-AirDefender.log and rotated copies): Clear log on the dashboard empties it; uninstall deletes it"
+            },
+            {
+                "what": "the latest safety event, which can name the aircraft",
+                "about": "third-parties",
+                "keptDays": null,
+                "canDelete": true,
+                "where": "plugins/AirDefender/last_event.json: deleted by Clear log, and with the plugin folder on uninstall"
+            },
+            {
+                "what": "aircraft near the show right now, for the dashboard's radar",
+                "about": "third-parties",
+                "keptDays": 0,
+                "canDelete": false,
+                "where": "memory (/dev/shm/AirDefender/state.json, or plugins/AirDefender/ if /dev/shm can't be used): replaced every check"
+            },
+            {
+                "what": "the Player's UI password, if you enter one on a Remote",
+                "about": "operator",
+                "keptDays": null,
+                "canDelete": true,
+                "where": "plugindata/AirDefender/ (owner-only): Remove in Settings deletes it; uninstall deletes it, a Reinstall keeps it"
             }
         ],
         "sensors": [],
@@ -77,9 +98,25 @@
             {
                 "kind": "service",
                 "what": "runs a background process while FPP is running, to watch for aircraft and control the shutters"
+            },
+            {
+                "kind": "core-settings",
+                "what": "holds the listed heads' shutter channels through fppd's channel overlays while an aircraft is near or during a test"
+            },
+            {
+                "kind": "network",
+                "what": "a read-only status page on FPP's web server, which Remote FPPs on your network read"
+            },
+            {
+                "kind": "core-settings",
+                "what": "on FPP 10.0-10.2 only, sets FPP's restart-needed flag if an update can't reload the plugin"
+            },
+            {
+                "kind": "service",
+                "what": "with DeadZones turned on, a part compiled at install runs inside fppd and closes a head's shutter while it points into an area you marked"
             }
         ],
         "closedCode": false,
-        "other": "While an aircraft is near, or during a test, it overrides the shutter channels of the moving heads you list using FPP's channel overlays. A read-only status page on FPP's web server lets Remote FPPs check the Player. On a Remote, the Player's UI password is kept in plugindata, readable only by the fpp user. adsb.lol is sent the location too only if you choose it or turn it on as a backup. With DeadZones turned on (it is off by default), a compiled part built at install runs inside fppd and closes a head's shutter in each frame while it points into an area you marked. Importing heads from xLights reads your xLights files in your browser only; nothing is sent anywhere."
+        "other": "The status page Remote FPPs read shares whether the heads are closed and why, and the latest event, which can name the aircraft. Uninstalling deletes everything Air Defender kept; a Reinstall keeps a Remote's saved Player password and your DeadZones zones. adsb.lol is sent the location only if you choose it or turn it on as a backup. With DeadZones turned on (it is off by default), a compiled part built at install runs inside fppd and closes a head's shutter in each frame while it points into an area you marked. Importing heads from xLights reads your xLights files in your browser only; nothing is sent anywhere."
     }
 }

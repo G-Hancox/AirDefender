@@ -14,7 +14,7 @@ closed. When the sky is clear again, it hands the shutters back to your sequence
 > service's own delay). It is an extra layer of care, **not a replacement for your own obligations** for
 > sky-pointing beams and lasers.
 
-Version 1.7.0 (see [CHANGELOG.md](CHANGELOG.md)). For FPP 10 and later.
+For FPP 10 and later. What's new in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -217,10 +217,10 @@ The **status banner** at the top says where things stand:
 | Banner | Meaning |
 |---|---|
 | **All clear** (green) | No aircraft inside your limits; the show controls the shutters. |
-| **Safety active** (orange) | The shutters are held closed, with the reason and when it started. |
+| **Safety active** (yellow) | The shutters are held closed, with the reason and when it started. |
 | **Test running** (blue) | A test is closing the heads, with the time left. |
-| **Standby** (grey-blue) | No show on, so not checking; shows the next scheduled show. |
-| **Can't check the sky** (yellow) | The flight-data service isn't answering. |
+| **Standby** (grey) | No show on, so not checking; shows the next scheduled show. |
+| **Can't check the sky** (red) | The flight-data service isn't answering. |
 | **Disabled** (grey) | Air Defender is switched off in Settings. |
 | **Not running** (red) | The detection loop isn't running. Restart FPPD or reboot. |
 
@@ -241,7 +241,8 @@ arrows), then press the lock again to save it.
 - **View log** shows when the heads were closed and opened, and tests, for **Today**, **Yesterday** (handy when a show
   runs past midnight) or the **Last 7 days**, newest first, with how many times the heads closed. **Everything**
   shows the full log instead.
-- **Clear log** deletes the Air Defender log. Nothing else trims it, so it keeps everything until you clear it.
+- **Clear log** deletes the Air Defender log. Otherwise it keeps everything until FPP's own log rotation trims it,
+  which only happens once it reaches 10 MB.
 
 ## FPP commands
 
@@ -249,7 +250,7 @@ Available in playlists, schedules and command presets:
 
 - **Air Defender: Start Test** (seconds): like Test on the dashboard.
 - **Air Defender: Stop Test**: ends a running test.
-- **Air Defender: Check Now** (minutes, 0 ends it): tracks aircraft outside show times, like Manual tracking on the dashboard's Test tab. (It keeps its old name so playlists that use it keep working.)
+- **Air Defender: Check Now** (minutes, 5 to 720; 0 ends it): tracks aircraft outside show times, like Manual tracking on the dashboard's Test tab. (It keeps its old name so playlists that use it keep working.)
 
 ## Flight data
 
@@ -329,9 +330,11 @@ uses.
 - The log (`plugin-AirDefender.log` in FPP's logs folder) records the callsigns, distance and height of low aircraft
   that passed near your show. It is kept **until you press Clear log** on the dashboard (FPP only rotates plugin
   logs once they reach 10 MB, which this one takes a very long time to do).
-- Nothing is sent anywhere until you switch Air Defender on. The backup service and the elevation lookup are off
+- Nothing is sent anywhere until you switch Air Defender on, except when you press **Test connection** or **Look it up**
+  in Settings, which send the location once to the service they test or ask. The backup service and the elevation lookup are off
   until you use them.
-- Uninstalling removes the log and the saved Player password.
+- Uninstalling removes the log and the saved Player password (a Reinstall keeps the password, so Remotes don't need it
+  again).
 - Air Defender runs a background process while FPP is running, and holds the shutter channels you list while
   aircraft are near or during a test.
 - With **DeadZones** on (off by default), a compiled part built at install runs inside fppd and closes a head's
@@ -388,18 +391,31 @@ there first.
 | Heads by model or manual channel | `scripts/airdefender_models.php` |
 | Flight-data services, backup, fetching and parsing | `scripts/airdefender_feeds.php`, `scripts/airdefender_adsb.php` |
 | Your own receiver: address check, finding its data, stale-data check | `scripts/airdefender_receiver.php` |
+| Which playlists count, and FPP's schedule | `scripts/airdefender_playlists.php`, `scripts/airdefender_time.php` |
 | Tests, Manual tracking, Last Event, log | `scripts/airdefender_test.php`, `scripts/airdefender_status.php` |
+| Where the status file lives (memory, or the plugin folder) | `scripts/airdefender_statefile.php` |
+| HTTP requests with their status (fopen and `stream_get_meta_data`, no `$http_response_header`) | `scripts/airdefender_http.php` |
+| Atomic file writes and the lock every test / manual-tracking change is made under | `scripts/airdefender_files.php` |
 | FPP's folders (media, logs, config), found the way FPP provides them | `scripts/airdefender_paths.php` |
 | FPP's settings and playlists, through its API | `scripts/airdefender_fpp.php` |
+| The plugin's version, from `VERSION` | `scripts/airdefender_version.php`, `VERSION` |
 | The Player's UI password (on a Remote), in `plugindata/AirDefender/` (0600) | `scripts/airdefender_secret.php` |
+| Command-line check (asks the flight-data service once) | `scripts/airdefender_check.php` |
+| FPP commands (Start Test, Stop Test, Check Now) | `commands/descriptions.json`, `commands/test_start.sh`, `commands/test_stop.sh`, `commands/check_now.sh`, `scripts/airdefender_test_cli.php` |
 | Dashboard and its endpoint | `www/index.php`, `www/test_api.php` |
 | Settings page, built from FPP's setting helpers | `www/settings.php`, `settings.json` |
+| Help behind FPP's **?** button | `help/www/index.php`, `help/www/settings.php` |
 | Help menu page (quick start, links) and GitHub request forms | `www/help.php`, `.github/ISSUE_TEMPLATE/` |
 | Status a Remote reads from its master | `www/master_status.php` |
-| Install, update and uninstall hooks | `scripts/fpp_install.sh`, `scripts/fpp_upgrade.sh`, `scripts/fpp_uninstall.sh` |
+| FPP's menu entries and page loader | `menu.inc`, `plugin.php` |
+| Install, update and uninstall hooks; release notes for Plugin Manager | `scripts/fpp_install.sh`, `scripts/fpp_upgrade.sh`, `scripts/fpp_uninstall.sh`, `scripts/fpp_releasenotes.sh` |
+| fppd start and stop hooks (nothing to do) | `scripts/preStart.sh`, `scripts/postStop.sh` |
+| Plugin Manager listing and privacy section, and FPP's schema for it | `pluginInfo.json`, `pluginInfo.schema.json`, `icon.png`, `icon.svg` |
+| Tests (run with `php tests/test_state_race.php`; no FPP needed) | `tests/test_state_race.php` |
+| Docs, licence, release notes, git ignore list | `README.md`, `LICENSE`, `CHANGELOG.md`, `.gitignore` |
 
-Runtime files written on the device (not in git): `heads.json`, `test.json`, `override.json`, `last_event.json` and
-`loop.lock` in the plugin folder, `plugin-AirDefender.log` in FPP's logs folder, and the Player's password in
+Runtime files written on the device (not in git): `heads.json`, `test.json`, `override.json`, `last_event.json`,
+`loop.lock` and `state.lock` in the plugin folder, `plugin-AirDefender.log` in FPP's logs folder, and the Player's password in
 `plugindata/AirDefender/`. The status the dashboard reads, `state.json`, is kept in memory (`/dev/shm/AirDefender/`,
 or the plugin folder where that can't be used), written when something in it changes and every 30 seconds.
 `heads.json` holds only what must survive a reboot and is written only when it changes, to spare the SD card.

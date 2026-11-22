@@ -620,10 +620,24 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             .done(function () { pluginSettings[key] = '' + value; if (label) { toast(label + ' saved.'); } })
             .fail(function () { toast('Could not save ' + (label || key) + '. Check the FPP logs.', false); });
     }
+    // A reply that isn't JSON (a PHP warning printed in front of it, say) is an error, never treated as empty.
+    function readJson(r) {
+        return r.text().then(function (t) {
+            var d;
+            try { d = JSON.parse(t); } catch (e) { d = null; }
+            if (!d || typeof d !== 'object') {
+                var snippet = String(t || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+                throw new Error('Air Defender sent back something that isn’t data' + (r.ok ? '' : ' (HTTP ' + r.status + ')')
+                    + (snippet ? ': ' + snippet : ''));
+            }
+            if (!r.ok) { throw new Error(d.error || ('HTTP ' + r.status)); }
+            return d;
+        });
+    }
     function post(fields) {
         return fetch(API, { method: 'POST', credentials: 'same-origin', cache: 'no-store',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(fields).toString() })
-            .then(function (r) { return r.json().then(function (d) { if (!r.ok) { throw new Error(d.error || ('HTTP ' + r.status)); } return d; }); });
+            .then(readJson);
     }
 
     /* ---------- General ---------- */
@@ -648,7 +662,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         }).catch(function (e) { toast(e.message, false); });
     });
     $id('adPasswordRemove').addEventListener('click', function () {
-        post({ action: 'set_password', password: '' }).then(function () {
+        post({ action: 'set_password', remove: '1' }).then(function () {
             $id('adMasterPassword').placeholder = 'Only if the Player has one';
             $id('adPasswordRemove').classList.add('d-none');
             toast('Player’s password removed.');
