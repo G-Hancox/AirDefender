@@ -2,6 +2,14 @@
 
 Release notes and questions: the [Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289).
 
+## 1.9.0 (unreleased)
+
+- **FPP warnings when the heads aren't protected**: no flight data for 2 minutes during a show (or a Remote losing
+  its Player), aircraft detection stopped, or DeadZones switched off after an error each add a warning to the top
+  of FPP's pages, gone again once things work. Apps that pass on FPP's warnings, such as FPPMon, can send them to
+  your phone. Choose All, some or none on the new **Notifications** tab; never for an aircraft closing the heads, and no flight data warning outside show times.
+- **New tab**: Notifications, after Limits.
+
 ## 1.8.0 (2026-11-22)
 
 - **DeadZones (optional, off by default)**: closes a moving head's shutter while it points into an area you mark,
@@ -21,11 +29,6 @@ Release notes and questions: the [Air Defender Facebook group](https://www.faceb
   frame just before it goes out and only changes the shutter channel. About a microsecond a frame, nothing written to
   the SD card. If it can't be built or hits an error, DeadZones switches itself off and the rest of Air Defender works
   as before.
-- **FPP warnings when the heads aren't protected**: no flight data for 2 minutes during a show (or a Remote losing
-  its Player), aircraft detection stopped, or DeadZones switched off after an error each add a warning to the top
-  of FPP's pages, gone again once things work. Apps that pass on FPP's warnings, such as FPPMon, can send them to
-  your phone. Choose All, some or none on the new **Notifications** tab; never for an aircraft closing the heads, and no flight data warning outside show times.
-- **New tabs**: Notifications and DeadZones, after Limits.
 - **Import models from xLights** on the Moving heads tab: pick your show folder and it fills in each head's start
   channel and shutter. Imported heads show as **Imported** with those locked; **Manual** unlocks them. **Reorder**
   drags heads into the order you want.
