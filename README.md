@@ -114,7 +114,7 @@ say so) and takes effect within a second; no restart is needed.
 
 | Tab | What's there |
 |---|---|
-| **General** | Enable Air Defender; **Role** (Player or Remote, starting from FPP's own mode); on a Remote, the Player's address and UI password |
+| **General** | Enable Air Defender; **Role** (Player or Remote, starting from FPP's own mode); on a Remote, the Player's address and UI password. |
 | **Moving heads** | Up to 8 heads: name, model or manual start channel, shutter channel in the fixture, closed value. |
 | **When & where** | **Check for aircraft during** (all scheduled shows, or only selected playlists) with the playlist list, the show location and its elevation. |
 | **Flight data** | The service (or your own receiver's address), **Test connection**, an optional backup service (also for your own receiver), and **Close heads if the feed is down**. |
@@ -256,7 +256,8 @@ itself once things work again:
 - **Aircraft detection has stopped** (no check-in for 90 seconds).
 - **DeadZones turned itself off** after an error, if you use it.
 
-Nothing is warned about outside show times, or for an aircraft closing the heads (that's Air Defender working).
+Nothing is warned about for an aircraft closing the heads (that's Air Defender working). The flight data warning
+is only given during show times; the other two can come at any time, since they mean nothing is watching.
 Apps that pass on FPP's warnings, such as **FPPMon**, can send them to your phone, with nothing to set up in Air
 Defender. Choose them on the **Notifications** tab: **All** (the default), **Only the ones I pick**, or **Off**. It needs the compiled part
 built at install (the same one DeadZones uses); without it there are no warnings, and the dashboard still shows

@@ -127,7 +127,7 @@ until you pick the model again.</p>
 <h3>Notifications</h3>
 <p>If the heads stop being protected, Air Defender adds a warning to the top of FPP's pages, and it goes away by itself
 once things work again. Apps that pass on FPP's warnings, such as FPPMon, can send it to your phone. Never for an
-aircraft closing the heads, or outside show times. Needs the compiled part built at install.</p>
+aircraft closing the heads; the flight data warning is only given during show times. Needs the compiled part built at install.</p>
 <ul>
     <li><b>FPP warnings</b>: <b>All</b> (the default), <b>Only the ones I pick</b> (tick them below), or <b>Off</b>.</li>
     <li><b>No flight data for 2 minutes</b>: during a show, the service hasn't answered (on a Remote: it can't reach

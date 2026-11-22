@@ -301,7 +301,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <div class="tab-pane fade" id="ad-notify" role="tabpanel" aria-labelledby="ad-notify-tab">
             <p>If the heads stop being protected, a warning appears at the top of FPP&rsquo;s pages and goes away by itself once
                 things work again. Apps that pass on FPP&rsquo;s warnings, such as FPPMon, can send it to your phone. Never for an
-                aircraft closing the heads, or outside show times.</p>
+                aircraft closing the heads; the flight data warning is only given during show times.</p>
             <?php airdefender_print_group('FPP warnings', array('fppWarnings', 'warnFeedDown', 'warnLoopStopped', 'warnDeadZones')); ?>
         </div>
         <div class="tab-pane fade" id="ad-dz" role="tabpanel" aria-labelledby="ad-dz-tab">

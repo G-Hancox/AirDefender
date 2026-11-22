@@ -5,7 +5,8 @@
  * warnings at the top of every page, and apps that watch FPP (such as FPPMon)
  * can pass them on to a phone. Only things that mean the heads aren't being
  * protected count: nothing for an aircraft closing the heads (that's Air
- * Defender doing its job) and nothing outside show times.
+ * Defender doing its job), and no flight data warning outside show times
+ * (detection stopped, or DeadZones off, count at any time: nothing is watching).
  *
  * No FPP here, so it can be tested on its own (tests/warnings_test.cpp). The
  * plugin feeds it what it reads every few seconds and adds or removes FPP
