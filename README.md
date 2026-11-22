@@ -43,7 +43,7 @@ For FPP 10 and later. What's new in each version: [CHANGELOG.md](CHANGELOG.md).
 2. Paste this into the plugin info URL box and press **Retrieve Plugin Info**:
 
    ```
-   https://raw.githubusercontent.com/AdeptChild/AirDefender/master/pluginInfo.json
+   https://raw.githubusercontent.com/G-Hancox/AirDefender/master/pluginInfo.json
    ```
 
 3. Review the privacy summary and press **Install**. FPP starts Air Defender straight away; no restart is needed.
@@ -52,7 +52,7 @@ For FPP 10 and later. What's new in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ```bash
 cd /home/fpp/media/plugins/
-git clone https://github.com/AdeptChild/AirDefender.git
+git clone https://github.com/G-Hancox/AirDefender.git
 ```
 
 Then restart FPPD (FPP only runs plugins installed by hand once fppd starts again).
@@ -340,7 +340,7 @@ Options `--url`, `--lat`, `--lon`, `--distance`, `--altitude` and `--elevation` 
 
 ## Questions, problems and ideas
 
-[Report a problem, suggest a feature, or ask for a flight data service](https://github.com/AdeptChild/AirDefender/issues/new/choose)
+[Report a problem, suggest a feature, or ask for a flight data service](https://github.com/G-Hancox/AirDefender/issues/new/choose)
 on GitHub. **Air Defender - Help** in FPP's Help menu links there too.
 
 For news, release notes and quick questions, join the **[Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289)**: updates are posted
