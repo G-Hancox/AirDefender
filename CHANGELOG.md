@@ -2,7 +2,7 @@
 
 Release notes and questions: the [Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289).
 
-## 1.8.0 (unreleased)
+## 1.8.0 (2026-11-22)
 
 - **DeadZones (optional, off by default)**: closes a moving head's shutter while it points into an area you mark,
   like a neighbour's house or the road. Set it up on the new **DeadZones** tab: each head's pan, tilt and dimmer
