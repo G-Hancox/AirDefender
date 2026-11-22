@@ -53,9 +53,7 @@ if (!function_exists('airdefender_aim_file')) {
             @unlink($file);
             return;
         }
-        if (@file_put_contents($file . '.tmp', json_encode($a)) !== false) {
-            @rename($file . '.tmp', $file);
-        }
+        airdefender_write_atomic($file, json_encode($a));
     }
 
     /* A head's channels for aiming, from the file the DeadZones check uses (pan and tilt must be set). */

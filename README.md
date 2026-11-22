@@ -333,8 +333,8 @@ uses.
 - Nothing is sent anywhere until you switch Air Defender on, except when you press **Test connection** or **Look it up**
   in Settings, which send the location once to the service they test or ask. The backup service and the elevation lookup are off
   until you use them.
-- Uninstalling removes the log and the saved Player password (a Reinstall keeps the password, so Remotes don't need it
-  again).
+- Uninstalling removes the log, the saved Player password and your DeadZones zones (a Reinstall keeps the password
+  and the zones, so nothing needs entering again).
 - Air Defender runs a background process while FPP is running, and holds the shutter channels you list while
   aircraft are near or during a test.
 - With **DeadZones** on (off by default), a compiled part built at install runs inside fppd and closes a head's
@@ -409,9 +409,11 @@ there first.
 | Status a Remote reads from its master | `www/master_status.php` |
 | FPP's menu entries and page loader | `menu.inc`, `plugin.php` |
 | Install, update and uninstall hooks; release notes for Plugin Manager | `scripts/fpp_install.sh`, `scripts/fpp_upgrade.sh`, `scripts/fpp_uninstall.sh`, `scripts/fpp_releasenotes.sh` |
-| fppd start and stop hooks (nothing to do) | `scripts/preStart.sh`, `scripts/postStop.sh` |
+| fppd start and stop hooks | `scripts/preStart.sh`, `scripts/postStart.sh`, `scripts/postStop.sh` |
 | Plugin Manager listing and privacy section, and FPP's schema for it | `pluginInfo.json`, `pluginInfo.schema.json`, `icon.png`, `icon.svg` |
-| Tests (run with `php tests/test_state_race.php`; no FPP needed) | `tests/test_state_race.php` |
+| Tests (no FPP needed; how to run each is at the top of the file) | `tests/test_state_race.php`, `tests/deadzones_core_test.cpp`, `tests/deadzones_check_test.cpp`, `tests/deadzones_config_test.cpp`, `tests/deadzones_sample.json` |
+| The plugin's API routes, for FPP's API page | `apiDocs.json` |
+| How DeadZones was planned and built, step by step | `docs/DEADZONES_PLAN.md` |
 | Docs, licence, release notes, git ignore list | `README.md`, `LICENSE`, `CHANGELOG.md`, `.gitignore` |
 
 Runtime files written on the device (not in git): `heads.json`, `test.json`, `override.json`, `last_event.json`,

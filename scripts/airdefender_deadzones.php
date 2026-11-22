@@ -20,6 +20,7 @@
  */
 
 require_once(__DIR__ . '/airdefender_paths.php');
+require_once(__DIR__ . '/airdefender_files.php');
 
 if (!function_exists('airdefender_deadzones_file')) {
 
@@ -165,9 +166,8 @@ if (!function_exists('airdefender_deadzones_file')) {
                 return;
             }
         }
-        // Written to a temp file and renamed, so fppd never reads half a file.
-        $tmp = $file . '.tmp';
-        if (@file_put_contents($tmp, $json) !== false && @rename($tmp, $file)) {
+        // Written atomically (airdefender_files.php), so fppd never reads half a file.
+        if (airdefender_write_atomic($file, $json)) {
             $last = $json;
             $failed = false;
         } elseif (empty($failed)) {
@@ -188,12 +188,11 @@ if (!function_exists('airdefender_zones_request')) {
     function airdefender_zones_write(array $z): bool
     {
         $file = airdefender_deadzones_zones_file();
-        $tmp = $file . '.tmp';
-        if (@file_put_contents($tmp, json_encode($z, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) === false) {
+        if (!airdefender_write_atomic($file, json_encode($z, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))) {
             return false;
         }
-        @chmod($tmp, 0644);
-        return @rename($tmp, $file);
+        @chmod($file, 0644);
+        return true;
     }
 
     /* One head's zones and tilt limits, tidied. */
@@ -309,19 +308,45 @@ if (!function_exists('airdefender_zones_request')) {
     /*
      * The Zones page's requests. $req: action and its fields.
      *   zones_get                                    -> every head's zones and tilt limits
-     *   zone_save   head, name, points (JSON [[pan,tilt],...]), alsoCloses (JSON [ids]), index (to replace one; else added)
-     *   zone_delete head, index
+     *   zone_save   head, name, points (JSON [[pan,tilt],...]), alsoCloses (JSON [ids]); to replace one: index
+     *               and replaces (the name of the zone expected there)
+     *   zone_delete head, index, name (the name of the zone expected there)
      *   tilt_limit  head, side (below|above|clear), tilt
      *   landmark_set head, slot (1|2), pan, tilt (or clear=1)
      *   realign     head, now1 / now2 (JSON [pan,tilt]: where landmark 1 / 2 is now)
      *   realign_undo head
-     *   zones_import zones (JSON, a file from Export) -> replaces every head's zones
-     *   head_clear  head (removed on the Moving heads tab: its zones go, and other zones stop closing it)
+     *   zones_import zones (JSON, a file from Export), replacing (how many zones the page expects to replace)
+     *               -> replaces every head's zones
+     *   head_clear  head (removed on the Moving heads tab: its zones go, and other zones stop closing it); refused
+     *               unless that head really is removed in the settings
      *   heads_reorder order (JSON: the old head numbers in their new order)
      * Returns [http status, answer].
+     *
+     * FPP's pages have no login, so anything that deletes or replaces zones must say what it expects to find,
+     * and is refused (409) if the zones changed since the page loaded them; and it's logged with $from, the
+     * address it came from. The whole read-change-write runs under one lock (zones.lock), so two browsers or a
+     * double click can't lose each other's changes.
      */
-    function airdefender_zones_request(array $req): array
+    function airdefender_zones_request(array $req, string $from = 'unknown address'): array
     {
+        $lock = airdefender_deadzones_dir() . '/zones.lock';
+        return airdefender_locked($lock, function () use ($req, $from) {
+            return airdefender_zones_request_locked($req, $from);
+        });
+    }
+
+    function airdefender_zones_total(array $z): int
+    {
+        $n = 0;
+        foreach ((is_array($z['heads'] ?? null) ? $z['heads'] : []) as $h) {
+            $n += is_array($h['zones'] ?? null) ? count($h['zones']) : 0;
+        }
+        return $n;
+    }
+
+    function airdefender_zones_request_locked(array $req, string $from): array
+    {
+        $changed = [409, ['error' => 'The zones changed since this page loaded them (another browser, perhaps), so nothing was changed. Reload the page and try again.']];
         $action = (string) ($req['action'] ?? '');
         $z = airdefender_deadzones_zones();
         if (!isset($z['heads']) || !is_array($z['heads'])) {
@@ -332,13 +357,15 @@ if (!function_exists('airdefender_zones_request')) {
             if ($clean === null) {
                 return [400, ['error' => "That isn't an Air Defender zones file (exported from the Zones page)."]];
             }
+            if (!isset($req['replacing']) || (int) $req['replacing'] !== airdefender_zones_total($z)) {
+                return $changed;
+            }
             if (!airdefender_zones_write($clean)) {
                 return [500, ['error' => 'Could not save the zones in ' . airdefender_deadzones_dir() . '. Check file permissions.']];
             }
-            $count = 0;
-            foreach ($clean['heads'] as $h) { $count += count($h['zones']); }
-            $req = ['action' => 'zones_get'];
-            [$code, $answer] = airdefender_zones_request($req);
+            $count = airdefender_zones_total($clean);
+            airdefender_write_log("DeadZones: imported {$count} zone(s), replacing " . airdefender_zones_total($z) . " (from {$from}).");
+            [$code, $answer] = airdefender_zones_request_locked(['action' => 'zones_get'], $from);
             $answer['imported'] = $count;
             return [$code, $answer];
         }
@@ -348,7 +375,14 @@ if (!function_exists('airdefender_zones_request')) {
             if ($id < 1 || $id > 8) {
                 return [400, ['error' => 'Unknown head.']];
             }
+            // Only for a head that really is removed in the settings (the page saves that first).
+            $cfg = function_exists('airdefender_read_kv_file') && function_exists('airdefender_config_file')
+                ? airdefender_read_kv_file(airdefender_config_file()) : [];
+            if (($cfg["head{$id}Enabled"] ?? '0') === '1' || trim((string) ($cfg["head{$id}Name"] ?? '')) !== '') {
+                return [409, ['error' => "Head {$id} is still set up on the Moving heads tab, so its zones were kept."]];
+            }
             $had = isset($z['heads'][(string) $id]);
+            $gone = is_array($z['heads'][(string) $id]['zones'] ?? null) ? count($z['heads'][(string) $id]['zones']) : 0;
             unset($z['heads'][(string) $id]);
             foreach ($z['heads'] as $k => $h) {
                 foreach ((is_array($h['zones'] ?? null) ? $h['zones'] : []) as $i => $zone) {
@@ -359,6 +393,9 @@ if (!function_exists('airdefender_zones_request')) {
             }
             if ($had && !airdefender_zones_write($z)) {
                 return [500, ['error' => 'Could not save the zones in ' . airdefender_deadzones_dir() . '. Check file permissions.']];
+            }
+            if ($had) {
+                airdefender_write_log("DeadZones: head {$id} was removed, so its {$gone} zone(s) were deleted (from {$from}).");
             }
             return [200, ['cleared' => $id]];
         }
@@ -424,7 +461,11 @@ if (!function_exists('airdefender_zones_request')) {
             $name = function_exists('mb_substr') ? mb_substr($name, 0, 40) : substr($name, 0, 40);
             $zone = ['name' => $name, 'points' => $clean, 'alsoCloses' => $also];
             $index = isset($req['index']) && is_numeric($req['index']) ? (int) $req['index'] : -1;
-            if ($index >= 0 && $index < count($h['zones'])) {
+            if ($index >= 0) {
+                if ($index >= count($h['zones']) || (string) ($req['replaces'] ?? "\0") !== (string) $h['zones'][$index]['name']) {
+                    return $changed;
+                }
+                airdefender_write_log("DeadZones: head {$id}'s zone \"{$h['zones'][$index]['name']}\" was replaced (from {$from}).");
                 $h['zones'][$index] = $zone;
             } elseif (count($h['zones']) >= AIRDEFENDER_ZONES_PER_HEAD) {
                 return [400, ['error' => 'A head can have up to ' . AIRDEFENDER_ZONES_PER_HEAD . ' zones.']];
@@ -436,6 +477,10 @@ if (!function_exists('airdefender_zones_request')) {
             if ($index < 0 || $index >= count($h['zones'])) {
                 return [400, ['error' => 'That zone is already gone.']];
             }
+            if ((string) ($req['name'] ?? "\0") !== (string) $h['zones'][$index]['name']) {
+                return $changed;
+            }
+            airdefender_write_log("DeadZones: head {$id}'s zone \"{$h['zones'][$index]['name']}\" was deleted (from {$from}).");
             array_splice($h['zones'], $index, 1);
         } elseif ($action === 'landmark_set') {
             $slot = (string) ($req['slot'] ?? '');
@@ -459,12 +504,14 @@ if (!function_exists('airdefender_zones_request')) {
             if ($moved === null) {
                 return [400, ['error' => $err]];
             }
+            airdefender_write_log("DeadZones: head {$id}'s zones were re-aligned (from {$from}).");
             $h = $moved;
         } elseif ($action === 'realign_undo') {
             if (!is_array($h['beforeRealign'] ?? null)) {
                 return [400, ['error' => 'Nothing to undo.']];
             }
             $b = $h['beforeRealign'];
+            airdefender_write_log("DeadZones: head {$id}'s re-align was undone (from {$from}).");
             $h = ['tiltMin' => $b['tiltMin'] ?? 0, 'tiltMax' => $b['tiltMax'] ?? 255, 'zones' => $b['zones'] ?? [], 'landmarks' => $b['landmarks'] ?? []];
         } elseif ($action === 'tilt_limit') {
             $side = (string) ($req['side'] ?? '');

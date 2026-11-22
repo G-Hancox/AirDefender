@@ -761,15 +761,18 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             if (!window.confirm('Remove ' + label(row) + '? Air Defender stops protecting it.')) { return; }
             var name = label(row);
             var blank = { Enabled: 0, Name: '', Model: '', Source: '', Start: 0, Offset: 1, ClosedValue: 0, Channel: 0 };
-            Object.keys(blank).forEach(function (f) { save(key(row, f), blank[f]); });
+            var saves = Object.keys(blank).map(function (f) { return Promise.resolve(save(key(row, f), blank[f])); });
             // Its DeadZones pan and tilt details go too, so a new head in this slot starts clean.
             document.querySelectorAll('#adDzHeads tr[data-dz-head="' + row.getAttribute('data-head') + '"] [data-dz-field]').forEach(function (input) {
                 var k = key(row, input.getAttribute('data-dz-field')), def = input.getAttribute('data-dz-default');
                 var blankValue = def === '' ? '0' : def;
-                if (setting(k, blankValue) !== blankValue) { save(k, blankValue); }
+                if (setting(k, blankValue) !== blankValue) { saves.push(Promise.resolve(save(k, blankValue))); }
                 input.value = def;
             });
-            post({ action: 'head_clear', head: row.getAttribute('data-head') }).catch(function (e) { toast(name + '\u2019s zones: ' + e.message, false); });
+            // Its zones go once the head is saved as removed: the server only deletes them for a head that really is.
+            var headNo = row.getAttribute('data-head');
+            Promise.all(saves).then(function () { return post({ action: 'head_clear', head: headNo }); })
+                .catch(function (e) { toast(name + '\u2019s zones: ' + (e && e.message ? e.message : 'not removed, as the head could not be saved'), false); });
             field(row, 'Enabled').checked = false; field(row, 'Name').value = ''; field(row, 'Model').value = '';
             field(row, 'Start').disabled = false; field(row, 'Start').value = ''; field(row, 'Start').setAttribute('data-manual', '');
             field(row, 'Offset').value = 1; field(row, 'ClosedValue').value = 0; row.setAttribute('data-channel', 0);
@@ -1395,7 +1398,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             del.innerHTML = '<i class="fas fa-trash"></i>'; del.setAttribute('aria-label', 'Delete ' + z.name);
             del.addEventListener('click', function () {
                 if (!window.confirm('Delete the zone "' + z.name + '"?')) { return; }
-                post({ action: 'zone_delete', head: head, index: i }).then(function (d) { zonesSaved(d); toast('Zone deleted.'); })
+                post({ action: 'zone_delete', head: head, index: i, name: z.name }).then(function (d) { zonesSaved(d); toast('Zone deleted.'); })
                     .catch(function (e) { toast(e.message, false); });
             });
             top.appendChild(name); top.appendChild(info); top.appendChild(del); item.appendChild(top);
@@ -1561,7 +1564,9 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     $id('adZonesFile').addEventListener('change', function () {
         var file = this.files && this.files[0]; if (!file) { return; }
         if (!window.confirm('Replace every head\u2019s zones, tilt limits and landmarks with the ones in ' + file.name + '?')) { return; }
-        file.text().then(function (text) { return post({ action: 'zones_import', zones: text }); })
+        var replacing = 0;
+        Object.keys(zonesData || {}).forEach(function (k) { replacing += ((zonesData[k] || {}).zones || []).length; });
+        file.text().then(function (text) { return post({ action: 'zones_import', zones: text, replacing: replacing }); })
             .then(function (d) { zonesData = d.heads || {}; draft = []; realignNow = {}; zonesDraw(); toast('Imported ' + d.imported + ' zone' + (d.imported === 1 ? '' : 's') + '.'); })
             .catch(function (e) { toast(e.message, false); });
     });

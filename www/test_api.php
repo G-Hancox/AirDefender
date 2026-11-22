@@ -69,7 +69,7 @@ if ($method === 'GET' && isset($_GET['log'])) {
 
 if (in_array($action, ['zones_get', 'zone_save', 'zone_delete', 'tilt_limit', 'landmark_set', 'realign', 'realign_undo', 'zones_import', 'heads_reorder', 'head_clear'], true)) {
     require_once(dirname(__DIR__) . "/scripts/airdefender_deadzones.php");
-    [$code, $answer] = airdefender_zones_request($_POST);
+    [$code, $answer] = airdefender_zones_request($_POST, (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown address'));
     http_response_code($code);
     echo json_encode($answer);
     exit;

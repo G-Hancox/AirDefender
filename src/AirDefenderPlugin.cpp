@@ -79,11 +79,17 @@ public:
         runScript("airdefender_start.sh", true);
     }
     // A sequence check still running must be stopped before its thread object goes (else std::terminate).
-    virtual ~AirDefenderPlugin() { stopCheck(); }
+    virtual ~AirDefenderPlugin() {
+        std::lock_guard<std::mutex> one(checkStartMutex);
+        stopCheck();
+    }
 
     /* fppd stopping, or unloading the plugin to update or uninstall it: stop the loop, as callbacks.sh would. */
     virtual std::function<bool()> shutdown() override {
-        stopCheck();
+        {
+            std::lock_guard<std::mutex> one(checkStartMutex);
+            stopCheck();
+        }
         runScript("airdefender_stop.sh", false);
         return nullptr;
     }
@@ -157,6 +163,10 @@ private:
     // "Check my sequences": one sequence at a time, on its own thread.
     std::thread checkThread;
     std::mutex checkMutex;               // guards checkSeq, checkResult, checkError
+    // Start and stop requests are handled one at a time: fppd's web server runs requests on several threads, and
+    // two Starts at once (a double click, two browsers) could otherwise both pass "already checking?" and the second
+    // would replace a running std::thread, which ends fppd (std::terminate). Shutdown takes it too.
+    std::mutex checkStartMutex;
     std::atomic<bool> checkBusy{ false }, checkCancel{ false };
     std::atomic<int> checkProgress{ 0 };
     std::string checkSeq, checkError;
@@ -182,6 +192,7 @@ private:
     }
 
     std::string checkRequest(const std::string& seqParam, bool stop, int& code) {
+        std::lock_guard<std::mutex> one(checkStartMutex);
         if (stop) {
             stopCheck();
             return checkStatus();
