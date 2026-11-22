@@ -12,6 +12,7 @@
 # fppd starts the loop, never this script, so it runs under fppd and not under
 # the web server. The version comes from fppd's API (/api/fppd/version).
 
+set -u
 FPPDIR="${FPPDIR:-/opt/fpp}"
 
 # Rebuild the compiled part (DeadZones) from the updated source before fppd loads it again;

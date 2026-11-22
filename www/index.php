@@ -205,7 +205,7 @@ $airdefenderPage = array(
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <small class="text-body-secondary" id="adLimits"></small>
                 <button type="button" class="buttons" id="adViewLog" title="When the heads were closed and opened, and tests">View log</button>
-                <button type="button" class="buttons" id="adClearLog" title="Delete the Air Defender log, which lists aircraft that passed nearby. It is kept until you clear it.">Clear log</button>
+                <button type="button" class="buttons" id="adClearLog" title="Delete the Air Defender log, which lists aircraft that passed nearby.">Clear log</button>
             </div>
         </div>
     </div>
@@ -327,7 +327,7 @@ $airdefenderPage = array(
                         </div>
                     </div>
                     <div class="text-body-secondary small mb-2" id="adLogSummary"></div>
-                    <table class="table table-sm mb-0"><tbody id="adLogList"></tbody></table>
+                    <div class="table-responsive"><table class="table table-sm mb-0"><tbody id="adLogList"></tbody></table></div>
                 </div>
             </div>
         </div>
@@ -337,6 +337,7 @@ $airdefenderPage = array(
 <script>
 (function () {
     var API = 'plugin.php?plugin=AirDefender&page=www/test_api.php&nopage=1';
+    var LOG_NAME = <?php echo json_encode(basename(airdefender_log_file())); ?>;   // Clear log must name the file it clears
     var cfg = <?php echo json_encode($airdefenderPage); ?>;
     var FEED_LABEL = cfg.feedLabel;
     var status = cfg.test, live = cfg.live;
@@ -348,7 +349,10 @@ $airdefenderPage = array(
     var root = $id('ad');
     function hide(el, hidden) { el.classList.toggle('d-none', !!hidden); }
     // jGrowl shows its text as HTML: names come from the user's own heads and files, so they go in as plain text.
-    function toast(text, ok) { var t = document.createElement('div'); t.textContent = text; $.jGrowl(t.innerHTML, { themeState: ok === false ? 'danger' : 'success' }); }
+    function toast(text, ok, sticky) {
+        var t = document.createElement('div'); t.textContent = text;
+        $.jGrowl(t.innerHTML, { themeState: ok === false ? 'danger' : 'success', sticky: !!sticky });
+    }
 
     function fmtClock(sec) {
         sec = Math.max(0, Math.ceil(sec));
@@ -897,18 +901,47 @@ $airdefenderPage = array(
     }
 
     /* ---------- server ---------- */
+    // A reply that isn't JSON (a PHP warning printed in front of it, say) is an error, never treated as empty.
+    function readJson(r) {
+        return r.text().then(function (t) {
+            var d;
+            try { d = JSON.parse(t); } catch (e) { d = null; }
+            if (!d || typeof d !== 'object') {
+                var snippet = String(t || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+                throw new Error('Air Defender sent back something that isn’t data' + (r.ok ? '' : ' (HTTP ' + r.status + ')')
+                    + (snippet ? ': ' + snippet : ''));
+            }
+            if (!r.ok) { throw new Error(d.error || ('HTTP ' + r.status)); }
+            return d;
+        });
+    }
+    // Each request is numbered; a slow reply that arrives after a newer one has been shown is not drawn,
+    // so overlapping refreshes can never put older data back on screen.
+    var callSeq = 0, shownSeq = 0, pollFailing = false;
     function call(method, body) {
         var opts = { method: method, credentials: 'same-origin', cache: 'no-store' };
         if (body) { opts.headers = { 'Content-Type': 'application/x-www-form-urlencoded' }; opts.body = body; }
-        return fetch(API + (view === 'detailed' ? '&view=detailed' : ''), opts).then(function (r) {
-            return r.json().then(function (d) {
-                if (!r.ok) { throw new Error(d.error || ('HTTP ' + r.status)); }
+        var seq = ++callSeq;
+        return fetch(API + (view === 'detailed' ? '&view=detailed' : ''), opts).then(readJson).then(function (d) {
+            if (seq > shownSeq) {
+                shownSeq = seq;
                 renderAll(d);
-                return d;
-            });
+            }
+            return d;
         });
     }
-    function poll() { return dzPoll().then(function () { return call('GET'); }).catch(function () {}); }
+    // A failing refresh is said once (and stays up), so the page never quietly shows old data as if it were live.
+    // The DeadZones banner first (dzPoll handles its own errors, so it never stops the main refresh).
+    function poll() {
+        return dzPoll().then(function () { return call('GET'); }).then(function () {
+            if (pollFailing) { pollFailing = false; toast('The dashboard is updating again.', true); }
+        }).catch(function (e) {
+            if (!pollFailing) {
+                pollFailing = true;
+                toast('The dashboard can’t update, so what it shows may be out of date. ' + e.message, false, true);
+            }
+        });
+    }
     function schedule() {
         if (pollTimer) { clearInterval(pollTimer); }
         pollTimer = setInterval(poll, view === 'detailed' ? 2000 : 5000);
@@ -1004,7 +1037,7 @@ $airdefenderPage = array(
     });
     $id('adClearLog').addEventListener('click', function () {
         if (!window.confirm('Delete the Air Defender log? This cannot be undone.')) { return; }
-        busy(this, call('POST', 'action=clear_log')
+        busy(this, call('POST', 'action=clear_log&expect=' + encodeURIComponent(LOG_NAME))
             .then(function () { toast('Log cleared.'); })
             .catch(function (e) { toast('Could not clear the log: ' + e.message, false); }));
     });
@@ -1016,7 +1049,7 @@ $airdefenderPage = array(
         $id('adLogSummary').textContent = 'Loading…';
         list.textContent = '';
         fetch(API + '&log=' + logRange + '&what=' + logWhat, { credentials: 'same-origin', cache: 'no-store' })
-            .then(function (r) { return r.json(); })
+            .then(readJson)
             .then(function (d) {
                 var lines = d.lines || [];
                 var when = { today: 'today', yesterday: 'yesterday', week: 'in the last 7 days' }[d.range] || '';

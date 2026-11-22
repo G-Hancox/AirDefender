@@ -9,6 +9,8 @@
  * plugindata/AirDefender/master-password, readable only by its owner (0600).
  */
 
+require_once(__DIR__ . '/airdefender_files.php');
+
 require_once(__DIR__ . "/airdefender_paths.php");
 
 function airdefender_master_password_file(): string
@@ -41,12 +43,9 @@ function airdefender_set_master_password(string $password): bool
     }
     @chmod($dir, 0700);
 
-    $tmp = $file . '.tmp';
+    // Written atomically with owner-only permissions from the start (umask 077).
     $mask = umask(077);
-    $ok = @file_put_contents($tmp, $password, LOCK_EX) !== false && @chmod($tmp, 0600) && @rename($tmp, $file);
+    $ok = airdefender_write_atomic($file, $password);
     umask($mask);
-    if (!$ok) {
-        @unlink($tmp);
-    }
-    return $ok;
+    return $ok && @chmod($file, 0600);
 }

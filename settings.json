@@ -62,7 +62,7 @@
     "settings": {
         "enabled": {
             "description": "Enable Air Defender",
-            "tip": "Off until you turn it on: nothing is sent anywhere and no shutters are touched until then.",
+            "tip": "Off until you turn it on: until then no shutters are touched, and nothing is sent anywhere except when you press Test connection or Look it up in these settings.",
             "type": "checkbox",
             "default": "0"
         },

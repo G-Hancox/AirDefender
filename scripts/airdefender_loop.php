@@ -27,6 +27,8 @@ if (PHP_SAPI !== 'cli') {
     exit(1);
 }
 
+require_once(__DIR__ . "/airdefender_http.php");
+require_once(__DIR__ . "/airdefender_files.php");
 require_once(__DIR__ . "/airdefender_time.php");
 require_once(__DIR__ . "/airdefender_controller.php");
 require_once(__DIR__ . "/airdefender_test.php");
@@ -52,13 +54,10 @@ const AIRDEFENDER_FPP_PLAYER_MODE = 2;     // FPPMode::PLAYER_MODE in FPP's sett
 
 /* ---------- files ---------- */
 
-/* Written to a temp file and renamed, so a reader never sees half a file. */
+/* Written atomically (airdefender_files.php), so a reader never sees half a file. */
 function airdefender_write_json(string $path, array $data): void
 {
-    $tmp = $path . ".tmp";
-    if (@file_put_contents($tmp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) !== false) {
-        @rename($tmp, $path);
-    }
+    airdefender_write_atomic($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 }
 
 /* The status file, in memory where possible (see airdefender_statefile.php). */
@@ -203,20 +202,10 @@ function airdefender_find_trigger(float $lat, float $lon, float $maxNm, float $m
 /* GET a URL and decode JSON. Returns [data, null] or [null, error]. */
 function airdefender_get_json(string $url, int $timeout, string $extraHeaders = ''): array
 {
-    $context = stream_context_create([
-        'http' => [
-            'timeout' => $timeout,
-            'header' => "User-Agent: FPP-AirDefender\r\nAccept: application/json\r\n" . $extraHeaders,
-            'ignore_errors' => true,
-        ],
+    [$status, $body] = airdefender_http($url, [
+        'timeout' => $timeout,
+        'header' => "User-Agent: FPP-AirDefender\r\nAccept: application/json\r\n" . $extraHeaders,
     ]);
-    $body = @file_get_contents($url, false, $context);
-    $status = 0;
-    foreach ($http_response_header ?? [] as $line) {
-        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) {
-            $status = (int) $m[1];
-        }
-    }
     // The status first: a refusal (401, 404) often comes with an empty body.
     if ($status !== 0 && $status !== 200) {
         return [null, "HTTP {$status}"];
@@ -378,7 +367,7 @@ function airdefender_current_counts(array $show, array $only, string $tickedSlot
  *   playing   - Only selected playlists ($only): while one of them plays,
  *               scheduled or started by hand, and shortly before a scheduled
  *               one (the loop treats nothing ticked as scheduled)
- * Manual tracking (Start tracking), or not being able to ask fppd, means check. With
+ * Manual tracking, or not being able to ask fppd, means check. With
  * $anyPlaying (Also check whenever FPP is playing), anything FPP plays counts
  * too: a playlist or a single sequence, scheduled or started by hand.
  */

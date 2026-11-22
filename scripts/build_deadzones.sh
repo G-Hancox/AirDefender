@@ -8,12 +8,14 @@
 # Plane safety is all PHP and doesn't need it, so this never fails the install
 # or update: if the build fails, DeadZones is simply unavailable and its
 # settings tab says so. Always exits 0.
+FPP_DIR="${FPPDIR:-/opt/fpp}"   # read before set -u: FPPDIR is unset on some FPP paths
+set -u
 BASEDIR="$(cd "$(dirname "$0")/.." && pwd)"
 # FPP's source folder, with its build files. FPP sets SRCDIR when it runs the install, but
 # a shell opened by hand (or Docker) may have it, or FPPDIR, set to something else: use the
 # first that really has FPP's makefiles.
 FOUND=""
-for d in "${SRCDIR}" "${FPPDIR:+${FPPDIR}/src}" /opt/fpp/src; do
+for d in "${SRCDIR:-}" "${FPP_DIR}/src" /opt/fpp/src; do
     if [ -n "${d}" ] && [ -f "${d}/makefiles/common/setup.mk" ]; then
         FOUND="${d}"
         break

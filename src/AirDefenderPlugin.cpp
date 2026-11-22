@@ -94,13 +94,17 @@ public:
     // Threads still running must be stopped before their objects go (else std::terminate).
     virtual ~AirDefenderPlugin() {
         stopWarnings();
+        std::lock_guard<std::mutex> one(checkStartMutex);
         stopCheck();
     }
 
     /* fppd stopping, or unloading the plugin to update or uninstall it: stop the loop, as callbacks.sh would. */
     virtual std::function<bool()> shutdown() override {
         stopWarnings();   // also takes its warnings off FPP's list
-        stopCheck();
+        {
+            std::lock_guard<std::mutex> one(checkStartMutex);
+            stopCheck();
+        }
         runScript("airdefender_stop.sh", false);
         return nullptr;
     }
@@ -169,7 +173,7 @@ private:
     long long fileTime = -1;
     long long fileSize = -1;
     unsigned long long frames = 0;
-    volatile bool failed = false;
+    std::atomic<bool> failed{ false };   // set on the output thread, read by the warnings thread
 
     // FPP warnings: their own thread, waking every 5 s.
     std::thread warnThread;
@@ -285,6 +289,10 @@ private:
     // "Check my sequences": one sequence at a time, on its own thread.
     std::thread checkThread;
     std::mutex checkMutex;               // guards checkSeq, checkResult, checkError
+    // Start and stop requests are handled one at a time: fppd's web server runs requests on several threads, and
+    // two Starts at once (a double click, two browsers) could otherwise both pass "already checking?" and the second
+    // would replace a running std::thread, which ends fppd (std::terminate). Shutdown takes it too.
+    std::mutex checkStartMutex;
     std::atomic<bool> checkBusy{ false }, checkCancel{ false };
     std::atomic<int> checkProgress{ 0 };
     std::string checkSeq, checkError;
@@ -310,6 +318,7 @@ private:
     }
 
     std::string checkRequest(const std::string& seqParam, bool stop, int& code) {
+        std::lock_guard<std::mutex> one(checkStartMutex);
         if (stop) {
             stopCheck();
             return checkStatus();

@@ -33,9 +33,11 @@ done
 pkill -KILL -f "${SUPERVISOR}" 2>/dev/null
 pkill -KILL -f "${LOOP}" 2>/dev/null
 
-if [ "$(id -u)" = "0" ] && id fpp >/dev/null 2>&1; then
-    RUN_AS="runuser -u fpp --"
-    command -v runuser >/dev/null 2>&1 || RUN_AS="sudo -u fpp"
+FPPUSER="${FPPUSER:-fpp}"
+FPPGROUP="${FPPGROUP:-${FPPUSER}}"
+if [ "$(id -u)" = "0" ] && id "${FPPUSER}" >/dev/null 2>&1; then
+    RUN_AS="runuser -u ${FPPUSER} --"
+    command -v runuser >/dev/null 2>&1 || RUN_AS="sudo -u ${FPPUSER}"
 else
     RUN_AS=""
 fi
@@ -46,7 +48,7 @@ fi
 # fresh install the loop never ran until a reboot chowned the media folder.
 if [ -n "${RUN_AS}" ]; then
     touch "${LOG}" 2>/dev/null
-    chown fpp:fpp "${LOG}" 2>/dev/null
+    chown "${FPPUSER}:${FPPGROUP}" "${LOG}" 2>/dev/null
 fi
 
 echo "Starting Air Defender detection loop"

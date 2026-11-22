@@ -11,6 +11,10 @@ Release notes and questions: the [Air Defender Facebook group](https://www.faceb
   default) or always. Plane safety works the same whether it's on or off.
 - **Catches fast swings**: each frame checks the whole way a head moved since the last one, not just where it
   ended up, so a quick sweep across a small zone between two frames still closes the shutter.
+- **Zones are safe from mix-ups:** zone changes are made one at a time, so two browsers or a double click can't lose
+  each other's changes. Deleting a zone has to name the zone, and Import has to say how many zones it replaces; if
+  the zones changed since the page loaded, nothing is changed. A removed head's zones are only deleted once it is
+  saved as removed. Deletes, imports and re-aligns are logged with the address they came from.
 - **Check my sequences** (optional): runs your sequences through DeadZones without the lights and lists each moment a
   lit beam points into a zone.
 - **How it runs**: a small compiled part, built on your FPP at install (and again when FPP is upgraded), checks each
@@ -29,6 +33,24 @@ Release notes and questions: the [Air Defender Facebook group](https://www.faceb
   **Manual tracking** (was Start tracking) moved to the Test tab. The boxes keep their size as things come and go.
 - **Privacy note**: FPP asks you to review Air Defender's privacy details again after this update, because they now
   mention DeadZones. Nothing new is sent anywhere; DeadZones runs entirely on your FPP.
+## 1.7.7 (2026-11-22)
+
+- **Ready for PHP 8.4** (FPP 11 on Debian Trixie): Air Defender no longer uses PHP's `$http_response_header`, which
+  PHP 8.4 deprecates; every web request reads its status another way. A full run with every PHP warning switched on
+  gives none.
+- **Tests can't be undone by accident.** Starting, stopping or running out of a test (and of Manual tracking) is now
+  done under one lock, and the files are written so nothing ever reads half of one. Before, a test starting just as
+  the last one ran out could be cancelled, and a read at the wrong moment could see no test running for a second.
+- **The dashboard says when it can't update.** If a refresh fails or the reply isn't valid, it says so (and stays
+  up) instead of quietly showing old data, and a slow reply can no longer put older data back on screen.
+- **Clear log and removing the saved Player password ask to be sure:** each request has to say what it is clearing,
+  and both are logged with the address they came from.
+- **Privacy details in Plugin Manager are more precise:** what is kept where, what Clear log and uninstall remove,
+  and the shutter overlays and status page listed as changes. FPP shows the privacy details again on this update.
+- **Smaller fixes:** install and uninstall scripts stop on unset variables, the FPP user is no longer assumed to be
+  `fpp`, the Check Now command's description gives its real range (5 to 720 minutes), and the README and help match
+  the code (banner colours, log trimming, what's sent before Air Defender is switched on, every file listed).
+
 ## 1.7.6 (2026-11-17)
 
 - **Song changes can't let the heads go.** Air Defender keeps checking for 10 seconds after a show seems to stop, so

@@ -23,12 +23,12 @@
     },
     {
         "name": "Air Defender: Check Now",
-        "description": "Tracks aircraft for the given number of minutes even outside show times, for example while testing a sequence. 0 stops it early. The same as Manual tracking on the dashboard's Test tab.",
+        "description": "Tracks aircraft for the given number of minutes (at least 5; 1 to 4 count as 5) even outside show times, for example while testing a sequence. 0 stops it early. The same as Manual tracking on the dashboard's Test tab.",
         "script": "check_now.sh",
         "args": [
             {
                 "name": "Minutes",
-                "description": "How long to check (minutes, 0 ends it)",
+                "description": "How long to check (minutes, 5 to 720; 0 ends it)",
                 "type": "int",
                 "min": 0,
                 "max": 720,
