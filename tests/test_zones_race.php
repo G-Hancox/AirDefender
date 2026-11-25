@@ -63,6 +63,15 @@ else {
     check('deletes, imports and clears are logged with the address', strpos($log, '(from 10.0.0.5)') !== false
         && substr_count($log, 'DeadZones:') >= 3);
 }
+// 3. A change saved within the same second, leaving the file the same size, must still reach the loop
+// (it re-reads zones.json only when the file changes).
+$zf = airdefender_deadzones_zones_file();
+airdefender_write_atomic($zf, '{"heads":{"1":{"zones":[{"name":"AAAA"}]}}}');
+airdefender_deadzones_zones();
+airdefender_write_atomic($zf, '{"heads":{"1":{"zones":[{"name":"BBBB"}]}}}');
+$seen = airdefender_deadzones_zones()['heads']['1']['zones'][0]['name'] ?? '?';
+check("a same-size change saved in the same second reaches the loop (saw {$seen})", $seen === 'BBBB');
+
 exec('rm -rf ' . escapeshellarg($root));
 echo $failures ? "FAILED ($failures)\n" : "All passed\n";
 exit($failures ? 1 : 0);

@@ -60,7 +60,10 @@ if (!function_exists('airdefender_deadzones_file')) {
         static $cache = [], $stamp = null;
         $file = airdefender_deadzones_zones_file();
         clearstatcache(true, $file);
-        $now = @filemtime($file) . ':' . @filesize($file);
+        // Inode too: times are whole seconds, so two saves in one second leaving the same size were missed.
+        // Every save renames a new file in, so the inode changes each time.
+        $st = @stat($file);
+        $now = $st === false ? '' : $st['ino'] . ':' . $st['mtime'] . ':' . $st['size'];
         if ($now !== $stamp) {
             $stamp = $now;
             $data = json_decode((string) @file_get_contents($file), true);
