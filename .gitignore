@@ -16,3 +16,4 @@ loop.lock
 deadzones.json
 zones.json
 aim.json
+state.lock
