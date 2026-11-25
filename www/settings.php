@@ -303,7 +303,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
   <div id="adIgnoreEditor" class="card mt-3 d-none"><div class="card-body">
     <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
       <b id="adIgnoreTitle">New area</b>
-      <span class="form-text m-0" id="adIgnoreHint">Click the map to add corners around where aircraft park; drag a corner to move it.</span>
+      <span class="form-text m-0" id="adIgnoreHint">Click the map to add corners around where aircraft park. Drag a corner to move it, or the dot halfway along an edge to add one.</span>
       <span class="ms-auto d-flex gap-2">
         <button type="button" class="btn btn-sm btn-outline-secondary" id="adIgnoreUndo">Undo corner</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="adIgnoreClear">Clear corners</button>
@@ -1132,6 +1132,31 @@ HTML
                 m.on('dragend', function () { igDraw(); });
                 m.on('click', function (e) { L.DomEvent.stop(e); ig.corners.splice(i, 1); igDraw(); });
             });
+            // A smaller handle halfway along each edge: drag it (or click it) to add a corner there.
+            var mid = L.divIcon({ className: '', iconSize: [12, 12], iconAnchor: [6, 6],
+                html: '<div style="width:12px;height:12px;border-radius:50%;background:#d6007e;opacity:.75;'
+                    + 'border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:copy"></div>' });
+            var edges = ig.corners.length >= 3 ? ig.corners.length : ig.corners.length - 1;
+            for (var k = 0; k < edges && ig.corners.length < 30; k++) {
+                (function (i) {
+                    var a = ig.corners[i], b = ig.corners[(i + 1) % ig.corners.length];
+                    var at = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], added = false;
+                    var h = L.marker(at, { icon: mid, draggable: true, autoPan: true, bubblingMouseEvents: false })
+                        .bindTooltip('Drag or click to add a corner here').addTo(ig.layers);
+                    h.on('dragstart', function () { ig.corners.splice(i + 1, 0, [+at[0].toFixed(6), +at[1].toFixed(6)]); added = true; });
+                    h.on('drag', function (e) {
+                        var ll = e.target.getLatLng();
+                        ig.corners[i + 1] = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
+                        shape.setLatLngs(ig.corners);
+                    });
+                    h.on('dragend', function () { igDraw(); });
+                    h.on('click', function (e) {
+                        L.DomEvent.stop(e);
+                        if (!added) { ig.corners.splice(i + 1, 0, [+at[0].toFixed(6), +at[1].toFixed(6)]); }
+                        igDraw();
+                    });
+                })(k);
+            }
         }
         var size = $id('adIgnoreSize');
         if (ig.corners.length >= 3) {
