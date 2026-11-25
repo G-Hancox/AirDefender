@@ -37,6 +37,7 @@ require_once(__DIR__ . "/airdefender_status.php");
 require_once(__DIR__ . "/airdefender_feeds.php");
 require_once(__DIR__ . "/airdefender_adsb.php");
 require_once(__DIR__ . "/airdefender_version.php");
+require_once(__DIR__ . "/airdefender_ignore.php");
 require_once(__DIR__ . "/airdefender_secret.php");
 require_once(__DIR__ . "/airdefender_playlists.php");
 require_once(__DIR__ . "/airdefender_receiver.php");
@@ -171,10 +172,12 @@ function airdefender_nearby(float $lat, float $lon, float $maxNm, float $maxFt, 
             'id' => $p['id'],
             'nm' => round($d, 2),
             'brg' => (int) round(airdefender_bearing($lat, $lon, $p['lat'], $p['lon'])),
+            'lat' => round($p['lat'], 5),   // for the Ignore areas map
+            'lon' => round($p['lon'], 5),
             'ft' => $p['altFt'] !== null ? (int) round($p['altFt']) : null,
             'trk' => isset($p['track']) && $p['track'] !== null ? (int) round($p['track']) % 360 : null,
-            'in' => $d <= $maxNm && $p['altFt'] !== null && $p['altFt'] <= $maxFt,
-        ] + ($p['info'] ?? []);
+            'in' => $d <= $maxNm && $p['altFt'] !== null && $p['altFt'] <= $maxFt && !isset($p['ignored']),
+        ] + (isset($p['ignored']) ? ['ign' => $p['ignored']] : []) + ($p['info'] ?? []);
     }
     usort($out, function ($a, $b) { return $a['nm'] <=> $b['nm']; });
     return array_slice($out, 0, $max);
@@ -185,7 +188,7 @@ function airdefender_find_trigger(float $lat, float $lon, float $maxNm, float $m
 {
     $best = null;
     foreach ($planes as $p) {
-        if ($p['onGround'] || $p['altFt'] === null || $p['altFt'] > $maxFt) {
+        if ($p['onGround'] || $p['altFt'] === null || $p['altFt'] > $maxFt || isset($p['ignored'])) {
             continue;
         }
         $d = airdefender_distance_nm($lat, $lon, $p['lat'], $p['lon']);
@@ -470,6 +473,7 @@ $masterOkAt = 0;             // when we got it
 $masterError = null;
 $lastReportKey = null;       // what state.json last said, and when it was written
 $lastReportAt = 0;
+$ignoring = [];             // aircraft id => the Ignore area it is parked in, for the log
 
 airdefender_log("Detection loop started (Air Defender " . airdefender_version() . ", pid " . getmypid() . ").");
 
@@ -486,6 +490,8 @@ while (true) {
     $maxFt = max(0, (float) airdefender_setting($settings, 'altitudeThresholdFt', 3000));
     // Heights are compared above the show, not above sea level.
     $elevationFt = airdefender_clamp_elevation(airdefender_setting($settings, 'showElevationFt', 0));
+    // Ignore areas (off unless turned on): parked or taxiing aircraft at places the user outlined.
+    $ignoreAreas = airdefender_truthy(airdefender_setting($settings, 'ignoreAreasEnabled', '0')) ? airdefender_ignore_areas() : [];
     // 5 to 15 seconds: a slower check lets a fast aircraft get too close between looks (an older setting above 15 is
     // treated as 15).
     $fetchInterval = min(15, max(5, (int) airdefender_setting($settings, 'fetchInterval', 10)));
@@ -589,6 +595,9 @@ while (true) {
     $wasChecking = $checking;
 
     $detecting = $enabled && $role !== 'remote' && $lat !== null && $lon !== null && $checking;
+    if (!$detecting) {
+        $ignoring = [];   // logged afresh when checking starts again
+    }
 
     // Start over with a fresh fetch whenever what we ask the feed changes.
     $feedKey = $feedTemplate . "|" . $receiverAddress . "|" . $lat . "|" . $lon . "|" . $maxNm;
@@ -665,6 +674,8 @@ while (true) {
             $lastFetchOkAt = $now;
             $aircraftCount = count($planes);
             $planes = airdefender_above_show($planes, $elevationFt);
+            $planes = airdefender_ignore_apply($planes, $elevationFt, $ignoreAreas);
+            $ignoring = airdefender_ignore_log_changes($ignoring, $planes, 'airdefender_log');
             $nearby = airdefender_nearby($lat, $lon, $maxNm, $maxFt, $planes);
             airdefender_log_once('feed', null);
             $hit = airdefender_find_trigger($lat, $lon, $maxNm, $maxFt, $planes);
@@ -848,6 +859,10 @@ while (true) {
         'feedOnBackup' => $onBackup,
         'feedChosen' => airdefender_feed_label($feedTemplate),
         'nearby' => $role === 'master' && $detecting ? $nearby : [],
+        // Ignore areas: on or off, and the aircraft being ignored now (the dashboard says so; never silent).
+        'ignoreAreas' => ['on' => $ignoreAreas !== [], 'count' => count($ignoreAreas),
+            'ignoring' => $role === 'master' && $detecting ? array_map(function ($id, $area) { return ['id' => (string) $id, 'area' => $area]; },
+                array_keys($ignoring), array_values($ignoring)) : []],
         'limits' => ['nm' => $maxNm, 'ft' => $maxFt, 'holdSec' => $clearDelay, 'elevationFt' => $elevationFt],
         'fetchInterval' => $fetchInterval,
         'safeSince' => $safeSince ? date('c', $safeSince) : null,

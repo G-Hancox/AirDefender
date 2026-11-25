@@ -31,6 +31,8 @@
  *                                        -> DeadZones aiming (scripts/airdefender_aim.php)
  *   POST action=zones_get | zone_save | zone_delete | tilt_limit | landmark_set | realign | realign_undo | zones_import
  *                                        -> DeadZones zones (scripts/airdefender_deadzones.php)
+ *   POST action=ignore_get | ignore_save&area=<json>&replaces=<name or ''> | ignore_delete&name=
+ *                                        -> Ignore areas (scripts/airdefender_ignore.php)
  *   GET ...&log=today|yesterday|week&what=events|all -> log lines for View log
  *
  * Anything that changes state is POST only.
@@ -70,6 +72,13 @@ if ($method === 'GET' && isset($_GET['log'])) {
 if (in_array($action, ['zones_get', 'zone_save', 'zone_delete', 'tilt_limit', 'landmark_set', 'realign', 'realign_undo', 'zones_import', 'heads_reorder', 'head_clear'], true)) {
     require_once(dirname(__DIR__) . "/scripts/airdefender_deadzones.php");
     [$code, $answer] = airdefender_zones_request($_POST, (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown address'));
+    http_response_code($code);
+    echo json_encode($answer);
+    exit;
+}
+if (in_array($action, ['ignore_get', 'ignore_save', 'ignore_delete'], true)) {
+    require_once(dirname(__DIR__) . "/scripts/airdefender_ignore.php");
+    [$code, $answer] = airdefender_ignore_request($_POST, (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown address'));
     http_response_code($code);
     echo json_encode($answer);
     exit;

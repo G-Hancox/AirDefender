@@ -33,6 +33,12 @@
                 "fetchInterval"
             ]
         },
+        "airdefenderIgnore": {
+            "description": "Ignore areas",
+            "settings": [
+                "ignoreAreasEnabled"
+            ]
+        },
         "airdefenderFeed": {
             "description": "Flight data",
             "settings": [
@@ -171,6 +177,12 @@
             "max": 15,
             "default": "10",
             "suffix": "s"
+        },
+        "ignoreAreasEnabled": {
+            "description": "Use Ignore areas",
+            "tip": "Off unless you turn it on. Aircraft parked or taxiing inside an area you outline (an airport ramp, a helipad) don't close the heads. Anything flying, taking off, landing or hovering above the area's ceiling still does.",
+            "type": "checkbox",
+            "default": "0"
         },
         "adsbSourceUrl": {
             "description": "Service",

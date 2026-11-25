@@ -113,6 +113,8 @@ function airdefender_live_status(bool $detailed = false): array
             'elevationFt' => isset($limits['elevationFt']) ? (int) $limits['elevationFt'] : 0,
         ],
         'aircraft' => $detailed && is_array($state['nearby'] ?? null) ? $state['nearby'] : null,
+        // Ignore areas: on or off, and which aircraft are being ignored now.
+        'ignoreAreas' => is_array($state['ignoreAreas'] ?? null) ? $state['ignoreAreas'] : ['on' => false, 'count' => 0, 'ignoring' => []],
         'checking' => !array_key_exists('checking', $state) || !empty($state['checking']),
         'checkWhen' => (string) ($state['checkWhen'] ?? 'scheduled'),
         // Read directly, so the dashboard shows a new override at once.

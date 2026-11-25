@@ -185,6 +185,33 @@ checking through requests anyway, because they play inside that show's schedule 
 To test a sequence at another time, use **Manual tracking** on the dashboard's Test tab (30 minutes to 4 hours), or the
 **Air Defender: Check Now** command. It stops by itself when the time runs out.
 
+### Ignore areas (optional, off by default)
+
+If you live near an airport or a helipad, aircraft sitting there can close your heads: many don't send the "on the
+ground" signal (Air Defender already ignores the ones that do), so a parked plane or a helicopter warming up looks like
+an aircraft at about 0 ft. **Ignore areas**, on the **Limits** tab, lets you outline those places on a map.
+
+An aircraft is ignored only while **all three** are true:
+
+- it is **inside the outline**,
+- it is **no higher than the area's ceiling** (100 ft by default, 25 to 200) above the ground there, and
+- it reports its speed, and is **slower than the area's limit** (40 kt by default, 5 to 60; well under takeoff speed).
+
+Anything taking off, landing, flying through or hovering above the ceiling still closes the heads, and an aircraft
+that doesn't report its speed or height is never ignored. Ignored aircraft stay on the radar, greyed out; the log
+notes each one when it starts and stops being ignored; and the dashboard's footer says Ignore areas are on and what
+they're ignoring.
+
+To add one, tick **Use Ignore areas**, press **Add area** and click the corners around where aircraft park, taxi or
+sit on the pad. Outline a little wider than the pavement: an aircraft's reported position is good to about 30 ft.
+Only the part inside your distance limit (the dashed ring) matters. Then set the area's **ground height**: the best
+way is to click an aircraft **parked** there on the map and press **Use its height as ground**. Aircraft report a GPS
+height that can read about 100 ft off sea level; using a parked one's height cancels that out. **Look it up** works
+too, from Open-Meteo, but may be off by that much. Up to 5 areas, each up to 10 NM across and 30 corners.
+
+The map pictures come from OpenStreetMap and are loaded by your browser only while the editor is open; Air Defender
+itself sends nothing. The areas are kept in `plugindata/AirDefender/ignore_areas.json`, written only when you save.
+
 ## Player and Remote
 
 Air Defender's **Role** uses FPP's own names. On a new install it follows FPP's **Player Mode** (Settings → FPP
@@ -325,7 +352,9 @@ uses.
 - Your **show's location**, rounded to about 1 km, and search radius go to the flight-data service you pick
   (adsb.fi, adsb.lol, or nowhere with your own receiver), only while Air Defender is checking. Air Defender works
   out each aircraft's distance from your exact location itself. Your own receiver is only asked for its aircraft list.
-- Pressing **Look it up** beside Show elevation sends the location once to api.open-meteo.com.
+- Pressing **Look it up** beside Show elevation, or in an Ignore area, sends that location once to api.open-meteo.com.
+- With the **Ignore areas** editor open, your browser loads map pictures of the area you're looking at from
+  OpenStreetMap (tile.openstreetmap.org). Air Defender itself sends nothing.
 - A Remote asks its Player for its status over your local network, with the Player's UI password if you entered one.
 - The log (`plugin-AirDefender.log` in FPP's logs folder) records the callsigns, distance and height of low aircraft
   that passed near your show. It is kept **until you press Clear log** on the dashboard (FPP only rotates plugin
@@ -333,8 +362,8 @@ uses.
 - Nothing is sent anywhere until you switch Air Defender on, except when you press **Test connection** or **Look it up**
   in Settings, which send the location once to the service they test or ask. The backup service and the elevation lookup are off
   until you use them.
-- Uninstalling removes the log, the saved Player password and your DeadZones zones (a Reinstall keeps the password
-  and the zones, so nothing needs entering again).
+- Uninstalling removes the log, the saved Player password, your DeadZones zones and your Ignore areas (a Reinstall
+  keeps them, so nothing needs entering again).
 - Air Defender runs a background process while FPP is running, and holds the shutter channels you list while
   aircraft are near or during a test.
 - With **DeadZones** on (off by default), a compiled part built at install runs inside fppd and closes a head's
@@ -387,6 +416,7 @@ there first.
 | Watchdog that keeps the loop running; fppd starts and stops it (through the compiled part when it's built, else through the lifecycle callbacks) | `callbacks.sh`, `scripts/airdefender_supervise.sh`, `scripts/airdefender_start.sh`, `scripts/airdefender_stop.sh` |
 | DeadZones, inside fppd: the per-frame check, its settings file, Check my sequences, and its routes (`/api/plugin-apis/AirDefender/deadzones`, `.../deadzones/check`) | `src/AirDefenderPlugin.cpp`, `src/DeadZonesCore.h`, `src/DeadZonesConfig.h`, `src/DeadZonesCheck.h`, `Makefile`, `scripts/build_deadzones.sh`; tests in `tests/` |
 | DeadZones zones and aiming (writes `deadzones.json` for the compiled part when settings change) | `scripts/airdefender_deadzones.php`, `scripts/airdefender_aim.php` |
+| Ignore areas: which aircraft are parked in an area, the log lines, and saving areas; the map editor's code (Leaflet 1.9.4, BSD licence), loaded only when the editor opens | `scripts/airdefender_ignore.php`, `www/lib/leaflet/` |
 | Shutter overlays (`PUT /api/overlays/range/<ch>`, FPP's proxy to fppd) | `scripts/airdefender_controller.php` |
 | Heads by model or manual channel | `scripts/airdefender_models.php` |
 | Flight-data services, backup, fetching and parsing | `scripts/airdefender_feeds.php`, `scripts/airdefender_adsb.php` |
@@ -411,7 +441,7 @@ there first.
 | Install, update and uninstall hooks; release notes for Plugin Manager | `scripts/fpp_install.sh`, `scripts/fpp_upgrade.sh`, `scripts/fpp_uninstall.sh`, `scripts/fpp_releasenotes.sh` |
 | fppd start and stop hooks | `scripts/preStart.sh`, `scripts/postStart.sh`, `scripts/postStop.sh` |
 | Plugin Manager listing and privacy section, and FPP's schema for it | `pluginInfo.json`, `pluginInfo.schema.json`, `icon.png`, `icon.svg` |
-| Tests (no FPP needed; how to run each is at the top of the file) | `tests/test_state_race.php`, `tests/deadzones_core_test.cpp`, `tests/deadzones_check_test.cpp`, `tests/deadzones_config_test.cpp`, `tests/deadzones_sample.json` |
+| Tests (no FPP needed; how to run each is at the top of the file) | `tests/test_state_race.php`, `tests/test_zones_race.php`, `tests/test_ignore_areas.php`, `tests/deadzones_core_test.cpp`, `tests/deadzones_check_test.cpp`, `tests/deadzones_config_test.cpp`, `tests/deadzones_sample.json` |
 | The plugin's API routes, for FPP's API page | `apiDocs.json` |
 | How DeadZones was planned and built, step by step | `docs/DEADZONES_PLAN.md` |
 | Docs, licence, release notes, git ignore list | `README.md`, `LICENSE`, `CHANGELOG.md`, `.gitignore` |
@@ -422,7 +452,7 @@ Runtime files written on the device (not in git): `heads.json`, `test.json`, `ov
 or the plugin folder where that can't be used), written when something in it changes and every 30 seconds.
 `heads.json` holds only what must survive a reboot and is written only when it changes, to spare the SD card.
 DeadZones keeps `deadzones.json` and `zones.json` in `plugindata/AirDefender/` (or the plugin folder), written only
-when you change them; what's being aimed is in memory (`/dev/shm/AirDefender/aim.json`). The pages use FPP's styles and Bootstrap, so they follow FPP's light and dark themes.
+when you change them, and Ignore areas keeps `ignore_areas.json` there too; what's being aimed is in memory (`/dev/shm/AirDefender/aim.json`). The pages use FPP's styles and Bootstrap, so they follow FPP's light and dark themes.
 
 ## Credits
 

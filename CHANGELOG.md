@@ -2,6 +2,14 @@
 
 Release notes and questions: the [Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289).
 
+## Unreleased (ignore-areas branch)
+
+- **Ignore areas (optional, off by default)**: for shows near an airport or helipad. Outline the place on a map on
+  the **Limits** tab, and aircraft parked or taxiing there no longer close the heads: only while inside the outline,
+  no higher than the area's ceiling (100 ft by default) and slower than its speed limit (40 kt by default). Anything
+  taking off, landing or hovering higher still does. Ignored aircraft stay on the radar, greyed out, and are noted in
+  the log. The map pictures come from OpenStreetMap, loaded by your browser only while the editor is open.
+
 ## 1.8.0 (2026-11-22)
 
 - **DeadZones (optional, off by default)**: closes a moving head's shutter while it points into an area you mark,
