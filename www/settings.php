@@ -305,8 +305,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
       <b id="adIgnoreTitle">New area</b>
       <span class="form-text m-0" id="adIgnoreHint">Click the map to add corners around where aircraft park. Drag a corner to move it, or the dot halfway along an edge to add one.</span>
       <span class="ms-auto d-flex gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="adIgnoreUndo">Undo corner</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="adIgnoreClear">Clear corners</button>
+        <button type="button" class="buttons" id="adIgnoreUndo">Undo corner</button>
+        <button type="button" class="buttons" id="adIgnoreClear">Clear corners</button>
       </span>
     </div>
     <div id="adIgnoreMap" style="height:420px;border-radius:6px" class="mb-1"></div>
