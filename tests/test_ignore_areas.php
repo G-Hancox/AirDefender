@@ -62,6 +62,7 @@ foreach ([
     'speed 100 kt' => ['maxKt' => 100] + $area,
     'corner not a position' => ['points' => [[36, -86], [36.001, -86], ['x', 1]]] + $area,
     '30 NM across' => ['points' => [[36, -86], [36.5, -86], [36.5, -85.5]]] + $area,
+    'a line break in the name' => ['name' => "Fake\n[2026-01-01] SAFETY OFF"] + $area,
 ] as $what => $bad) {
     check("refused: $what", airdefender_ignore_check_area($bad)[0] === null);
 }
@@ -108,6 +109,16 @@ if (function_exists('pcntl_fork')) {
     echo "SKIP: concurrent saves need the pcntl extension\n";
 }
 check('the loop reads the saved file', count(airdefender_ignore_areas()) === 5);
+// A second save within the same second must still reach the loop (it caches the file until it changes).
+$before = airdefender_ignore_areas()[0]['ceilingFt'];
+$t = time();
+$save(['name' => 'A0', 'ceilingFt' => $before === 150 ? 175 : 150] + $area, 'A0');
+$save(['name' => 'A0', 'ceilingFt' => 125] + $area, 'A0');
+airdefender_ignore_areas();
+$save(['name' => 'A0', 'ceilingFt' => 200] + $area, 'A0');
+$sameSecond = time() === $t;
+$seen = airdefender_ignore_areas()[0]['ceilingFt'];
+check("a change saved within the same second reaches the loop (saw {$seen} ft" . ($sameSecond ? '' : ', not the same second') . ')', $seen === 200);
 
 exec('rm -rf ' . escapeshellarg($root));
 echo $failures ? "$failures FAILED\n" : "All passed\n";

@@ -33,7 +33,7 @@
             },
             {
                 "to": "tile.openstreetmap.org",
-                "what": "map pictures of the area you're looking at, from your browser",
+                "what": "requests for map pictures of the area you're viewing (around your show), from your browser",
                 "why": "only while the Ignore areas editor is open in Settings",
                 "alwaysOn": false
             },

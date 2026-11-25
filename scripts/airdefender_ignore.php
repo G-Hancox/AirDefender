@@ -54,7 +54,8 @@ function airdefender_ignore_check_area($a): array
         return [null, 'not an area'];
     }
     $name = trim((string) ($a['name'] ?? ''));
-    if ($name === '' || mb_strlen($name) > 40) {
+    $length = function_exists('mb_strlen') ? mb_strlen($name) : strlen($name);
+    if ($name === '' || $length > 40 || preg_match('/[\x00-\x1F\x7F]/', $name)) {
         return [null, 'give the area a name (up to 40 characters)'];
     }
     $points = $a['points'] ?? null;
@@ -93,12 +94,13 @@ function airdefender_ignore_areas(): array
     static $cache = [], $stamp = null;
     $file = airdefender_ignore_file();
     clearstatcache(true, $file);
-    $now = @filemtime($file);
-    if ($now === false) {
+    $st = @stat($file);
+    if ($st === false) {
         $cache = [];
         $stamp = null;
         return [];
     }
+    $now = $st['ino'] . ':' . $st['mtime'] . ':' . $st['size'];   // a save renames a new file in: new inode
     if ($now !== $stamp) {
         $stamp = $now;
         $data = json_decode((string) @file_get_contents($file), true);

@@ -310,7 +310,8 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
       </span>
     </div>
     <div id="adIgnoreMap" style="height:420px;border-radius:6px" class="mb-1"></div>
-    <div class="form-text mb-3" id="adIgnoreSize"></div>
+    <div class="form-text mb-0" id="adIgnoreSize"></div>
+    <div class="form-text mb-3 text-body-secondary" id="adIgnorePlanesNote"></div>
     <div class="row g-2">
       <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgName">Name</label>
         <input type="text" class="form-control form-control-sm" id="adIgName" maxlength="40" placeholder="Regional airport"></div>
@@ -1175,6 +1176,8 @@ HTML
         fetch(API + '&view=detailed', { credentials: 'same-origin', cache: 'no-store' }).then(readJson).then(function (d) {
             var list = (d.live && d.live.aircraft) || [], elev = (d.live && d.live.limits && d.live.limits.elevationFt) || 0;
             ig.planes.clearLayers();
+            $id('adIgnorePlanesNote').textContent = list.length ? 'Blue dots are aircraft Air Defender sees now (grey: already ignored); click one for its height.'
+                : 'No aircraft shown: Air Defender only sees them while it is checking. To see the ones parked there now, start Manual tracking on the dashboard.';
             list.forEach(function (p) {
                 if (p.lat === undefined || p.lon === undefined) { return; }
                 var reported = p.ft === null ? null : p.ft + elev;

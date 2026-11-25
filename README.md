@@ -199,7 +199,7 @@ An aircraft is ignored only while **all three** are true:
 
 Anything taking off, landing, flying through or hovering above the ceiling still closes the heads, and an aircraft
 that doesn't report its speed or height is never ignored. Ignored aircraft stay on the radar, greyed out; the log
-notes each one when it starts and stops being ignored; and the dashboard's footer says Ignore areas are on and what
+notes each one when it starts being ignored, and again if it moves off or climbs; and the dashboard's footer says Ignore areas are on and what
 they're ignoring.
 
 To add one, tick **Use Ignore areas**, press **Add area** and click the corners around where aircraft park, taxi or
