@@ -2,13 +2,26 @@
 
 Release notes and questions: the [Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289).
 
-## 1.9.0 (unreleased)
+## Unreleased (warnings branch)
 
 - **FPP warnings when the heads aren't protected**: no flight data for 2 minutes during a show (or a Remote losing
   its Player), aircraft detection stopped, or DeadZones switched off after an error each add a warning to the top
   of FPP's pages, gone again once things work. Apps that pass on FPP's warnings, such as FPPMon, can send them to
   your phone. Choose All, some or none on the new **Notifications** tab; never for an aircraft closing the heads, and no flight data warning outside show times.
 - **New tab**: Notifications, after Limits.
+
+## 1.9.0 (2026-11-25)
+
+- **Ignore areas (optional, off by default)**: for shows near an airport or helipad. Outline the place on a map on
+  the **Limits** tab, and aircraft parked or taxiing there no longer close the heads: only while inside the outline,
+  no higher than the area's ceiling (100 ft by default) and slower than its speed limit (40 kt by default). Anything
+  taking off, landing or hovering higher still does. Ignored aircraft stay on the radar, greyed out, and are noted in
+  the log. The map pictures come from OpenStreetMap, loaded by your browser only while the editor is open.
+  Drag corners to move them, drag the dot halfway along an edge to add one, and **Center on show** brings the map
+  back to your show. On a Docker FPP, after installing, reload Apache once (`apache2ctl graceful`) or restart the
+  container so the map pictures show.
+- **DeadZones fix**: a zone change saved within the same second as the one before it (and leaving the file the same
+  size) could be missed until the next change, so DeadZones kept using the old zones. It's picked up straight away now.
 
 ## 1.8.0 (2026-11-22)
 

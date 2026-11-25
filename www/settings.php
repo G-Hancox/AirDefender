@@ -291,6 +291,49 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
         <div class="tab-pane fade" id="ad-limits" role="tabpanel" aria-labelledby="ad-limits-tab">
             <?php airdefender_print_group('Safety limits', array('distanceNM', 'altitudeThresholdFt',
                 airdefender_row('adLimitsRow', '', "<span class='form-text' id='adLimitsHelp'></span>"), 'clearDelaySec', 'fetchInterval')); ?>
+            <?php airdefender_print_group('Ignore areas', array('ignoreAreasEnabled', airdefender_row('adIgnoreRow', '', <<<'HTML'
+<div id="adIgnore" class="d-none">
+  <p class="form-text mt-0">Outline places near you where aircraft park or taxi, like an airport ramp or a helipad. An aircraft
+    there is ignored only while it is <b>inside the outline</b>, <b>no higher than the area's ceiling</b> above the ground there,
+    and <b>slower than its speed limit</b>. Anything taking off, landing, flying or hovering higher still closes the heads.
+    Ignored aircraft stay on the radar, greyed out, and each one is noted in the log.</p>
+  <div class="table-responsive"><table class="table table-sm align-middle mb-2" id="adIgnoreTable">
+    <thead><tr><th>Area</th><th>Ground</th><th>Ignore below</th><th>Slower than</th><th>Corners</th><th></th></tr></thead>
+    <tbody></tbody></table></div>
+  <button type="button" class="buttons" id="adIgnoreAdd"><i class="fas fa-fw fa-draw-polygon"></i> Add area</button>
+  <div id="adIgnoreEditor" class="card mt-3 d-none"><div class="card-body">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+      <b id="adIgnoreTitle">New area</b>
+      <span class="form-text m-0" id="adIgnoreHint">Click the map to add corners around where aircraft park. Drag a corner to move it, or the dot halfway along an edge to add one.</span>
+      <span class="ms-auto d-flex gap-2">
+        <button type="button" class="buttons" id="adIgnoreUndo">Undo corner</button>
+        <button type="button" class="buttons" id="adIgnoreClear">Clear corners</button>
+      </span>
+    </div>
+    <div id="adIgnoreMap" style="height:420px;border-radius:6px" class="mb-1"></div>
+    <div class="form-text mb-0" id="adIgnoreSize"></div>
+    <div class="form-text mb-3 text-body-secondary" id="adIgnorePlanesNote"></div>
+    <div class="row g-2">
+      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgName">Name</label>
+        <input type="text" class="form-control form-control-sm" id="adIgName" maxlength="40" placeholder="Regional airport"></div>
+      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgGround">Ground height (ft)</label> <span data-bs-toggle='tooltip' data-bs-html='true' data-bs-placement='auto' data-bs-title='The height an aircraft <b>parked</b> in this area reports. Best set by clicking a parked aircraft on the map and pressing <i>Use its height as ground</i>: aircraft report a GPS height that can read about 100 ft off sea level, and a parked one&rsquo;s height cancels that out. <i>Look it up</i> gives the true sea-level height, which may be off by that much.'><img src='images/redesign/help-icon.svg' class='icon-help' alt='help'></span>
+        <div class="input-group"><input type="number" class="form-control form-control-sm" id="adIgGround" min="-1500" max="15000" step="1">
+        <button type="button" class="btn btn-outline-secondary" id="adIgLookup">Look it up</button></div></div>
+      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgCeiling">Ignore below (ft)</label> <span data-bs-toggle='tooltip' data-bs-html='true' data-bs-placement='auto' data-bs-title='An aircraft higher than this above the area&rsquo;s ground height always counts. 100 ft (the default) allows for reported heights wobbling by 25 to 50 ft on the ground; 25 to 200 ft. A helicopter hovering higher than this, or anything climbing out, still closes the heads.'><img src='images/redesign/help-icon.svg' class='icon-help' alt='help'></span>
+        <input type="number" class="form-control form-control-sm" id="adIgCeiling" min="25" max="200" step="5" value="100"></div>
+      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgSpeed">Slower than (kt)</label> <span data-bs-toggle='tooltip' data-bs-html='true' data-bs-placement='auto' data-bs-title='An aircraft is only ignored while slower than this. Parked aircraft and helicopters on a pad report 0 kt; taxiing is usually 10 to 20 kt, up to about 30 kt on a long straight taxiway. Takeoff is much faster: small planes lift off around 50 to 60 kt, jets above 120 kt. So the default, 40 kt, ignores parked and taxiing aircraft but never one rolling to take off. 5 to 60 kt; lower is stricter.'><img src='images/redesign/help-icon.svg' class='icon-help' alt='help'></span>
+        <input type="number" class="form-control form-control-sm" id="adIgSpeed" min="5" max="60" step="5" value="40"></div>
+    </div>
+    <div class="form-text" id="adIgGroundHelp">Best: click an aircraft parked there on the map and use its height. Aircraft report a GPS
+      height that can be about 100 ft off sea level, and using a parked one's height cancels that out.</div>
+    <div class="mt-3 d-flex gap-2"><button type="button" class="buttons btn-success" id="adIgSave">Save area</button>
+      <button type="button" class="buttons" id="adIgCancel">Cancel</button></div>
+    <div class="form-text mt-2">Map pictures come from OpenStreetMap, loaded by this browser only while this editor is open.
+      Air Defender itself sends nothing.</div>
+  </div></div>
+</div>
+HTML
+            ))); ?>
         </div>
 
         <div class="tab-pane fade" id="ad-feed" role="tabpanel" aria-labelledby="ad-feed-tab">
@@ -957,7 +1000,256 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
             if ($id(id + 'Row')) { $id(id + 'Row').classList.toggle('d-none', !pick); }
         });
     }
-    function refresh() { updateRole(); updateLocation(); updateLimits(); updateWarnings(); }
+
+    /* ---------- Ignore areas (Limits) ---------- */
+    var ig = { areas: [], editing: null, corners: [], map: null, layers: null, planes: null, timer: null, loading: null };
+    function igOn() { return $id('ignoreAreasEnabled') && $id('ignoreAreasEnabled').checked; }
+    function igElev() { return parseInt($id('showElevationFt') && $id('showElevationFt').value, 10) || 0; }
+    function updateIgnore() {
+        if (!$id('adIgnore')) { return; }
+        $id('adIgnore').classList.toggle('d-none', !igOn());
+        if (igOn() && !ig.loaded) { ig.loaded = true; igLoad(); }
+    }
+    function igLoad() {
+        return post({ action: 'ignore_get' }).then(function (d) { ig.areas = d.areas || []; igList(); })
+            .catch(function (e) { toast('Could not read the Ignore areas: ' + e.message, false); });
+    }
+    function igList() {
+        var body = $id('adIgnoreTable').querySelector('tbody');
+        body.textContent = '';
+        if (!ig.areas.length) {
+            var tr = body.insertRow(), td = tr.insertCell();
+            td.colSpan = 6; td.className = 'text-body-secondary'; td.textContent = 'No areas yet.';
+        }
+        ig.areas.forEach(function (a) {
+            var tr = body.insertRow();
+            [a.name, a.groundFt.toLocaleString() + ' ft', a.ceilingFt + ' ft', a.maxKt + ' kt', a.points.length].forEach(function (v) {
+                tr.insertCell().textContent = v;
+            });
+            var td = tr.insertCell(); td.className = 'text-end text-nowrap';
+            var edit = document.createElement('button'); edit.type = 'button'; edit.className = 'buttons me-1';
+            edit.textContent = 'Edit'; edit.addEventListener('click', function () { igEdit(a); });
+            var del = document.createElement('button'); del.type = 'button'; del.className = 'buttons';
+            del.textContent = 'Delete'; del.addEventListener('click', function () {
+                if (!confirm('Delete the Ignore area "' + a.name + '"?')) { return; }
+                post({ action: 'ignore_delete', name: a.name }).then(function (d) { ig.areas = d.areas; igList(); toast(a.name + ' deleted.'); })
+                    .catch(function (e) { toast(e.message, false); igLoad(); });
+            });
+            td.appendChild(edit); td.appendChild(del);
+        });
+        $id('adIgnoreAdd').disabled = ig.areas.length >= 5;
+        if (ig.map) { igDraw(); }
+    }
+    // The map code ships with the plugin and loads only when the editor opens.
+    function igLeaflet() {
+        if (window.L) { return Promise.resolve(); }
+        if (ig.loading) { return ig.loading; }
+        var base = 'plugin.php?plugin=' + PLUGIN + '&nopage=1&file=www/lib/leaflet/';
+        var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = base + 'leaflet.css';
+        document.head.appendChild(css);
+        ig.loading = new Promise(function (ok, fail) {
+            var s = document.createElement('script'); s.src = base + 'leaflet.js';
+            s.onload = function () { ok(); }; s.onerror = function () { ig.loading = null; fail(new Error('the map code did not load')); };
+            document.head.appendChild(s);
+        });
+        return ig.loading;
+    }
+    function igEdit(area) {
+        var loc = showLoc();
+        if (!loc) { toast('Set the show’s location on When & where first.', false); return; }
+        ig.editing = area ? area.name : '';
+        ig.corners = area ? area.points.map(function (p) { return [p[0], p[1]]; }) : [];
+        $id('adIgnoreTitle').textContent = area ? 'Edit ' + area.name : 'New area';
+        $id('adIgName').value = area ? area.name : '';
+        $id('adIgGround').value = area ? area.groundFt : igElev();
+        $id('adIgCeiling').value = area ? area.ceilingFt : 100;
+        $id('adIgSpeed').value = area ? area.maxKt : 40;
+        $id('adIgnoreEditor').classList.remove('d-none');
+        igLeaflet().then(function () {
+            if (!ig.map) {
+                ig.map = L.map('adIgnoreMap', { zoomControl: true });
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(ig.map);
+                L.control.scale({ metric: false, imperial: true }).addTo(ig.map);
+                // Center on show: back to the show after wandering round the map.
+                var Home = L.Control.extend({ options: { position: 'topleft' }, onAdd: function () {
+                    var b = L.DomUtil.create('button', 'btn btn-light btn-sm border shadow-sm');
+                    b.type = 'button';
+                    b.innerHTML = '<i class="fas fa-fw fa-crosshairs"></i> Center on show';
+                    b.title = 'Back to your show';
+                    L.DomEvent.disableClickPropagation(b);
+                    L.DomEvent.on(b, 'click', function () {
+                        var home = showLoc();
+                        if (home) { ig.map.setView([home.lat, home.lon], 13); }
+                    });
+                    return b;
+                } });
+                new Home().addTo(ig.map);
+                ig.layers = L.layerGroup().addTo(ig.map);
+                ig.planes = L.layerGroup().addTo(ig.map);
+                ig.map.on('popupopen', function () { ig.popupOpen = true; });
+                ig.map.on('popupclose', function () { ig.popupOpen = false; });
+                ig.map.on('click', function (e) {
+                    if (ig.corners.length >= 30) { toast('Up to 30 corners.', false); return; }
+                    ig.corners.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]);
+                    igDraw();
+                });
+            }
+            ig.map.invalidateSize();
+            if (ig.corners.length >= 3) { ig.map.fitBounds(L.latLngBounds(ig.corners).pad(0.6)); }
+            else { ig.map.setView([loc.lat, loc.lon], 13); }
+            igDraw();
+            igPlanes();
+            clearInterval(ig.timer);
+            ig.timer = setInterval(igPlanes, 5000);
+            $id('adIgnoreEditor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }).catch(function (e) { toast('Could not open the map: ' + e.message, false); });
+    }
+    function igClose() {
+        clearInterval(ig.timer); ig.timer = null;
+        $id('adIgnoreEditor').classList.add('d-none');
+        ig.editing = null; ig.corners = [];
+    }
+    function igNm(a, b) {   // great-circle distance in NM
+        var r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+        var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return 3440.065 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    }
+    function igLen(nm) { return nm < 0.3 ? Math.round(nm * 6076 / 10) * 10 + ' ft' : nm.toFixed(2) + ' NM'; }
+    function igDraw() {
+        if (!ig.map) { return; }
+        ig.layers.clearLayers();
+        var loc = showLoc(), nm = parseFloat($id('distanceNM') && $id('distanceNM').value) || 5;
+        if (loc) {
+            L.circle([loc.lat, loc.lon], { radius: nm * 1852, color: '#f0ad4e', weight: 2, dashArray: '6 6', fill: false, interactive: false })
+                .addTo(ig.layers);
+            L.circleMarker([loc.lat, loc.lon], { radius: 7, color: '#fff', weight: 2, fillColor: '#28a745', fillOpacity: 1 })
+                .bindTooltip('Your show').addTo(ig.layers);
+        }
+        ig.areas.forEach(function (a) {
+            if (a.name === ig.editing) { return; }
+            L.polygon(a.points, { color: '#6c757d', weight: 2, fillOpacity: 0.15, interactive: false }).addTo(ig.layers);
+        });
+        if (ig.corners.length) {
+            var shape = (ig.corners.length >= 3 ? L.polygon : L.polyline)(ig.corners, { color: '#d6007e', weight: 4, fillColor: '#ff1aa3',
+                fillOpacity: 0.25, interactive: false }).addTo(ig.layers);
+            // Corners are handles: drag one to move it (the outline follows as you drag), click one to remove it.
+            var handle = L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 9],
+                html: '<div style="width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #d6007e;'
+                    + 'box-shadow:0 0 0 1px #fff, 0 1px 4px rgba(0,0,0,.5);cursor:move"></div>' });
+            ig.corners.forEach(function (c, i) {
+                var m = L.marker(c, { icon: handle, draggable: true, autoPan: true, bubblingMouseEvents: false })
+                    .bindTooltip('Corner ' + (i + 1) + ' · drag to move · click to remove').addTo(ig.layers);
+                m.on('drag', function (e) {
+                    var at = e.target.getLatLng();
+                    ig.corners[i] = [+at.lat.toFixed(6), +at.lng.toFixed(6)];
+                    shape.setLatLngs(ig.corners);
+                });
+                m.on('dragend', function () { igDraw(); });
+                m.on('click', function (e) { L.DomEvent.stop(e); ig.corners.splice(i, 1); igDraw(); });
+            });
+            // A smaller handle halfway along each edge: drag it (or click it) to add a corner there.
+            var mid = L.divIcon({ className: '', iconSize: [12, 12], iconAnchor: [6, 6],
+                html: '<div style="width:12px;height:12px;border-radius:50%;background:#d6007e;opacity:.75;'
+                    + 'border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:copy"></div>' });
+            var edges = ig.corners.length >= 3 ? ig.corners.length : ig.corners.length - 1;
+            for (var k = 0; k < edges && ig.corners.length < 30; k++) {
+                (function (i) {
+                    var a = ig.corners[i], b = ig.corners[(i + 1) % ig.corners.length];
+                    var at = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], added = false;
+                    var h = L.marker(at, { icon: mid, draggable: true, autoPan: true, bubblingMouseEvents: false })
+                        .bindTooltip('Drag or click to add a corner here').addTo(ig.layers);
+                    h.on('dragstart', function () { ig.corners.splice(i + 1, 0, [+at[0].toFixed(6), +at[1].toFixed(6)]); added = true; });
+                    h.on('drag', function (e) {
+                        var ll = e.target.getLatLng();
+                        ig.corners[i + 1] = [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
+                        shape.setLatLngs(ig.corners);
+                    });
+                    h.on('dragend', function () { igDraw(); });
+                    h.on('click', function (e) {
+                        L.DomEvent.stop(e);
+                        if (!added) { ig.corners.splice(i + 1, 0, [+at[0].toFixed(6), +at[1].toFixed(6)]); }
+                        igDraw();
+                    });
+                })(k);
+            }
+        }
+        var size = $id('adIgnoreSize');
+        if (ig.corners.length >= 3) {
+            var lats = ig.corners.map(function (c) { return c[0]; }), lons = ig.corners.map(function (c) { return c[1]; });
+            var s = Math.min.apply(null, lats), n = Math.max.apply(null, lats), w = Math.min.apply(null, lons), e = Math.max.apply(null, lons);
+            var mid = (s + n) / 2;
+            size.textContent = 'About ' + igLen(igNm([mid, w], [mid, e])) + ' east to west, ' + igLen(igNm([s, w], [n, w]))
+                + ' north to south, ' + ig.corners.length + ' corners.';
+        } else {
+            size.textContent = ig.corners.length ? (3 - ig.corners.length) + ' more corner' + (ig.corners.length === 2 ? '' : 's') + ' to make an area.' : '';
+        }
+    }
+    // Aircraft Air Defender sees right now, while it is checking (or with Manual tracking on the dashboard).
+    function igPlanes() {
+        if (!ig.map || $id('adIgnoreEditor').classList.contains('d-none') || ig.popupOpen) { return; }
+        fetch(API + '&view=detailed', { credentials: 'same-origin', cache: 'no-store' }).then(readJson).then(function (d) {
+            var list = (d.live && d.live.aircraft) || [], elev = (d.live && d.live.limits && d.live.limits.elevationFt) || 0;
+            ig.planes.clearLayers();
+            $id('adIgnorePlanesNote').textContent = list.length ? 'Blue dots are aircraft Air Defender sees now (grey: already ignored); click one for its height.'
+                : 'No aircraft shown: Air Defender only sees them while it is checking. To see the ones parked there now, start Manual tracking on the dashboard.';
+            list.forEach(function (p) {
+                if (p.lat === undefined || p.lon === undefined) { return; }
+                var reported = p.ft === null ? null : p.ft + elev;
+                var m = L.circleMarker([p.lat, p.lon], { radius: 7, color: p.ign ? '#adb5bd' : '#0d6efd', weight: 2,
+                    fillColor: p.ign ? '#adb5bd' : '#0d6efd', fillOpacity: 0.7, bubblingMouseEvents: false }).addTo(ig.planes);
+                var box = document.createElement('div'), t = document.createElement('div');
+                t.textContent = p.id + (p.desc ? ' · ' + p.desc : '');
+                t.style.fontWeight = '600';
+                box.appendChild(t);
+                var info = document.createElement('div');
+                info.textContent = (reported === null ? 'No height' : 'Reports ' + reported.toLocaleString() + ' ft')
+                    + ' · ' + (p.gs === undefined ? 'no speed' : p.gs + ' kt') + (p.ign ? ' · ignored (' + p.ign + ')' : '');
+                box.appendChild(info);
+                if (reported !== null) {
+                    var b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-sm btn-outline-primary mt-1';
+                    b.textContent = 'Use its height as ground';
+                    b.addEventListener('click', function () {
+                        $id('adIgGround').value = reported;
+                        $id('adIgGroundHelp').textContent = 'Ground set from ' + p.id + ': ' + reported.toLocaleString() + ' ft. Use an aircraft that is parked, not flying.';
+                        ig.map.closePopup();
+                    });
+                    box.appendChild(b);
+                }
+                m.bindPopup(box);
+            });
+        }).catch(function () {});
+    }
+    $id('adIgnoreAdd').addEventListener('click', function () { igEdit(null); });
+    $id('adIgCancel').addEventListener('click', igClose);
+    $id('adIgnoreUndo').addEventListener('click', function () { ig.corners.pop(); igDraw(); });
+    $id('adIgnoreClear').addEventListener('click', function () { ig.corners = []; igDraw(); });
+    $id('adIgLookup').addEventListener('click', function () {
+        var btn = this;
+        if (ig.corners.length < 1) { toast('Add the corners first; it looks up the middle of the area.', false); return; }
+        var lat = 0, lon = 0;
+        ig.corners.forEach(function (c) { lat += c[0]; lon += c[1]; });
+        btn.disabled = true;
+        post({ action: 'elevation', lat: lat / ig.corners.length, lon: lon / ig.corners.length }).then(function (d) {
+            if (!d.ok) { throw new Error(d.error || 'No answer'); }
+            $id('adIgGround').value = d.feet;
+            $id('adIgGroundHelp').textContent = 'Found ' + Number(d.feet).toLocaleString() + ' ft above sea level (Open-Meteo, Copernicus DEM). '
+                + 'Aircraft heights can read about 100 ft off that, so a parked aircraft’s height is better if you can get one.';
+        }).catch(function (e) { toast('Could not look it up: ' + e.message, false); })
+            .then(function () { btn.disabled = false; });
+    });
+    $id('adIgSave').addEventListener('click', function () {
+        var area = { name: $id('adIgName').value.trim(), points: ig.corners, groundFt: $id('adIgGround').value,
+            ceilingFt: $id('adIgCeiling').value, maxKt: $id('adIgSpeed').value };
+        if (!area.name) { toast('Give the area a name.', false); return; }
+        if (ig.corners.length < 3) { toast('Click at least 3 corners on the map.', false); return; }
+        if (area.groundFt === '') { toast('Set the ground height.', false); return; }
+        post({ action: 'ignore_save', area: JSON.stringify(area), replaces: ig.editing || '' }).then(function (d) {
+            ig.areas = d.areas; toast(area.name + ' saved.'); igClose(); igList();
+        }).catch(function (e) { toast(e.message, false); });
+    });
+
+    function refresh() { updateRole(); updateLocation(); updateLimits(); updateIgnore(); updateWarnings(); }
 
     // Come back to the tab you were on.
     try {

@@ -77,6 +77,7 @@ $airdefenderPage = array(
     .airdefender-radar .ring, .airdefender-radar .hollow { fill: none; stroke: var(--bs-secondary-color); stroke-width: 1.2; stroke-linejoin: round; }
     .airdefender-radar .in .ring, .airdefender-radar .in .hollow { stroke: var(--bs-warning); }
     .airdefender-radar .hit { fill: transparent; cursor: pointer; }
+    .airdefender-radar .plane.ign { opacity: .4; }   /* parked in an Ignore area */
     .airdefender-radar .picked { fill: none; stroke: var(--bs-primary); stroke-width: 1.5; }
     .airdefender-radar.turning .hit { cursor: inherit; }
     /* The Aircraft card never grows the row: its details scroll inside it. Beside the radar it takes the Sky card's
@@ -679,7 +680,7 @@ $airdefenderPage = array(
             ['Climb', p.vs === undefined ? null : Math.abs(p.vs) < 200 ? 'Level' : (p.vs > 0 ? 'Climbing ' : 'Descending ') + num(Math.abs(p.vs)) + ' ft/min'],
             ['Speed', p.gs === undefined ? null : p.gs + ' kn (' + Math.round(p.gs * 1.15078) + ' mph)'],
             ['Heading', p.trk === null || p.trk === undefined ? null : compass(p.trk)],
-            ['Limits', p.in ? 'Inside' : outsideWhy(p)],
+            ['Limits', p.in ? 'Inside' : p.ign ? 'Ignored: parked in ' + p.ign + ' (Ignore areas)' : outsideWhy(p)],
             ['Other', [p.year ? 'built ' + p.year : '', p.sq ? 'squawk ' + p.sq : '', p.hex ? 'ICAO ' + p.hex.toUpperCase() : '']
                 .filter(Boolean).join(' · ')]
         ];
@@ -789,7 +790,7 @@ $airdefenderPage = array(
             var r = Math.min(1, p.nm / outer) * R, a = (p.brg - rotation) * Math.PI / 180;
             var x = (100 + r * Math.sin(a)).toFixed(1), y = (100 - r * Math.cos(a)).toFixed(1);
             var s = p.in ? 1.6 : 1, kind = planeKind(p);
-            var g = el('g', { 'class': p.in ? 'plane in' : 'plane', transform: 'translate(' + x + ' ' + y + ')' });
+            var g = el('g', { 'class': p.in ? 'plane in' : (p.ign ? 'plane ign' : 'plane'), transform: 'translate(' + x + ' ' + y + ')' });
             if (p.trk !== null && p.trk !== undefined) {
                 // An arrow pointing the way it's heading: solid for a plane, inside a rotor ring for a helicopter,
                 // hollow for a drone, balloon, glider or anything else.
@@ -805,7 +806,8 @@ $airdefenderPage = array(
             // A bigger invisible target, so it's easy to hover or tap.
             var hit = el('circle', { r: 9, 'class': 'hit', 'data-key': planeKey(p) }, undefined, g);
             el('title', {}, (p.type ? p.type + ' · ' : '') + p.id + ' · ' + p.nm + ' NM · ' + (p.ft === null ? '? ft' : num(p.ft) + ' ft')
-                + (p.trk !== null && p.trk !== undefined ? ' · heading ' + compass(p.trk) : '') + ' · click for details', hit);
+                + (p.trk !== null && p.trk !== undefined ? ' · heading ' + compass(p.trk) : '') + (p.ign ? ' · ignored, parked in ' + p.ign : '')
+                + ' · click for details', hit);
             if (p.in) { inside++; }
         });
         svg.classList.toggle('has-in', inside > 0);
@@ -813,8 +815,10 @@ $airdefenderPage = array(
         if (!live.feed || live.feed.lastOkAgo === null) {
             setSkyNote('Waiting for flight data', 'Waiting for flight data');
         } else {
-            setSkyNote(planes.length + ' around \u00b7 ' + inside + ' inside',
-                planes.length + ' aircraft around \u00b7 ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft');
+            var ignored = planes.filter(function (p) { return p.ign; }).length;
+            setSkyNote(planes.length + ' around \u00b7 ' + inside + ' inside' + (ignored ? ' \u00b7 ' + ignored + ' ignored' : ''),
+                planes.length + ' aircraft around \u00b7 ' + inside + ' inside ' + lim.nm + ' NM / ' + num(lim.ft) + ' ft'
+                + (ignored ? ' \u00b7 ' + ignored + ' parked in Ignore areas' : ''));
         }
     }
 
@@ -888,6 +892,12 @@ $airdefenderPage = array(
         var lim = limits();
         $id('adLimits').textContent = lim.nm + ' NM · ' + num(lim.ft) + ' ft' + (lim.elevationFt ? ' above show' : '') + ' · hold ' + lim.holdSec + ' s'
             + (live && live.role === 'remote' ? '' : ' · ' + FEED_LABEL);
+        // Ignore areas are never silent: say they're on, and what is being ignored right now.
+        var ia = live && live.ignoreAreas;
+        if (ia && ia.on && !(live && live.role === 'remote')) {
+            var now = (ia.ignoring || []).map(function (x) { return x.id + ' (' + x.area + ')'; });
+            $id('adLimits').textContent += ' · Ignore areas on (' + ia.count + ')' + (now.length ? ': ignoring ' + now.join(', ') : '');
+        }
     }
 
     function renderAll(data) {

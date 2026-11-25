@@ -49,6 +49,12 @@ fi
 
 rm -rf /dev/shm/AirDefender 2>/dev/null
 
+# Take OpenStreetMap back off the sites FPP's pages may load images from (added for the Ignore areas
+# map). A Reinstall adds it again.
+if [ -x "${FPPDIR:-/opt/fpp}/scripts/ManageApacheContentPolicy.sh" ]; then
+    "${FPPDIR:-/opt/fpp}/scripts/ManageApacheContentPolicy.sh" remove img-src https://tile.openstreetmap.org >/dev/null 2>&1 || true
+fi
+
 # No restart needed: just before this, FPP asked fppd to unload the plugin,
 # which withdrew the Air Defender commands and stopped the loop (callbacks.sh).
 

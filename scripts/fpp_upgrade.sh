@@ -18,6 +18,9 @@ FPPDIR="${FPPDIR:-/opt/fpp}"
 # Rebuild the compiled part (DeadZones) from the updated source before fppd loads it again;
 # never fails the update (see the script).
 "$(dirname "$0")/build_deadzones.sh"
+# Ignore areas' map: let FPP's pages show OpenStreetMap's map pictures (FPP only allows
+# images from itself). The browser loads them only while the Ignore areas editor is open.
+"${FPPDIR}/scripts/ManageApacheContentPolicy.sh" add img-src https://tile.openstreetmap.org >/dev/null 2>&1 || true
 API="http://127.0.0.1/api/fppd/plugin/AirDefender"
 
 VERSION="$(curl -s -m 10 http://127.0.0.1/api/fppd/version 2>/dev/null)"
