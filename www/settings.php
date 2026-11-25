@@ -1055,6 +1055,20 @@ HTML
                 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19,
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(ig.map);
                 L.control.scale({ metric: false, imperial: true }).addTo(ig.map);
+                // Center on show: back to the show after wandering round the map.
+                var Home = L.Control.extend({ options: { position: 'topleft' }, onAdd: function () {
+                    var b = L.DomUtil.create('button', 'btn btn-light btn-sm border shadow-sm');
+                    b.type = 'button';
+                    b.innerHTML = '<i class="fas fa-fw fa-crosshairs"></i> Center on show';
+                    b.title = 'Back to your show';
+                    L.DomEvent.disableClickPropagation(b);
+                    L.DomEvent.on(b, 'click', function () {
+                        var home = showLoc();
+                        if (home) { ig.map.setView([home.lat, home.lon], 13); }
+                    });
+                    return b;
+                } });
+                new Home().addTo(ig.map);
                 ig.layers = L.layerGroup().addTo(ig.map);
                 ig.planes = L.layerGroup().addTo(ig.map);
                 ig.map.on('popupopen', function () { ig.popupOpen = true; });
