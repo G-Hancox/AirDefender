@@ -120,6 +120,10 @@
             {
                 "kind": "service",
                 "what": "with DeadZones turned on, a part compiled at install runs inside fppd and closes a head's shutter while it points into an area you marked"
+            },
+            {
+                "kind": "core-settings",
+                "what": "adds tile.openstreetmap.org to the sites FPP's pages may show images from, for the Ignore areas map; removed on uninstall"
             }
         ],
         "closedCode": false,

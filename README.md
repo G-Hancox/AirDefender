@@ -354,7 +354,9 @@ uses.
   out each aircraft's distance from your exact location itself. Your own receiver is only asked for its aircraft list.
 - Pressing **Look it up** beside Show elevation, or in an Ignore area, sends that location once to api.open-meteo.com.
 - With the **Ignore areas** editor open, your browser loads map pictures of the area you're looking at from
-  OpenStreetMap (tile.openstreetmap.org). Air Defender itself sends nothing.
+  OpenStreetMap (tile.openstreetmap.org). Air Defender itself sends nothing. So the map can show, installing adds
+  tile.openstreetmap.org to the sites FPP's pages may load images from (FPP's `ManageApacheContentPolicy.sh`);
+  uninstalling takes it off again.
 - A Remote asks its Player for its status over your local network, with the Player's UI password if you entered one.
 - The log (`plugin-AirDefender.log` in FPP's logs folder) records the callsigns, distance and height of low aircraft
   that passed near your show. It is kept **until you press Clear log** on the dashboard (FPP only rotates plugin
