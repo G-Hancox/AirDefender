@@ -303,7 +303,7 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
   <div id="adIgnoreEditor" class="card mt-3 d-none"><div class="card-body">
     <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
       <b id="adIgnoreTitle">New area</b>
-      <span class="form-text m-0" id="adIgnoreHint">Click the map to add corners around where aircraft park.</span>
+      <span class="form-text m-0" id="adIgnoreHint">Click the map to add corners around where aircraft park; drag a corner to move it.</span>
       <span class="ms-auto d-flex gap-2">
         <button type="button" class="btn btn-sm btn-outline-secondary" id="adIgnoreUndo">Undo corner</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="adIgnoreClear">Clear corners</button>
@@ -1101,11 +1101,21 @@ HTML
             L.polygon(a.points, { color: '#6c757d', weight: 2, fillOpacity: 0.15, interactive: false }).addTo(ig.layers);
         });
         if (ig.corners.length) {
-            (ig.corners.length >= 3 ? L.polygon : L.polyline)(ig.corners, { color: '#d6007e', weight: 4, fillColor: '#ff1aa3', fillOpacity: 0.25, interactive: false })
-                .addTo(ig.layers);
+            var shape = (ig.corners.length >= 3 ? L.polygon : L.polyline)(ig.corners, { color: '#d6007e', weight: 4, fillColor: '#ff1aa3',
+                fillOpacity: 0.25, interactive: false }).addTo(ig.layers);
+            // Corners are handles: drag one to move it (the outline follows as you drag), click one to remove it.
+            var handle = L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 9],
+                html: '<div style="width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #d6007e;'
+                    + 'box-shadow:0 0 0 1px #fff, 0 1px 4px rgba(0,0,0,.5);cursor:move"></div>' });
             ig.corners.forEach(function (c, i) {
-                var m = L.circleMarker(c, { radius: 7, color: '#d6007e', weight: 3, fillColor: '#fff', fillOpacity: 1, bubblingMouseEvents: false })
-                    .bindTooltip('Corner ' + (i + 1) + ' · click to remove').addTo(ig.layers);
+                var m = L.marker(c, { icon: handle, draggable: true, autoPan: true, bubblingMouseEvents: false })
+                    .bindTooltip('Corner ' + (i + 1) + ' · drag to move · click to remove').addTo(ig.layers);
+                m.on('drag', function (e) {
+                    var at = e.target.getLatLng();
+                    ig.corners[i] = [+at.lat.toFixed(6), +at.lng.toFixed(6)];
+                    shape.setLatLngs(ig.corners);
+                });
+                m.on('dragend', function () { igDraw(); });
                 m.on('click', function (e) { L.DomEvent.stop(e); ig.corners.splice(i, 1); igDraw(); });
             });
         }
