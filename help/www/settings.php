@@ -109,6 +109,12 @@ until you pick the model again.</p>
     <li><b>Check every</b>: how often, in seconds, to ask for new flight data (5 to 15; never slower, so a fast aircraft can't get too close between looks). Every 10 seconds is about
         1,800 requests in a 5-hour show night, which matters because free services limit how many they answer. A
         smaller distance may want a quicker check.</li>
+    <li><b>Ignore areas</b> (off unless you turn it on): outline places like an airport ramp or a helipad on a map.
+        An aircraft there is ignored only while it is inside the outline, no higher than the area's ceiling above
+        the ground there, and slower than its speed limit; anything taking off, landing or hovering higher still
+        closes the heads. Set the ground height from an aircraft <i>parked</i> there (click it on the map), which cancels
+        the ~100 ft GPS offset. The map pictures come from OpenStreetMap, loaded by your browser only while the editor
+        is open.</li>
 </ul>
 
 
