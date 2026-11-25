@@ -2,13 +2,18 @@
 
 Release notes and questions: the [Air Defender Facebook group](https://www.facebook.com/groups/1148027754367289).
 
-## Unreleased (ignore-areas branch)
+## 1.9.0 (2026-11-25)
 
 - **Ignore areas (optional, off by default)**: for shows near an airport or helipad. Outline the place on a map on
   the **Limits** tab, and aircraft parked or taxiing there no longer close the heads: only while inside the outline,
   no higher than the area's ceiling (100 ft by default) and slower than its speed limit (40 kt by default). Anything
   taking off, landing or hovering higher still does. Ignored aircraft stay on the radar, greyed out, and are noted in
   the log. The map pictures come from OpenStreetMap, loaded by your browser only while the editor is open.
+  Drag corners to move them, drag the dot halfway along an edge to add one, and **Center on show** brings the map
+  back to your show. On a Docker FPP, after installing, reload Apache once (`apache2ctl graceful`) or restart the
+  container so the map pictures show.
+- **DeadZones fix**: a zone change saved within the same second as the one before it (and leaving the file the same
+  size) could be missed until the next change, so DeadZones kept using the old zones. It's picked up straight away now.
 
 ## 1.8.0 (2026-11-22)
 
