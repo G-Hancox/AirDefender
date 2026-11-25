@@ -314,12 +314,12 @@ $airdefenderFeedRows = airdefender_row('adFeedTestRow', 'Test',
     <div class="row g-2">
       <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgName">Name</label>
         <input type="text" class="form-control form-control-sm" id="adIgName" maxlength="40" placeholder="Regional airport"></div>
-      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgGround">Ground height (ft, as aircraft report it)</label>
+      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgGround">Ground height (ft, as aircraft report it)</label> <span data-bs-toggle='tooltip' data-bs-html='true' data-bs-placement='auto' data-bs-title='The height an aircraft <b>parked</b> in this area reports. Best set by clicking a parked aircraft on the map and pressing <i>Use its height as ground</i>: aircraft report a GPS height that can read about 100 ft off sea level, and a parked one&rsquo;s height cancels that out. <i>Look it up</i> gives the true sea-level height, which may be off by that much.'><img src='images/redesign/help-icon.svg' class='icon-help' alt='help'></span>
         <div class="input-group input-group-sm"><input type="number" class="form-control" id="adIgGround" min="-1500" max="15000" step="1">
         <button type="button" class="btn btn-outline-secondary" id="adIgLookup">Look it up</button></div></div>
-      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgCeiling">Ignore below (ft above that ground)</label>
+      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgCeiling">Ignore below (ft above that ground)</label> <span data-bs-toggle='tooltip' data-bs-html='true' data-bs-placement='auto' data-bs-title='An aircraft higher than this above the area&rsquo;s ground height always counts. 100 ft (the default) allows for reported heights wobbling by 25 to 50 ft on the ground; 25 to 200 ft. A helicopter hovering higher than this, or anything climbing out, still closes the heads.'><img src='images/redesign/help-icon.svg' class='icon-help' alt='help'></span>
         <input type="number" class="form-control form-control-sm" id="adIgCeiling" min="25" max="200" step="5" value="100"></div>
-      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgSpeed">Only if slower than (kt)</label>
+      <div class="col-sm-6 col-lg-3"><label class="form-label small mb-0" for="adIgSpeed">Only if slower than (kt)</label> <span data-bs-toggle='tooltip' data-bs-html='true' data-bs-placement='auto' data-bs-title='An aircraft is only ignored while slower than this. Parked aircraft and helicopters on a pad report 0 kt; taxiing is usually 10 to 20 kt, up to about 30 kt on a long straight taxiway. Takeoff is much faster: small planes lift off around 50 to 60 kt, jets above 120 kt. So the default, 40 kt, ignores parked and taxiing aircraft but never one rolling to take off. 5 to 60 kt; lower is stricter.'><img src='images/redesign/help-icon.svg' class='icon-help' alt='help'></span>
         <input type="number" class="form-control form-control-sm" id="adIgSpeed" min="5" max="60" step="5" value="40"></div>
     </div>
     <div class="form-text" id="adIgGroundHelp">Best: click an aircraft parked there on the map and use its height. Aircraft report a GPS
@@ -1101,10 +1101,10 @@ HTML
             L.polygon(a.points, { color: '#6c757d', weight: 2, fillOpacity: 0.15, interactive: false }).addTo(ig.layers);
         });
         if (ig.corners.length) {
-            (ig.corners.length >= 3 ? L.polygon : L.polyline)(ig.corners, { color: '#fd7e14', weight: 3, fillOpacity: 0.2, interactive: false })
+            (ig.corners.length >= 3 ? L.polygon : L.polyline)(ig.corners, { color: '#d6007e', weight: 4, fillColor: '#ff1aa3', fillOpacity: 0.25, interactive: false })
                 .addTo(ig.layers);
             ig.corners.forEach(function (c, i) {
-                var m = L.circleMarker(c, { radius: 6, color: '#fd7e14', weight: 2, fillColor: '#fff', fillOpacity: 1, bubblingMouseEvents: false })
+                var m = L.circleMarker(c, { radius: 7, color: '#d6007e', weight: 3, fillColor: '#fff', fillOpacity: 1, bubblingMouseEvents: false })
                     .bindTooltip('Corner ' + (i + 1) + ' · click to remove').addTo(ig.layers);
                 m.on('click', function (e) { L.DomEvent.stop(e); ig.corners.splice(i, 1); igDraw(); });
             });
